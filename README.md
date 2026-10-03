@@ -31,6 +31,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st debug` | Toggle detector messages |
 | `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
+| `/st gag` | Preview the Zenit gag |
 | `/st zenit` | Toggle Zenit test mode on this character |
 
 ## How it works
@@ -91,9 +92,11 @@ If the logged-in character is in `settings.zenitNames` (default `Zenit`), the pa
 hidden and the gag plays instead, and points and badge messages are hidden when he logs a summon. This is
 a joke gate for friends, not security: addon files are plain text.
 
-To add clips, put each short `.ogg` and its square power-of-two textures (`.tga` or `.blp`, 256 or 512 px)
-in `Media/` and add an entry to `Gag.clips` in `Gag.lua`. With no clips it falls back to a built-in sound
-and a placeholder icon. The diagnostics Sound/flip row looks for `Media/test.ogg`.
+Each clip is a sprite sheet: all frames in one power-of-two texture (`.tga` or `.blp`), played left to right,
+top to bottom, plus an optional short `.ogg`. Add an entry to `Gag.clips` in `Gag.lua`:
+`{ sheet = { file = ..., cols = 4, rows = 2, frames = 8, fps = 8 }, sound = ... }`. One is picked at random
+each time. The bundled placeholder, `Media/gag_wag_sheet.tga` (1024x512, 8 frames of 256), is made by
+`tools/make_gag_sheet.ps1`; replace it with your friends' frames. The diagnostics Sound/flip row looks for `Media/test.ogg`.
 
 ### Large images
 

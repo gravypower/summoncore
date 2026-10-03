@@ -3,16 +3,20 @@ local ADDON, ST = ...
 local Gag = {}
 ST.Gag = Gag
 
--- Add clips here: { sound = ".ogg path", frames = { 256/512px power-of-two textures, ... } }.
--- Files live in Interface\AddOns\summoncore\Media\. One is picked at random per block.
+local MEDIA = "Interface\\AddOns\\summoncore\\Media\\"
+
+-- Each clip is a sprite sheet (all frames in one power-of-two texture) plus an optional sound:
+--   sheet = { file = <path without extension>, cols = n, rows = n, frames = n, fps = n }
+--   sound = ".ogg path" (optional; a built-in sound plays if missing)
+-- Frames run left to right, top to bottom. One clip is picked at random per block, so add more entries
+-- as friends record them. Convert each recording outside the game into an .ogg plus a sheet (.tga/.blp).
 Gag.clips = {
-    -- { sound = "Interface\\AddOns\\summoncore\\Media\\ahah1.ogg",
-    --   frames = { "Interface\\AddOns\\summoncore\\Media\\wag1_1", "Interface\\AddOns\\summoncore\\Media\\wag1_2" } },
+    { sheet = { file = MEDIA .. "gag_wag_sheet", cols = 4, rows = 2, frames = 8, fps = 8 } },
 }
 
-local FALLBACK_FRAMES = { "Interface\\Icons\\Spell_Shadow_Teleport", "Interface\\Icons\\INV_Misc_QuestionMark" }
-local FRAME_TIME = 0.2
 local DURATION = 2.5
+local SHOW_SIZE = 192
+local CAPTION = "Ah ah ah! You didn't say the magic word!"
 
 function Gag.IsZenit()
     local s = ST.db and ST.db.settings
@@ -27,40 +31,50 @@ end
 
 local frame, ticker
 
+-- Points the texture at one cell of the sheet.
+local function setFrame(tex, sheet, index)
+    local col = index % sheet.cols
+    local row = math.floor(index / sheet.cols)
+    tex:SetTexCoord(col / sheet.cols, (col + 1) / sheet.cols, row / sheet.rows, (row + 1) / sheet.rows)
+end
+
+local function playSound(clip)
+    if ST.db.settings.soundOn == false then return end
+    if clip and clip.sound then
+        local ok, willPlay = pcall(PlaySoundFile, clip.sound, "Master")
+        if ok and willPlay then return end
+    end
+    pcall(PlaySound, SOUNDKIT and SOUNDKIT.IG_QUEST_LOG_ABANDON_QUEST or 857, "Master")
+end
+
 function Gag.Play()
-    local clip = #Gag.clips > 0 and Gag.clips[math.random(#Gag.clips)] or nil
-    local willPlay = false
-    if clip and clip.sound and ST.db.settings.soundOn ~= false then
-        local ok, wp = pcall(PlaySoundFile, clip.sound, "Master")
-        willPlay = ok and wp
-    end
-    if not willPlay and ST.db.settings.soundOn ~= false then
-        pcall(PlaySound, SOUNDKIT and SOUNDKIT.IG_QUEST_LOG_ABANDON_QUEST or 857, "Master")
-    end
+    local clip = Gag.clips[math.random(#Gag.clips)]
+    local sheet = clip.sheet
+    playSound(clip)
     if not frame then
         frame = CreateFrame("Frame", nil, UIParent)
-        frame:SetSize(128, 128)
+        frame:SetSize(SHOW_SIZE, SHOW_SIZE)
         frame:SetPoint("CENTER", 0, 100)
         frame:SetFrameStrata("FULLSCREEN_DIALOG")
         frame.tex = frame:CreateTexture(nil, "ARTWORK")
         frame.tex:SetAllPoints()
         frame.text = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         frame.text:SetPoint("TOP", frame, "BOTTOM", 0, -6)
-        frame.text:SetText("Ah ah ah! You didn't say the magic word!")
+        frame.text:SetText(CAPTION)
     end
-    local frames = (clip and clip.frames and #clip.frames > 0) and clip.frames or FALLBACK_FRAMES
+    frame.tex:SetTexture(sheet.file)
     local n = 0
+    setFrame(frame.tex, sheet, 0)
     if ticker then ticker:Cancel() end
     frame:Show()
-    ticker = C_Timer.NewTicker(FRAME_TIME, function()
+    ticker = C_Timer.NewTicker(1 / sheet.fps, function()
         n = n + 1
-        frame.tex:SetTexture(frames[(n - 1) % #frames + 1])
-        -- Mirror every other tick so a single image still wags left and right.
-        if n % 2 == 0 then frame.tex:SetTexCoord(0, 1, 0, 1) else frame.tex:SetTexCoord(1, 0, 0, 1) end
-        if n * FRAME_TIME >= DURATION then
+        if n / sheet.fps >= DURATION then
             ticker:Cancel()
             frame:Hide()
+            return
         end
+        setFrame(frame.tex, sheet, n % sheet.frames)
     end)
 end
 
