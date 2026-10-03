@@ -23,6 +23,17 @@ function ST.isSecret(v)
     return issecretvalue ~= nil and issecretvalue(v) == true
 end
 
+ST.RITUAL_ID = 698 -- Ritual of Summoning (classic ID; confirm with /st test)
+
+-- Spell name for an ID, or nil if unknown, secret or the lookup fails.
+function ST.SpellName(id)
+    if not id or ST.isSecret(id) then return nil end
+    local fn = (C_Spell and C_Spell.GetSpellName) or GetSpellInfo
+    if not fn then return nil end
+    local ok, name = pcall(fn, id)
+    return ok and name or nil
+end
+
 local function initDB()
     SummonTrackerDB = SummonTrackerDB or {}
     local db = SummonTrackerDB

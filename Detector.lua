@@ -4,22 +4,16 @@ local ADDON, ST = ...
 local Detector = {}
 ST.Detector = Detector
 
-local RITUAL_ID = 698
 local PENDING_TTL = 30
 local TICK = 0.5
 local pending
 
-local function debug(msg)
+local function dbg(msg)
     if ST.db and ST.db.settings.debug then ST.print("|cff888888[detect]|r " .. msg) end
 end
 
-local function ritualName()
-    if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(RITUAL_ID) end
-    if GetSpellInfo then return (GetSpellInfo(RITUAL_ID)) end
-end
-
 local function isRitualID(spellID)
-    return spellID ~= nil and not ST.isSecret(spellID) and spellID == RITUAL_ID
+    return spellID ~= nil and not ST.isSecret(spellID) and spellID == ST.RITUAL_ID
 end
 
 -- Plain string name, or nil if the value is missing or secret.
@@ -43,7 +37,7 @@ Detector.PartyMembers = partyMembers
 -- Names of party members currently channeling the ritual.
 local function channelers()
     local out = {}
-    local rname = ritualName()
+    local rname = ST.SpellName(ST.RITUAL_ID)
     for i = 1, 4 do
         local unit = "party" .. i
         if UnitExists(unit) then
@@ -68,7 +62,7 @@ local function snapshotHelpers()
     for _, n in ipairs(channelers()) do
         if not pending.helpers[n] then
             pending.helpers[n] = true
-            debug("helper seen channeling: " .. n)
+            dbg("helper seen channeling: " .. n)
         end
     end
 end
@@ -91,11 +85,11 @@ local function startPending(target)
         snapshotHelpers()
         if ticks * TICK > PENDING_TTL then clearPending() end
     end)
-    debug(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
+    dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))
 end
 
-local function report(id, ev, badges)
+local function report(ev, badges)
     local zenit = ST.Gag.IsZenit()
     ST.print(string.format("Summon logged: %s in %s%s%s", ev.target, ev.subzone ~= "" and ev.subzone or "?",
         zenit and "" or string.format(" (+%d, %s)", ev.points, ev.kind), ev.confirmed and "" or " [unconfirmed]"))
@@ -113,18 +107,18 @@ function Detector.Finish(info)
         if n ~= target and n ~= me then candidates[#candidates + 1] = n end
     end
     local function save(assistants, confirmed)
-        local id, ev, badges = ST.Store.Add({
+        local _, ev, badges = ST.Store.Add({
             caster = me, target = target, assistants = assistants,
             mapID = info.mapID, subzone = info.subzone or "", confirmed = confirmed,
         })
-        report(id, ev, badges)
+        report(ev, badges)
     end
     if #candidates == 0 then
         save({}, true) -- nobody could have helped
     elseif #info.helpers == 2 and info.target then
         save(info.helpers, true)
     else
-        debug(string.format("%d helpers detected, asking caster", #info.helpers))
+        dbg(string.format("%d helpers detected, asking caster", #info.helpers))
         ST.Prompt.Ask(target, candidates, info.helpers, save)
     end
 end
@@ -155,7 +149,7 @@ frame:SetScript("OnEvent", function(_, event, _, a2, a3, a4)
     -- SENT args: unit, target, castGUID, spellID. Others: unit, castGUID, spellID.
     local spellID = (event == "UNIT_SPELLCAST_SENT") and a4 or a3
     if not isRitualID(spellID) then return end
-    debug(event)
+    dbg(event)
     if event == "UNIT_SPELLCAST_SENT" then
         startPending(a2)
     elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then

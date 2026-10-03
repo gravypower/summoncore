@@ -27,6 +27,7 @@ local REQUEST_WINDOW = 120 -- how long after our REQUEST we accept a BATCH from 
 local function newState()
     return { queue = {}, requested = {}, lastReq = {}, lastHelloBack = {}, added = 0 }
 end
+Sync.newState = newState
 Sync.state = newState()
 Sync.quiet = false
 
@@ -304,5 +305,3 @@ frame:SetScript("OnEvent", function(_, event, ...)
         if prefix == PREFIX then Sync.OnMessage(text, channel, sender) end
     end
 end)
-
-Sync.newState = newState

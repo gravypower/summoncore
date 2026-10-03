@@ -3,7 +3,7 @@
 local ADDON, ST = ...
 local safe = ST.safe
 
-local RITUAL_ID = 698
+local RITUAL_ID = ST.RITUAL_ID
 local TEST_SOUNDFILE = "Interface\\AddOns\\summoncore\\Media\\test.ogg"
 local LOG_MAX = 40
 
@@ -17,16 +17,7 @@ local function push(list, entry)
 end
 
 local function spellName(id)
-    if not id or ST.isSecret(id) then return "?" end
-    local name
-    if C_Spell and C_Spell.GetSpellName then
-        local ok, n = pcall(C_Spell.GetSpellName, id)
-        if ok then name = n end
-    elseif GetSpellInfo then
-        local ok, n = pcall(GetSpellInfo, id)
-        if ok then name = n end
-    end
-    return name or "?"
+    return ST.SpellName(id) or "?"
 end
 
 local function isRitual(spellID, name)
@@ -119,12 +110,15 @@ msgFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender)
     if ST.RefreshTests then ST.RefreshTests() end
 end)
 
+local function registerPrefix()
+    if ST.prefixRegistered or not (C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix) then return end
+    local ok, res = pcall(C_ChatInfo.RegisterAddonMessagePrefix, ST.prefix)
+    ST.prefixRegistered = ok
+    push(ST.msgLog, "register prefix -> " .. (ok and safe(res) or ("ERR " .. safe(res))))
+end
+
 function ST.SendPings(whisperTarget)
-    if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix and not ST.prefixRegistered then
-        local ok, res = pcall(C_ChatInfo.RegisterAddonMessagePrefix, ST.prefix)
-        ST.prefixRegistered = ok
-        push(ST.msgLog, "register prefix -> " .. (ok and safe(res) or ("ERR " .. safe(res))))
-    end
+    registerPrefix()
     local id = tostring(math.floor(GetTime() * 1000) % 100000)
     local targets = {}
     local g = groupChannel()
@@ -142,11 +136,7 @@ end
 
 -- The prefix must be registered before CHAT_MSG_ADDON delivers anything.
 function ST.OnLogin()
-    if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
-        local ok, res = pcall(C_ChatInfo.RegisterAddonMessagePrefix, ST.prefix)
-        ST.prefixRegistered = ok
-        push(ST.msgLog, "register prefix -> " .. (ok and safe(res) or ("ERR " .. safe(res))))
-    end
+    registerPrefix()
 end
 
 ----------------------------------------------------------------------
