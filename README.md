@@ -26,6 +26,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st undo` | Remove the latest summon (earned badges are kept) |
 | `/st sync` | Send a HELLO to party and guild, show sync status |
 | `/st synctest` | Run the sync self-test with simulated clients (scratch data only) |
+| `/st comic [size]` | Large-image test viewer (generate the textures first, see below) |
 | `/st test` | Diagnostics panel; `/st test ping <name>` adds a whisper ping |
 | `/st debug` | Toggle detector messages |
 | `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
@@ -93,6 +94,13 @@ a joke gate for friends, not security: addon files are plain text.
 To add clips, put each short `.ogg` and its square power-of-two textures (`.tga` or `.blp`, 256 or 512 px)
 in `Media/` and add an entry to `Gag.clips` in `Gag.lua`. With no clips it falls back to a built-in sound
 and a placeholder icon. The diagnostics Sound/flip row looks for `Media/test.ogg`.
+
+### Large images
+
+`/st comic` shows generated test textures at 256 to 2048 px, at several on-screen sizes or tiled 2x2, and
+reports texels per screen pixel. The textures are git-ignored; create them with
+`powershell -ExecutionPolicy Bypass -File toolsmake_test_patterns.ps1` (about 16 MB in `Media/`). Addon
+textures must be `.tga` or `.blp` with power-of-two sides.
 
 ## Status
 
