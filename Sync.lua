@@ -126,18 +126,23 @@ end
 -- Merge (pure rules; the only DB access is through Store)
 ----------------------------------------------------------------------
 -- live: the record arrived as an EVENT broadcast, so the sender must be the caster.
+-- opts.dryRun: report what would happen without writing.
+-- opts.allowSelf: accept your own events that you do not have (a user-initiated import restoring a
+--   lost log); an existing copy of your own event is still never overwritten.
 -- Returns "added", "replaced", "kept" or "rejected:<why>".
-function Sync.Merge(id, ev, sender, live)
+function Sync.Merge(id, ev, sender, live, opts)
+    opts = opts or {}
     local store = ST.Store
     if live and ev.caster ~= sender then return "rejected:sender" end
     local cur = store.Get(id)
     if ev.caster == Sync.myName() then
         -- Nobody can write entries against the receiver. Our own copy is authoritative.
-        return cur and "kept" or "rejected:self"
+        if cur then return "kept" end
+        if not opts.allowSelf then return "rejected:self" end
     end
     ev.points, ev.kind = ST.Scoring.Score(ev.mapID, ev.subzone)
     if not cur then
-        store.Put(id, ev)
+        if not opts.dryRun then store.Put(id, ev) end
         return "added"
     end
     local replace
@@ -146,7 +151,7 @@ function Sync.Merge(id, ev, sender, live)
     else
         replace = (ev.wrote or ev.time) < (cur.wrote or cur.time) -- both confirmed or both not: earlier write
     end
-    if replace then store.Put(id, ev) end
+    if replace and not opts.dryRun then store.Put(id, ev) end
     return replace and "replaced" or "kept"
 end
 

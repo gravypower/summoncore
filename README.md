@@ -24,6 +24,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st badges` | Badge list |
 | `/st where` | Current map ID, subzone and how it scores |
 | `/st undo` | Remove the latest summon (earned badges are kept) |
+| `/st export`, `/st import` | Import / Export window (copy-paste strings of the summon log) |
 | `/st sync` | Send a HELLO to party and guild, show sync status |
 | `/st synctest` | Run the sync self-test with simulated clients (scratch data only) |
 | `/st comic [size]` | Large-image test viewer (generate the textures first, see below) |
@@ -86,6 +87,15 @@ Merge rules:
 - Points and kind are recomputed locally, never read from the wire.
 - Messages from a newer protocol major version are ignored.
 
+### Export and import
+
+`/st export` opens a window with the whole log as a string (compressed and base64-encoded, starting `!ST1!`);
+`Export mine` limits it to summons you cast. To import, paste a string, press **Preview** to see how many are
+new, would replace an existing copy, are already known or are rejected, then press **Import**. Imports use
+the same merge rules as sync, with one difference: because you are doing it yourself, your own events missing
+from your log can be restored, but an event you already have is never overwritten. Damaged, truncated or
+newer-version strings are refused. This is the manual fallback if addon messages turn out to be restricted.
+
 ### Zenit mode
 
 If the logged-in character is in `settings.zenitNames` (default `Zenit`), the panel, tally and badges are
@@ -110,7 +120,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Area | State |
 |---|---|
 | Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zenit gag | Verified in the live client (solo, with `/st fake`) |
-| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 13/13) |
+| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 13/13; the 5 export/import tests added since are unrun) |
 | Real Ritual of Summoning detection | **Untested.** Spell ID 698, the target field and whether `SUCCEEDED` fires at start or end are assumptions |
 | Addon messages between two real clients | **Untested** |
 | Deadmines entrance subzone string | A guess |
@@ -118,6 +128,13 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 
 Known limits of the 12.0 API: no combat log, party data may be secret, no web requests. Secret values on
 other units (`UnitInRange`, `UnitHealth`) were confirmed, so the addon does not rely on them.
+
+## Development
+
+CI (`.github/workflows/ci.yml`) runs luacheck on every push; `.luacheckrc` currently reports only syntax errors
+and undefined or accidental globals. Pushing a tag such as `v0.7.0` (it must match `## Version` in the TOC)
+runs `release.yml`, which zips the addon (without `tools/`) and publishes a GitHub release. Test textures
+from `tools/` are git-ignored, so release zips do not include them and `/st comic` shows green squares there.
 
 ## Parked for later
 

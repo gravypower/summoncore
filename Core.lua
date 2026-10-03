@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.6.0"
+ST.version = "0.7.0"
 
 local DB_VERSION = 1
 
@@ -166,6 +166,14 @@ function commands.sync()
     ST.Sync.Status()
 end
 
+function commands.export()
+    ST.Export.Open("export")
+end
+
+function commands.import()
+    ST.Export.Open("import")
+end
+
 function commands.gag()
     ST.Gag.Play()
 end
@@ -190,6 +198,7 @@ local HELP = {
     "/st where - current map, subzone and how it scores",
     "/st fake <target> [h1 h2] - add a test summon    /st fakeprompt <target> <members...>",
     "/st sync - say hello to party/guild and show sync status    /st synctest - run the merge self-test",
+    "/st export / /st import - copy-paste strings of the summon log",
     "/st gag - preview the Zenit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
     "/st undo - remove the latest summon    /st debug - toggle detector messages",

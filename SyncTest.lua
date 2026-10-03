@@ -250,6 +250,89 @@ add("three clients with different logs converge, then stay quiet", function()
     return quiet, string.format("first pass: %d rounds, %d batch msgs; repeat: R=%d B=%d E=%d", rounds, c1.B, c2.R, c2.B, c2.E)
 end)
 
+add("export codec round-trips text, including a full 12-bit dictionary", function()
+    local Codec = ST.Export.Codec
+    local samples = { "a", "ab", "abc", string.rep("Alpha-1717000001|Target|H1,H2|1436|Sentinel Hill|", 40) }
+    local rnd = {}
+    for i = 1, 20000 do rnd[i] = string.char(math.random(0, 255)) end
+    samples[#samples + 1] = table.concat(rnd)
+    for i, s in ipairs(samples) do
+        local back, err = Codec.Unpack(Codec.Pack(s))
+        if back ~= s then return false, string.format("sample %d failed: %s", i, tostring(err)) end
+    end
+    local empty = Codec.Unpack(Codec.Pack(""))
+    return empty == "", #samples .. " samples"
+end)
+
+add("export strings: damage, truncation, newer versions and stray whitespace", function()
+    local Codec = ST.Export.Codec
+    local good = Codec.Pack(string.rep("hello world ", 30))
+    local flipped = good:sub(1, -6) .. (good:sub(-5, -5) == "A" and "B" or "A") .. good:sub(-4)
+    local cases = {
+        { good:sub(1, #good - 8), false }, -- truncated
+        { flipped, false },                -- one character changed
+        { "!ST2!1!1!AAAA", false },        -- newer version
+        { "hello", false },                -- not ours
+        { "", false },
+        { (good:gsub("(.......)", "%1\n ")), true }, -- whitespace is ignored
+    }
+    for i, c in ipairs(cases) do
+        local text = Codec.Unpack(c[1])
+        if (text ~= nil) ~= c[2] then return false, "case " .. i .. " gave " .. tostring(text ~= nil) end
+    end
+    return true, #cases .. " cases"
+end)
+
+add("export all, import on a fresh client, then re-import adds nothing", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
+    for i = 1, 3 do cast(a, i, true) end
+    with(a, function()
+        local id, ev = sample()
+        Sync.Merge(id, ev, "Beta", false)
+    end)
+    local str, n = with(a, function() return ST.Export.Build("all") end)
+    local p = with(b, function() return ST.Export.Preview(str) end)
+    -- Beta's own event is a restore for the client named Beta, so all four are new.
+    if n ~= 4 or not p or p.counts.added ~= 4 then
+        return false, "preview wrong: exported " .. tostring(n) .. ", added " .. tostring(p and p.counts.added)
+    end
+    with(b, function() ST.Export.Apply(p) end)
+    local sa, sb = signature(a), signature(b)
+    local again = with(b, function() return ST.Export.Preview(str) end)
+    return sa == sb and again.counts.added == 0 and again.counts.replaced == 0,
+        string.format("identical=%s, repeat: added=%d known=%d", tostring(sa == sb), again.counts.added, again.counts.kept)
+end)
+
+add("import restores your own lost events but never overwrites existing ones", function()
+    local a = newClient("Alpha")
+    for i = 1, 2 do cast(a, i, true) end
+    local mine = with(a, function() return ST.Export.Build("mine") end)
+    local lost = newClient("Alpha") -- same character, empty log (SavedVariables lost)
+    local p = with(lost, function() return ST.Export.Preview(mine) end)
+    with(lost, function() ST.Export.Apply(p) end)
+    if signature(lost) ~= signature(a) then return false, "restore did not match the original" end
+    -- A tampered copy of an event you already have must not replace it.
+    local id = "Alpha-" .. (BASE + 1)
+    local _, fake = sample({ caster = "Alpha", target = "Fake", time = BASE + 1, wrote = 1, confirmed = true })
+    local forged = ST.Export.Codec.Pack(Sync.Encode(id, fake))
+    local p2 = with(lost, function() return ST.Export.Preview(forged) end)
+    with(lost, function() ST.Export.Apply(p2) end)
+    local target = lost.db.events[id].target
+    return target == "Target1" and p2.counts.kept == 1, "target=" .. target
+end)
+
+add("import ignores points in the string and rejects bad records", function()
+    local b = newClient("Beta")
+    local id, ev = sample({ caster = "Gamma", time = BASE + 5, mapID = 1453 })
+    id = "Gamma-" .. ev.time
+    local text = Sync.Encode(id, ev) .. "~" .. "garbage|record" .. "~" .. Sync.Encode("Other-1", ev)
+    local p = with(b, function() return ST.Export.Preview(ST.Export.Codec.Pack(text)) end)
+    with(b, function() ST.Export.Apply(p) end)
+    local got = b.db.events[id]
+    return p.counts.added == 1 and p.counts.rejected == 2 and got and got.points == 1,
+        string.format("added=%d rejected=%d points=%s", p.counts.added, p.counts.rejected, tostring(got and got.points))
+end)
+
 function T.Run()
     local pass = 0
     local results = {}

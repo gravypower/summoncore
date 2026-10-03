@@ -1,0 +1,33 @@
+name: Release
+
+# Push a tag like v0.7.0 (it must match "## Version" in summoncore.toc) to build and publish a zip.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag matches the TOC version
+        run: |
+          toc=$(grep -m1 '^## Version:' summoncore.toc | sed 's/^## Version: *//' | tr -d '\r')
+          if [ "v$toc" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match TOC version v$toc"
+            exit 1
+          fi
+      - name: Package
+        run: |
+          mkdir -p dist/summoncore
+          cp ./*.lua summoncore.toc README.md dist/summoncore/
+          cp -r Media dist/summoncore/Media
+          rm -f dist/summoncore/Media/.gitkeep
+          (cd dist && zip -r "summoncore-${GITHUB_REF_NAME}.zip" summoncore)
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" "dist/summoncore-${GITHUB_REF_NAME}.zip" --title "$GITHUB_REF_NAME" --generate-notes
