@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.7.0"
+ST.version = "0.9.0"
 
 local DB_VERSION = 1
 
@@ -180,6 +180,23 @@ function commands.import()
     ST.Export.Open("import")
 end
 
+function commands.intro(rest)
+    ST.Intro.Toggle(rest)
+end
+
+function commands.clip(rest)
+    if rest == "" then
+        local cats = ST.Clips.Categories()
+        if #cats == 0 then
+            return print_("no voice clips yet: put .ogg files named <category>_<NN>_<who> in Media/clips, run tools/build_clip_manifest.ps1, then /reload")
+        end
+        for _, c in ipairs(cats) do print_(string.format("%s: %d clip%s", c[1], c[2], c[2] == 1 and "" or "s")) end
+        return print_("/st clip <category or file name> plays one")
+    end
+    local file = ST.Clips.Play(rest)
+    print_(file and ("played " .. file) or ("nothing to play for '" .. rest .. "'"))
+end
+
 function commands.gag()
     ST.Gag.Play()
 end
@@ -205,6 +222,8 @@ local HELP = {
     "/st fake <target> [h1 h2] - add a test summon    /st fakeprompt <target> <members...>",
     "/st sync - say hello to party/guild and show sync status    /st synctest - run the merge self-test",
     "/st export / /st import - copy-paste strings of the summon log",
+    "/st intro [scene] - play the illustrated intro",
+    "/st clip [category|file] - list or play voice clips from Media/clips",
     "/st gag - preview the Zenit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
     "/st undo - remove the latest summon    /st debug - toggle detector messages",

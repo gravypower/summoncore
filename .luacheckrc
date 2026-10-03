@@ -18,7 +18,7 @@ read_globals = {
     "Ambiguate", "C_ChatInfo", "C_Map", "C_Spell", "C_Timer", "ChatFontNormal", "CreateFrame",
     "GetBuildInfo", "GetNormalizedRealmName", "GetPhysicalScreenSize", "GetSpellInfo", "GetSubZoneText",
     "GetTime", "GetUnitName", "GetZoneText", "IsInGroup", "IsInGuild", "IsInInstance", "IsInRaid",
-    "PlaySound", "PlaySoundFile", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo",
+    "PlaySound", "PlaySoundFile", "StopSound", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo",
     "UnitExists", "UnitFullName", "UnitGUID", "UnitHealth", "UnitInRange", "UnitIsConnected", "UnitName",
     "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert",
 }

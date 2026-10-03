@@ -273,6 +273,8 @@ function Sync.OnMessage(text, channel, sender)
         if result == "added" then
             st.added = st.added + 1
             announceSoon()
+            -- Zenit hears a recorded complaint when a friend summons him (live events only, not history).
+            if typ == "E" and ev.target == Sync.myName() and ST.Gag.IsZenit() then ST.Clips.Play("zenit_land") end
         end
         return result
     end

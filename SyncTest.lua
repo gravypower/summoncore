@@ -333,6 +333,50 @@ add("import ignores points in the string and rejects bad records", function()
         string.format("added=%d rejected=%d points=%s", p.counts.added, p.counts.rejected, tostring(got and got.points))
 end)
 
+add("voice clips: names parse, categories count, picks do not repeat", function()
+    local Clips = ST.Clips
+    local c, n, who = Clips.Parse("zenit_refuse_03_sam")
+    if c ~= "zenit_refuse" or n ~= 3 or who ~= "sam" then return false, "parse gave " .. tostring(c) end
+    if Clips.Parse("narrator_weekopen_01_lewis") ~= "narrator_weekopen" then return false, "multi-word category" end
+    if Clips.Parse("notaclip") or Clips.Parse("_01_x") or Clips.Parse("wag_x_y") then return false, "bad names parsed" end
+    Clips.SetList({ "wag_02_b", "wag_01_a", "ritual_01_c", "bad name" })
+    local cats = Clips.Categories()
+    local counted = #cats == 2 and cats[1][1] == "ritual" and cats[2][1] == "wag" and cats[2][2] == 2
+    local repeated, prev = false, nil
+    for _ = 1, 60 do
+        local p = Clips.Pick("wag")
+        if p == prev then repeated = true end
+        prev = p
+    end
+    local missing = Clips.Pick("nothing") == nil
+    Clips.SetList(ST.clipFiles) -- restore the real list
+    return counted and not repeated and missing, string.format("counted=%s repeated=%s", tostring(counted), tostring(repeated))
+end)
+
+add("Zenit hears a recorded complaint when summoned live, not from history", function()
+    local z = newClient("Zenit")
+    z.db.settings.zenitTest = true
+    local calls = {}
+    local realPlay = ST.Clips.Play
+    ST.Clips.Play = function(category) calls[#calls + 1] = category end
+    local ok, err = pcall(function()
+        local function record(target, i)
+            local id, ev = sample({ caster = "Alpha", target = target, time = BASE + i })
+            return "Alpha-" .. ev.time, ev
+        end
+        local id, ev = record("Zenit", 300)
+        with(z, function() Sync.OnMessage("1~E~" .. Sync.Encode(id, ev), "PARTY", "Alpha") end)       -- live: yes
+        id, ev = record("Zenit", 301)
+        z.state.requested["Alpha"] = clock
+        with(z, function() Sync.OnMessage("1~B~" .. Sync.Encode(id, ev), "WHISPER", "Alpha") end)     -- history: no
+        id, ev = record("Someone", 302)
+        with(z, function() Sync.OnMessage("1~E~" .. Sync.Encode(id, ev), "PARTY", "Alpha") end)       -- someone else: no
+    end)
+    ST.Clips.Play = realPlay
+    if not ok then return false, tostring(err) end
+    return #calls == 1 and calls[1] == "zenit_land", #calls .. " clip call(s)"
+end)
+
 function T.Run()
     local pass = 0
     local results = {}

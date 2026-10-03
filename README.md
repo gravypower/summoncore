@@ -32,6 +32,8 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st debug` | Toggle detector messages |
 | `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
+| `/st intro [scene]` | Play the illustrated intro, "Zenit and the Index" |
+| `/st clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/st gag` | Preview the Zenit gag |
 | `/st zenit` | Toggle Zenit test mode on this character |
 
@@ -96,6 +98,35 @@ the same merge rules as sync, with one difference: because you are doing it your
 from your log can be restored, but an event you already have is never overwritten. Damaged, truncated or
 newer-version strings are refused. This is the manual fallback if addon messages turn out to be restricted.
 
+### Intro
+
+`/st intro` plays "Zenit and the Index": 8 scenes of 3-frame flipbook art (about six flips a second) with the
+narration as captions, about 2:22 in all. Controls: previous/next scene, play/pause, restart. `/st intro 3` starts at
+scene 3. The art lives in `Media/intro_1.blp` to `intro_8.blp` (2048x1024 sheets, DXT1, about 1.3 MB each);
+`tools/intro/render_intro.ps1` rebuilds them from `tools/intro/source.html` using headless Edge or Chrome
+(`-Format tga` writes uncompressed TGAs instead if BLPs misbehave in your client).
+
+The narration is `Media/intro_1.ogg` to `intro_8.ogg` (the "George" takes), one clip per scene, because
+`PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
+start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
+mutes the narration.
+
+### Voice clips
+
+Drop `.ogg` takes into `Media/clips/`, named `<category>_<NN>_<who>.ogg`: `wag_01_aaron`, `zenit_land_02_sam`,
+`zenit_refuse_03_sam`, `ritual_02_lewis`, `narrator_weekopen_01_lewis`. AddOns cannot list a folder, so run
+`powershell -ExecutionPolicy Bypass -File toolsuild_clip_manifest.ps1` (it writes `ClipList.lua` and warns about
+badly named files), then `/reload`. `/st clip` lists the categories; `/st clip wag` or a file name plays one. The
+addon picks a random clip per category and avoids repeating the last one. Plays on the Dialog sound channel.
+
+- `wag`: used for the Zenit gag instead of the built-in sound.
+- `zenit_land`: played on Zenit's client when a friend's live summon of him arrives.
+- Other categories (refuse, win, ritual, narrator stings) are loaded and playable with `/st clip` now; they will be
+  wired in with the challenge and weekly features.
+
+`Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zenit, and the repo is on GitHub. Add
+the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.
+
 ### Zenit mode
 
 If the logged-in character is in `settings.zenitNames` (default `Zenit`), the panel, tally and badges are
@@ -120,7 +151,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Area | State |
 |---|---|
 | Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zenit gag | Verified in the live client (solo, with `/st fake`) |
-| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 13/13; the 5 export/import tests added since are unrun) |
+| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 13/13; the 7 export, import and clip tests added since are unrun) |
 | Real Ritual of Summoning detection | **Untested.** Spell ID 698, the target field and whether `SUCCEEDED` fires at start or end are assumptions |
 | Addon messages between two real clients | **Untested** |
 | Deadmines entrance subzone string | A guess |

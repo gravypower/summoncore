@@ -44,6 +44,7 @@ local function playSound(clip)
         local ok, willPlay = pcall(PlaySoundFile, clip.sound, "Master")
         if ok and willPlay then return end
     end
+    if ST.Clips.Play("wag") then return end -- a recorded "ah-ah-ah" from Media/clips
     pcall(PlaySound, SOUNDKIT and SOUNDKIT.IG_QUEST_LOG_ABANDON_QUEST or 857, "Master")
 end
 
