@@ -1,0 +1,17 @@
+## Interface: 16001
+## Title: Summon Core
+## Notes: Ritual of Summoning logger, shared tally and scoring (v1 in progress)
+## Author: Aaron
+## Version: 0.4.0
+## SavedVariables: SummonTrackerDB
+
+Core.lua
+Scoring.lua
+Store.lua
+Sync.lua
+SyncTest.lua
+Prompt.lua
+Detector.lua
+Gag.lua
+UI.lua
+Tests.lua
