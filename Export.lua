@@ -276,6 +276,11 @@ local function doExport(scope)
 end
 
 local function doPreview()
+    if window.edit:GetText():match("^%s*$") then
+        preview = nil
+        window.importBtn:Disable()
+        return setStatus("Paste a Summon Core string into the box first.")
+    end
     local p, err = Export.Preview(window.edit:GetText())
     preview = nil
     window.importBtn:Disable()
@@ -297,18 +302,18 @@ local function doImport()
     for _, name in ipairs(badges) do ST.print("|cffffd100Badge earned:|r " .. name) end
 end
 
-local function button(parent, text, width, x, onClick)
+local function button(parent, text, width, x, onClick, y)
     local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
     b:SetSize(width, 24)
     b:SetText(text)
-    b:SetPoint("BOTTOMLEFT", x, 12)
+    b:SetPoint("BOTTOMLEFT", x, y or 12)
     b:SetScript("OnClick", onClick)
     return b
 end
 
 local function build()
     window = CreateFrame("Frame", "SummonCoreExport", UIParent, "BasicFrameTemplateWithInset")
-    window:SetSize(640, 460)
+    window:SetSize(640, 490)
     window:SetPoint("CENTER")
     window:SetFrameStrata("DIALOG")
     window:SetMovable(true)
@@ -321,7 +326,7 @@ local function build()
 
     local sf = CreateFrame("ScrollFrame", nil, window, "UIPanelScrollFrameTemplate")
     sf:SetPoint("TOPLEFT", 14, -34)
-    sf:SetPoint("BOTTOMRIGHT", -34, 84)
+    sf:SetPoint("BOTTOMRIGHT", -34, 112)
     local eb = CreateFrame("EditBox", nil, sf)
     eb:SetMultiLine(true)
     eb:SetAutoFocus(false)
@@ -340,7 +345,7 @@ local function build()
     window.edit = eb
 
     window.status = window:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    window.status:SetPoint("BOTTOMLEFT", 16, 48)
+    window.status:SetPoint("BOTTOMLEFT", 16, 76)
     window.status:SetPoint("RIGHT", -16, 0)
     window.status:SetJustifyH("LEFT")
 
@@ -355,6 +360,33 @@ local function build()
         window.importBtn:Disable()
         setStatus("Paste a Summon Core string, then press Preview.")
     end)
+
+    -- Test tools: build a log to export, empty it again, and run the self-test, all without leaving the window.
+    local names, added = { "Bob", "Al", "Cy", "Di", "Ed" }, 0
+    button(window, "Add fake summon", 130, 14, function()
+        added = added + 1
+        local i = (added - 1) % #names + 1
+        local ev, badges = ST.AddFake(names[i], { names[i % #names + 1], names[(i + 1) % #names + 1] })
+        for _, name in ipairs(badges) do ST.print("|cffffd100Badge earned:|r " .. name) end
+        setStatus(string.format("Added test summon: %s (%s, +%d). The log now holds %d.", ev.target, ev.kind,
+            ev.points, ST.Store.Count()), true)
+    end, 44)
+    button(window, "Undo last", 90, 150, function()
+        local last = ST.Store.RemoveLast()
+        if last then
+            setStatus(string.format("Removed the latest summon (%s). The log now holds %d.", last.ev.target,
+                ST.Store.Count()), true)
+        else
+            setStatus("Nothing to undo.", false)
+        end
+    end, 44)
+    button(window, "Run self-test", 110, 246, function()
+        ST.SyncTest.Run()
+        setStatus("Self-test results are in the chat window.")
+    end, 44)
+    local label = window:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    label:SetPoint("BOTTOMLEFT", 370, 50)
+    label:SetText("Test tools (fake summons are never shared)")
 end
 
 -- mode: "export" fills the box with the whole log; "import" opens it empty for pasting.

@@ -81,16 +81,22 @@ function commands.where()
     print_(string.format("mapID=%s zone=%s subzone='%s' -> %s (%d pts)", ST.safe(mapID), GetZoneText(), sub, kind, pts))
 end
 
+-- Adds a test summon at your current location. It is never put on the network.
+function ST.AddFake(target, assistants)
+    local _, ev, badges = ST.Store.Add({
+        caster = ST.Store.me(), target = target, assistants = assistants or {},
+        mapID = C_Map.GetBestMapForUnit("player"), subzone = GetSubZoneText(), confirmed = true,
+    }, true)
+    return ev, badges
+end
+
 -- Solo testing: /st fake <target> [helper1 helper2]
 function commands.fake(rest)
     local w = words(rest)
     if not w[1] then return print_("usage: /st fake <target> [helper1 helper2]") end
     local assistants = {}
     for i = 2, math.min(#w, 3) do assistants[#assistants + 1] = w[i] end
-    local _, ev, badges = ST.Store.Add({
-        caster = ST.Store.me(), target = w[1], assistants = assistants,
-        mapID = C_Map.GetBestMapForUnit("player"), subzone = GetSubZoneText(), confirmed = true,
-    }, true) -- test events never go on the network
+    local ev, badges = ST.AddFake(w[1], assistants)
     print_(string.format("fake summon saved: %s in %s (+%d, %s)", ev.target, ev.subzone, ev.points, ev.kind))
     for _, name in ipairs(badges) do print_("|cffffd100Badge earned:|r " .. name) end
 end
