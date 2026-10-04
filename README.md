@@ -259,17 +259,21 @@ warning, and `/st week victory` (also offered at login) plays chapter 2 of the s
 From the week of **Monday 5 October 2026** the group has to beat Zennit at his own answers (the reasoning, with the
 numbers behind it, is in `design/lenses.md`):
 
-- **Only summons of Zennit count**, and only the first **5** of them each week. Any after that are logged as usual but
-  "filed under 'enthusiasm'": the race ignores them. Summons of each other still count for the tally and badges.
+- **Only summons of Zennit count**, up to **10** of them each week. Any after that are logged as usual but "filed under
+  'enthusiasm'": the race ignores them. Summons of each other still count for the tally and badges.
+- **Zennit can close the Index** for the rest of the week once **5** have been filed and the latest of them answered:
+  a "Close the Index" button after his answer, and in the hub's Answer tab. It is free, and it travels with his answer,
+  so every client agrees. Summons after that are filed under 'enthusiasm', and their casters are told.
 - The group's score is the points of those summons that landed. Zennit's starts at **2** (a head start), gains the
   summon's points when he wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal.
 - **Zennit has 3 dice a week.** When they are gone he has to accept, refuse or ask for the silver. His roll gets **+10**;
   each helper on the summon (up to two) adds **+5** to the summoner's roll; a tie goes to him.
-- The hub's season band shows the week's score, how many summons of him have been filed (`FILED 3/5`) and his dice left.
+- The hub's season band shows the week's score, how many summons of him have been filed (`FILED 3/10`) and his dice
+  left, or `CLOSED`.
 
 Earlier weeks keep the rules they were played under (his head start of 10, every landed summon counting for the group,
 unlimited dice), so the season and the chapters already reached do not change. Tune the race in `Week.RULES`
-(head start, limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro still
+(head start, the minimum before he can close and the limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro still
 narrate the draft rules.
 
 ### The season

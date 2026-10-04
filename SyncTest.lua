@@ -856,6 +856,7 @@ add("pending summons: the unanswered and the ones owing silver, newest first", f
 end)
 
 -- Runs fn with the new race rules (Week.RULES) in force for every week; T.Run keeps the old rules for the rest.
+-- (Defined here, before the tests below that use it.)
 local function newRules(fn)
     local saved = ST.Week.RULES.from
     ST.Week.RULES.from = 0
@@ -865,7 +866,7 @@ local function newRules(fn)
     return good, detail
 end
 
-add("the new race: only summons of Zennit count, five a week, and a summon to his list pays him too", function()
+add("the new race: only summons of Zennit count, ten a week, and a summon to his list pays him too", function()
     return newRules(function()
         local a = newClient("Alpha")
         local W = ST.Week
@@ -878,20 +879,20 @@ add("the new race: only summons of Zennit count, five a week, and a summon to hi
             end
             for n = 1, 3 do put("f" .. n, n, "Target1", 10) end -- summons of each other are not in the race
             out.friends = W.Score(last)
-            for n = 1, 6 do put("z" .. n, 10 + n, "Zennit", 3) end -- six of him: the first five count
+            for n = 1, 11 do put("z" .. n, 20 + n, "Zennit", 3) end -- eleven of him: the first ten count
             out.six = W.Score(last)
-            out.first, out.sixth = W.Counts(a.db.events.z1), W.Counts(a.db.events.z6)
+            out.first, out.sixth = W.Counts(a.db.events.z1), W.Counts(a.db.events.z11)
             local resp = { result = "accepted", zroll = 0, sroll = 0, time = last + 99999 }
-            out.enthusiasm = ST.Respond.Announce(a.db.events.z6, resp):find("enthusiasm") ~= nil
+            out.enthusiasm = ST.Respond.Announce(a.db.events.z11, resp):find("enthusiasm") ~= nil
                 and not ST.Respond.Announce(a.db.events.z1, resp):find("enthusiasm")
             a.db.events.z1.response = { result = "accepted", zroll = 0, sroll = 0, time = last + 99999, listed = true }
             out.listed = W.Score(last)
         end)
         local f, s, l = out.friends, out.six, out.listed
         local ok = f.group == 0 and f.zennit == W.RULES.headstart and f.winner == "zennit"
-            and s.counted == 5 and s.extra == 1 and s.group == 15 and s.winner == "group"
-            and out.first and not out.sixth and out.enthusiasm and l.zennit == W.RULES.headstart + 3 and l.group == 15
-        return ok, string.format("friends %d-%d, six: %d counted, %d extra, %d-%d, listed: Zennit %d, enthusiasm %s",
+            and s.counted == 10 and s.extra == 1 and s.group == 30 and s.winner == "group"
+            and out.first and not out.sixth and out.enthusiasm and l.zennit == W.RULES.headstart + 3 and l.group == 30
+        return ok, string.format("friends %d-%d, eleven: %d counted, %d extra, %d-%d, listed: Zennit %d, enthusiasm %s",
             f.group, f.zennit, s.counted, s.extra, s.group, s.zennit, l.zennit, tostring(out.enthusiasm))
     end)
 end)
@@ -924,6 +925,40 @@ add("the new dice: three a week, and each helper (up to two) adds 5 to the summo
         local ok = resolve and out.one == 5 and out.three == 10 and out.fresh == 3 and out.used == 0 and out.old
         return ok, string.format("bonus %s/%s, dice %s then %s, old rules unlimited: %s", tostring(out.one),
             tostring(out.three), tostring(out.fresh), tostring(out.used), tostring(out.old))
+    end)
+end)
+
+add("closing the Index: allowed after five answered, it travels to everyone, and later summons stop counting", function()
+    return newRules(function()
+        local W, z, a = ST.Week, newClient("Zennit"), newClient("Alpha")
+        local ids = {}
+        for n = 1, 7 do ids[n] = cast(a, 960 + n, false, { target = "Zennit", assistants = {}, points = 3 }) end
+        settle({ a, z })
+        local start = W.Start(BASE + 961)
+        local out = {}
+        with(z, function()
+            -- a closes flag before the fifth is ignored, and he can't close until the fifth is answered
+            z.db.events[ids[3]].response = { result = "accepted", zroll = 0, sroll = 0, time = BASE + 2000, closes = true }
+            out.early = W.IsClosed(start)
+            for n = 1, 4 do ST.Respond.Decide(ids[n], "accepted") end
+            out.before = W.CloseTarget(start)
+            ST.Respond.Decide(ids[5], "refused")
+            out.target = W.CloseTarget(start)
+            out.closed = ST.Respond.CloseIndex(start)
+            out.again = W.CloseTarget(start) -- once closed, it can't be closed again
+            ST.Respond.Decide(ids[5], "accepted") -- a changed answer keeps the Index closed
+        end)
+        settle({ a, z })
+        local rz = with(z, function() return W.Score(start) end)
+        local ra = with(a, function() return W.Score(start) end)
+        local later = with(a, function() return W.Counts(a.db.events[ids[6]]) end)
+        local back = select(2, Sync.Decode(Sync.Encode(ids[5], a.db.events[ids[5]])))
+        local ok = out.early == false and out.before == nil and out.target == ids[5] and out.closed and out.again == nil
+            and rz.closed and ra.closed and ra.counted == 5 and ra.extra == 2 and rz.group == ra.group
+            and later == false and back and back.response and back.response.closes == true
+        return ok, string.format("early %s, target %s, closed %s/%s, counted %d, extra %d, group %d/%d, codec %s",
+            tostring(out.early), tostring(out.target == ids[5]), tostring(rz.closed), tostring(ra.closed), ra.counted,
+            ra.extra, rz.group, ra.group, tostring(back and back.response and back.response.closes))
     end)
 end)
 

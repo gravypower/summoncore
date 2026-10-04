@@ -202,7 +202,12 @@ end
 
 local function buildAnswer(f)
     local info = label(f, "", 16, -8, "green")
-    info:SetWidth(740)
+    info:SetWidth(570)
+    -- once enough summons of him are filed this week, Zennit may close the Index for the rest of it
+    local closeIndex = button(f, "CLOSE THE INDEX", 600, -6, 156, function()
+        ST.Respond.CloseIndex()
+        Hub.Refresh()
+    end, "danger")
     local surface
     surface = ST.Respond.NewSurface(f, 16, -36, 740, function()
         ST.Respond.Clear(surface)
@@ -252,6 +257,7 @@ local function buildAnswer(f)
 
     return function()
         secret:SetShown(ST.Gag.IsZennit() or ST.IsAdmin())
+        closeIndex:SetShown(ST.Gag.IsZennit() and ST.Week.CloseTarget(ST.Week.Start()) ~= nil)
         local list = ST.Respond.List()
         listText:SetText(#list == 0 and T.Paint("dim", "empty: refusing always costs points") or table.concat(list, ", "))
         local pending = ST.Respond.Pending()
@@ -620,9 +626,9 @@ local function refreshChrome()
         local week = W.Score(W.Start())
         local score = string.format("%s / %s", T.Paint("cyan", "GROUP " .. week.group), T.Paint("pink", "ZENNIT " .. week.zennit))
         if week.new then
-            -- the new race: how many summons of him have been filed this week, and how many dice he has left
-            chrome.week:SetText(string.format("%s · FILED %d/%d · DICE %d", score, week.counted, W.RULES.cap,
-                W.DiceLeft(W.Start())))
+            -- the new race: how many summons of him have been filed this week, and his dice left (or the Index closed)
+            chrome.week:SetText(string.format("%s · FILED %d/%d · %s", score, week.counted, W.RULES.cap,
+                week.closed and T.Paint("amber", "CLOSED") or ("DICE " .. W.DiceLeft(W.Start()))))
         else
             chrome.week:SetText("THIS WEEK  " .. score)
         end

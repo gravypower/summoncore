@@ -76,10 +76,25 @@ local function split(s, sep)
     return out
 end
 
--- Zennit's answer to a summon of him travels with the record as "result:zroll:sroll:time" (empty if none).
+-- An answer's flags as one digit: 1 = the place is on his list, 2 = he closed the Index with it. "" for none.
+local function respFlags(r)
+    local n = (r.listed and 1 or 0) + (r.closes and 2 or 0)
+    return n > 0 and tostring(n) or ""
+end
+
+-- The flags digit back into an answer's fields.
+local function applyFlags(resp, digit)
+    local n = tonumber(digit) or 0
+    resp.listed = n % 2 == 1 or nil
+    resp.closes = n >= 2 or nil
+    return resp
+end
+
+-- Zennit's answer to a summon of him travels with the record as "result:zroll:sroll:time[:flags]" (empty if none).
 local function respString(r)
     if not r then return "" end
-    return string.format("%s:%d:%d:%d%s", r.result, r.zroll or 0, r.sroll or 0, r.time, r.listed and ":1" or "")
+    local flags = respFlags(r)
+    return string.format("%s:%d:%d:%d%s", r.result, r.zroll or 0, r.sroll or 0, r.time, flags ~= "" and (":" .. flags) or "")
 end
 
 -- nil for none, false for a malformed answer, otherwise the answer.
@@ -89,7 +104,7 @@ local function parseResp(str)
     if not result or not ST.Store.RESULTS[result] then return false end
     z, r, t = tonumber(z), tonumber(r), tonumber(t)
     if z > 100 or r > 100 or t <= 0 or t > time() + 86400 then return false end
-    return { result = result, zroll = z, sroll = r, time = t, listed = listed == "1" or nil }
+    return applyFlags({ result = result, zroll = z, sroll = r, time = t }, listed)
 end
 
 -- The later of two answers (an answer can change: owes 50 silver, then paid).
@@ -240,8 +255,9 @@ end
 
 -- Zennit tells everyone how he dealt with a summon of him.
 function Sync.SendResponse(id, resp)
+    local flags = respFlags(resp)
     local body = string.format("%s|%s|%d|%d|%d%s", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time,
-        resp.listed and "|1" or "")
+        flags ~= "" and ("|" .. flags) or "")
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
 end
 
@@ -391,11 +407,12 @@ function Sync.OnMessage(text, channel, sender)
         if not ev then return "rejected:unknown" end
         if sender ~= ev.target then return "rejected:sender" end
         if not ST.Store.RESULTS[result] then return "rejected:result" end
-        local resp = { result = result, zroll = tonumber(z), sroll = tonumber(r), time = tonumber(rt), listed = listed == "1" or nil }
+        local resp = applyFlags({ result = result, zroll = tonumber(z), sroll = tonumber(r), time = tonumber(rt) }, listed)
         if resp.zroll > 100 or resp.sroll > 100 or resp.time > time() + 86400 then return "rejected:values" end
         if laterResponse(ev.response, resp) ~= resp then return "kept" end
+        local before = ev.response
         ST.Store.SetResponse(rid, resp)
-        if Sync.onResponse then Sync.onResponse(rid, ev, resp) end
+        if Sync.onResponse then Sync.onResponse(rid, ev, resp, before) end
         return "applied"
 
     elseif typ == "A" then

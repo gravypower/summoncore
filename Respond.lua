@@ -66,8 +66,10 @@ function Respond.Announce(ev, resp)
     local who, pts = ev.target, ev.points or 0
     local r = resp.result
     if not ST.Week.Counts(ev) then
-        return string.format("%s %s the summon from %s. It is past the %d summons of him that count this week, so the " ..
-            "race ignores it: the Index files it under 'enthusiasm'.", who, DID[r] or "answered", ev.caster, ST.Week.RULES.cap)
+        local why = ST.Week.IsClosed(ST.Week.Start(ev.time)) and "He has closed the Index for the week" or
+            string.format("It is past the %d summons of him that count this week", ST.Week.RULES.cap)
+        return string.format("%s %s the summon from %s. %s, so the race ignores it: the Index files it under 'enthusiasm'.",
+            who, DID[r] or "answered", ev.caster, why)
     end
     local sroll = summonerRoll(ev, resp.sroll or 0)
     local bonus = ""
@@ -146,8 +148,10 @@ function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
     if not ev or not ST.Store.RESULTS[result] then return nil end
     if ST.Week.EventClosed(ev) then return nil end -- that week is over; answers no longer change it
-    local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0, time = time(),
-        listed = Respond.OnList(ev) or nil }
+    -- a new answer is always later than the one it replaces, or other clients keep the old one (sync takes the later)
+    local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0,
+        time = math.max(time(), ev.response and ev.response.time + 1 or 0),
+        listed = Respond.OnList(ev) or nil, closes = ev.response and ev.response.closes or nil }
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
@@ -155,6 +159,28 @@ function Respond.Decide(id, result, zroll, sroll)
     refreshSurfaces(id, "done")
     if ST.Hub then ST.Hub.Refresh() end
     return resp
+end
+
+-- The chat line for Zennit closing the Index on the week of this summon.
+local function closedLine(ev)
+    local r = ST.Week.Score(ST.Week.Start(ev.time))
+    return string.format("%s has closed the Index for the week after %d summons of him. Any more are filed under " ..
+        "'enthusiasm' until Monday.", ev.target, r.counted)
+end
+
+-- Zennit closes the Index for the week of `start` (default: this week): no more summons of him count until Monday.
+-- Allowed once the week's minimum has been filed and the latest of them answered. Returns true if it closed.
+function Respond.CloseIndex(start)
+    local id, ev = ST.Week.CloseTarget(start or ST.Week.Start())
+    if not id or ST.Week.EventClosed(ev) then return false end
+    local old = ev.response
+    local resp = { result = old.result, zroll = old.zroll, sroll = old.sroll, time = math.max(time(), old.time + 1),
+        listed = old.listed, closes = true }
+    ST.Store.SetResponse(id, resp)
+    ST.Sync.SendResponse(id, resp)
+    ST.print(closedLine(ev))
+    if ST.Hub then ST.Hub.Refresh() end
+    return true
 end
 
 -- Zennit has rolled: ask the summoner to roll back.
@@ -264,8 +290,11 @@ function Respond.OnDiceChallenge(id, ev, zroll)
 end
 
 -- Sync calls this when Zennit's answer arrives. Tell the chat, and finish the dice prompt if we have one.
-function Respond.OnResponse(id, ev, resp)
+function Respond.OnResponse(id, ev, resp, before)
     local line = Respond.Announce(ev, resp)
+    if resp.closes and before and not before.closes and before.result == resp.result then
+        line = closedLine(ev) -- the same answer again, now closing the Index: only that is news
+    end
     playAnswerClip(resp)
     if line then ST.print(line) end
     if ST.Hub then ST.Hub.Refresh() end
@@ -324,8 +353,9 @@ local function render(s, stage, extra)
         local free = Respond.OnList(ev)
         local cost
         if not ST.Week.Counts(ev) then
-            cost = string.format("It is past the %d summons of you that count this week, so the race ignores it: the Index " ..
-                "files it under 'enthusiasm'. Answer however you like.", ST.Week.RULES.cap)
+            cost = string.format("%s, so the race ignores it: the Index files it under 'enthusiasm'. Answer however you like.",
+                ST.Week.IsClosed(ST.Week.Start(ev.time)) and "You have closed the Index for the week" or
+                    string.format("It is past the %d summons of you that count this week", ST.Week.RULES.cap))
         else
             cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
                 string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))
@@ -360,12 +390,19 @@ local function render(s, stage, extra)
         setButtons(s, { { "Back", function() render(s, "choose") end } })
     else -- done
         local resp = ev.response or { result = "accepted", zroll = 0, sroll = 0 }
-        s.text:SetText(Respond.Announce(ev, resp) or "")
-        if resp.result == "owed" then
-            setButtons(s, { { "They paid", function() Respond.Decide(id, "paid") end }, { "Close", s.close } })
-        else
-            setButtons(s, { { "Close", s.close } })
+        local text = Respond.Announce(ev, resp) or ""
+        local buttons = {}
+        if resp.result == "owed" then buttons[#buttons + 1] = { "They paid", function() Respond.Decide(id, "paid") end } end
+        buttons[#buttons + 1] = { "Done", s.close }
+        if not ev.fake and ST.Week.CloseTarget(ST.Week.Start(ev.time)) then
+            text = text .. "\n\nThat makes enough summons for the Index to accept a closure. You may close it for the week."
+            buttons[#buttons + 1] = { "Close the Index", function()
+                Respond.CloseIndex(ST.Week.Start(ev.time))
+                render(s, "done")
+            end }
         end
+        s.text:SetText(text)
+        setButtons(s, buttons)
     end
 end
 

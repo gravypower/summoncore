@@ -21,7 +21,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Essential Experience | Anchors the rest: what should a summon, an answer and a week feel like? | Week answered; summoner and Zennit still open |
 | Meaningful Choices | Zennit's four answers are the main decision in the game | Dice limited (3 a week); playtest |
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
-| Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Findings in; decision open; ask Zennit |
+| Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | |
 | Visible Progress / Feedback | The season band and answer colours in the hub | |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
@@ -163,10 +163,38 @@ Fairness entry):
 **Recommendation:** F. In the game's voice: "Zennit has closed the Index for the week. The 3 forms left were stamped
 APPROVED in his absence: +15 to the group."
 
-**Open**
-- Choose: F, or another version.
-- **Ask Zennit.** The Lens of Friendship can't be answered from the code. How does five summons a week feel to him? Would
-  he use a close button, and would paying for it feel fair or feel like a punishment? His answer goes here.
+**Our answer:** "We could go 5 to 10 a week and he will be OK. We can always change it later." Not playing yet, so
+Zennit gets asked at the first playtest.
+
+**That changes the recommendation.** With a floor (he can only close once 5 are filed), the versions behave differently
+(30,000 simulated weeks each):
+
+| Version | Normal | Trying | Busy (8 dungeon) | All out (10 far-flung) |
+|---|---|---|---|---|
+| Limit 5, no closing (what was built) | 28% | 64% | 63% | 63% |
+| Limit 10, no closing | 27% | 64% | 94% | 99% |
+| **Limit 10, he may close after the 5th, free** | **27%** | **63%** | **63%** | **63%** |
+| Limit 10, close after the 5th, each cut-off slot 5 points | 27% | 63% | 94% | 99% |
+
+- **A limit of 10 with no way out rewards hounding him** (94% for a busy week): exactly the griefing the lens is about.
+- **The price stops helping once the limit is 10.** He either sits through it or pays, so hounding still wins.
+- **Free closing after the 5th is the fit.** If he closes at 5, the week plays exactly like the limit-5 rules we already
+  judged fair; the exploit only existed because he could close *before* 5. And summons to places on *his list* earn
+  him points, so a friendly group gives him a reason to leave it open.
+- **Lesson:** a new constraint (the floor of 5) changed which fix was best. Re-run the lens when the design moves.
+
+**Built:** up to 10 summons of him count; once 5 are filed and the latest answered, he can close the Index for free
+(after his answer, or from the hub's Answer tab). It travels as a flag on his answer, so every client agrees; later
+summons are filed under 'enthusiasm', and their casters are told. A changed answer keeps the Index closed.
+
+**Found while building:** an answer changed within the same second as the one before it (owes, then paid) never
+reached other clients, because sync keeps the later of two answers and a tie keeps the old one. A new answer is now
+always timestamped after the one it replaces. The closing self-test caught it: the two clients disagreed, 15 to 12.
+
+**Ask Zennit at the first playtest**
+- How do 5, 8 and 10 summons in a week feel?
+- Does he use the close button? Early, late, never? If he always closes at 5, the extra five slots do nothing.
+- Does closing feel like a fair way out, or like giving up?
 
 ## Decisions
 
@@ -175,3 +203,4 @@ APPROVED in his absence: +15 to the group."
 | 2026-10-04 | The group should have to try to beat Zennit; "he wins more weeks than he loses" no longer holds | Essential Experience | A win should be earned and reachable |
 | 2026-10-04 | "Trying" means beating him at his own answers; keep it tongue in cheek | Essential Experience | Summoning Zennit should be how to win, not a risk to avoid |
 | 2026-10-04 | New race from 5 Oct 2026: only summons of him count, 5 a week, 3 dice a week, +5 per helper, head start 2 | Fairness, Meaningful Choices | See the Fairness entry: effort pays, and his list keeps his week off within reach |
+| 2026-10-04 | 5 to 10 summons of him count a week; he can close the Index for free once 5 are filed | Griefing / Friendship | He gets a way out; closing can't lock in a lead before the fair minimum |
