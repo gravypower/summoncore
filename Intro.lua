@@ -121,6 +121,7 @@ end
 local function endTime() return starts[hi] + scenes[hi].dur end
 
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
+local onClose -- runs once when the viewer is next closed (Intro.Play's whenClosed)
 local pictureH, pictureW, buttonsWidth = 300, 533, 700
 local t, playing, shownScene, shownFrame, lastCue = 0, false, 0, -1, nil
 
@@ -355,11 +356,8 @@ end
 -- Button helper: lays buttons out left to right along the bottom.
 local nextX = 12
 local function button(parent, text, width, onClick)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    b:SetSize(width, 24)
-    b:SetText(text)
+    local b = ST.Theme.Button(parent, text, width, 24, onClick)
     b:SetPoint("BOTTOMLEFT", nextX, 10)
-    b:SetScript("OnClick", onClick)
     nextX = nextX + width + 6
     return b
 end
@@ -386,7 +384,7 @@ local function layout()
     tape:SetPoint("BOTTOM", picture, "BOTTOM", 0, h * 0.03)
     tapeText:SetFont(FONT, fontSize, "OUTLINE")
     if mode ~= "key" then tape:Hide() end
-    frame:SetSize(math.max(w + 24, buttonsWidth), h + 24 + 44 + (mode == "full" and boxHeight + 8 or 0))
+    frame:SetSize(math.max(w + 24, buttonsWidth), h + 24 + 64 + (mode == "full" and boxHeight + 8 or 0))
 end
 
 -- A button that flips a setting and shows its state in its label.
@@ -412,7 +410,7 @@ local function build()
     frame = CreateFrame("Frame", "SummonCoreIntro", UIParent)
     frame:Hide() -- a new frame is visible; start hidden so the toggle below shows it on the first command
     ST.db.settings.introMute = ST.db.settings.introSound == false
-    frame:SetSize(w + 24, h + 24 + 44)
+    frame:SetSize(w + 24, h + 24 + 64)
     frame:SetPoint("CENTER", 0, 20)
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
@@ -424,7 +422,8 @@ local function build()
 
     local bg = frame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.07, 0.06, 0.1, 0.96)
+    bg:SetColorTexture(0.016, 0.024, 0.04, 0.96)
+    ST.Theme.Border(frame, "green", 1, 2)
 
     picture = frame:CreateTexture(nil, "ARTWORK")
     picture:SetSize(w, h)
@@ -484,8 +483,9 @@ local function build()
     terminal:SetPoint("TOPLEFT", picture, "BOTTOMLEFT", 0, -6)
     terminalText:SetJustifyV("TOP")
 
-    status = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    status:SetPoint("BOTTOMRIGHT", -14, 16)
+    -- its own line above the buttons (the row of buttons is about as wide as the window)
+    status = ST.Theme.Text(frame, 16, "dim", "OVERLAY")
+    status:SetPoint("BOTTOMLEFT", 14, 42)
 
     nextX = 12
     button(frame, "<", 30, function() seek(starts[math.max(lo, sceneAt(t) - 1)]) end)
@@ -553,7 +553,12 @@ local function build()
         end
         show(t)
     end)
-    frame:SetScript("OnHide", function() setPlaying(false) end)
+    frame:SetScript("OnHide", function()
+        setPlaying(false)
+        local after = onClose
+        onClose = nil
+        if after then after() end
+    end)
     layout()
 end
 
@@ -576,7 +581,7 @@ function Intro.Check()
         try(SFX .. name .. ".ogg")
     end
     if bad == 0 then
-        ST.print("all intro sound files play. If the pictures are blank, try Terminal art: on/off, or tell me.")
+        ST.print("all intro sound files play. If the pictures are blank, try Look: lines or storybook, or tell me.")
     else
         ST.print(bad .. " file(s) failed. If files were added or replaced while WoW was running, quit WoW completely and start it again: /reload does not pick up new media files.")
     end
@@ -607,10 +612,17 @@ function Intro.Toggle(arg)
     setPlaying(true)
 end
 
--- Starts a chapter (or scene) from the beginning even if the viewer is already open.
-function Intro.Play(arg)
+-- Starts a chapter (or scene) from the beginning even if the viewer is already open. whenClosed (optional)
+-- runs once, when the viewer is closed.
+function Intro.Play(arg, whenClosed)
+    onClose = nil -- closing the viewer to restart it is not the close whenClosed waits for
     if frame and frame:IsShown() then frame:Hide() end
     Intro.Toggle(arg)
+    if frame and frame:IsShown() then
+        onClose = whenClosed
+    elseif whenClosed then
+        whenClosed() -- it did not open (a chapter not reached yet): straight back
+    end
 end
 
 -- Mention the intro once, the first time the addon loads.
