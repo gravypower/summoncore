@@ -1,6 +1,7 @@
 -- Week: the weekly contest. Each Monday (UTC) to the next, the group's landed summon points are set against
 -- Zennit's points toward a week off (see Store.Goal). He starts every week with a head start, and a tie goes to
--- him, so he wins more weeks than he loses. When he wins, the seven days that follow are his: no summons.
+-- him. When he wins, the seven days that follow are his: no summons. From October 2026 the race follows
+-- Week.RULES: the group has to beat Zennit at his own answers, and he no longer wins most weeks by default.
 -- Everything is derived from the event log, so every client reaches the same result.
 -- A week closes two days after it ends: its winner is then frozen and Zennit can no longer answer into it.
 local ADDON, ST = ...
@@ -48,15 +49,87 @@ local function frozen()
     return ST.db and ST.db.settings and ST.db.settings.weekFrozen
 end
 
--- The score for the week starting at `start`: { start, group, zennit, summons, winner, over }.
--- winner is "zennit", "group", or nil when there were no summons that week.
+-- The race from the week of Monday 5 October 2026 (UTC) on: beating Zennit means beating his answers (see
+-- design/lenses.md). Only summons OF Zennit count, and only the first `cap` of them each week; he has `dice` rolls a
+-- week; each helper (up to `helpersMax`) adds `helperBonus` to the summoner's roll. Weeks before `from` keep the rules
+-- they were played under, so the season and the chapters already reached do not change.
+Week.RULES = { from = 1791158400, headstart = 2, cap = 5, dice = 3, helperBonus = 5, helpersMax = 2 }
+
+function Week.NewRules(start)
+    return start >= Week.RULES.from
+end
+
+-- The real summons of Zennit in the week starting at `start`, oldest first: { { id, ev }, ... }.
+local function summonsOfZennit(start)
+    local list = {}
+    for id, ev in pairs(ST.db.events) do
+        if not ev.fake and ev.time >= start and ev.time < start + LENGTH and isZennit(ev.target) then
+            list[#list + 1] = { id = id, ev = ev }
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.ev.time ~= b.ev.time then return a.ev.time < b.ev.time end
+        return tostring(a.id) < tostring(b.id)
+    end)
+    return list
+end
+
+-- Does this summon count toward its week? Under the new rules: a summon of Zennit within the week's first `cap`
+-- (a test summon is placed among the real ones by its time). Under the old rules every summon counts.
+function Week.Counts(ev)
+    local start = Week.Start(ev.time)
+    if not Week.NewRules(start) then return true end
+    if not isZennit(ev.target) then return false end
+    local before = 0
+    for i, s in ipairs(summonsOfZennit(start)) do
+        if s.ev == ev then return i <= Week.RULES.cap end
+        if s.ev.time <= ev.time then before = before + 1 end
+    end
+    return before < Week.RULES.cap
+end
+
+-- Dice Zennit has left in the week starting at `start`, or nil when there is no limit (the old rules).
+function Week.DiceLeft(start)
+    if not Week.NewRules(start) then return nil end
+    local used = 0
+    for _, s in ipairs(summonsOfZennit(start)) do
+        local res = s.ev.response and s.ev.response.result
+        if res == "won" or res == "lost" then used = used + 1 end
+    end
+    return math.max(0, Week.RULES.dice - used)
+end
+
+-- What the summoner adds to their dice roll for this summon: a bonus per helper (0 under the old rules).
+function Week.HelperBonus(ev)
+    if not Week.NewRules(Week.Start(ev.time)) then return 0 end
+    return math.min(#(ev.assistants or {}), Week.RULES.helpersMax) * Week.RULES.helperBonus
+end
+
+-- The score for the week starting at `start`: { start, group, zennit, summons, winner, over, new, counted, extra }.
+-- winner is "zennit", "group", or nil when there were no summons that week. Under the new rules, counted is how many
+-- summons of Zennit were filed toward the week (at most RULES.cap) and extra how many came after those.
 function Week.Score(start)
-    local r = { start = start, group = 0, zennit = Week.HEADSTART, summons = 0, over = time() >= start + LENGTH }
+    local new = Week.NewRules(start)
+    local r = { start = start, group = 0, zennit = new and Week.RULES.headstart or Week.HEADSTART, summons = 0,
+        over = time() >= start + LENGTH, new = new, counted = 0, extra = 0 }
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and ev.time >= start and ev.time < start + LENGTH then
             r.summons = r.summons + 1
-            if ST.Store.Lands(ev) then r.group = r.group + (ev.points or 0) end
-            if isZennit(ev.target) then r.zennit = r.zennit + ST.Store.Goal(ev) end
+            if not new then
+                if ST.Store.Lands(ev) then r.group = r.group + (ev.points or 0) end
+                if isZennit(ev.target) then r.zennit = r.zennit + ST.Store.Goal(ev) end
+            end
+        end
+    end
+    if new then
+        for i, s in ipairs(summonsOfZennit(start)) do
+            if i <= Week.RULES.cap then
+                r.counted = r.counted + 1
+                if ST.Store.Lands(s.ev) then r.group = r.group + (s.ev.points or 0) end
+                r.zennit = r.zennit + ST.Store.Goal(s.ev)
+            else
+                r.extra = r.extra + 1
+            end
         end
     end
     if r.summons > 0 then r.winner = r.zennit >= r.group and "zennit" or "group" end
@@ -92,7 +165,13 @@ function Week.Immune(now)
 end
 
 local function lines(r)
-    return string.format("group %d, Zennit %d (including a %d point head start)", r.group, r.zennit, Week.HEADSTART)
+    local text = string.format("group %d, Zennit %d (including a %d point head start)", r.group, r.zennit,
+        r.new and Week.RULES.headstart or Week.HEADSTART)
+    if r.new then
+        text = text .. string.format("; %d of %d summons of Zennit filed", r.counted, Week.RULES.cap)
+        if r.extra > 0 then text = text .. string.format(", %d more filed under 'enthusiasm'", r.extra) end
+    end
+    return text
 end
 
 -- One line saying how the week is going, or how it ended.

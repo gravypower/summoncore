@@ -618,8 +618,14 @@ local function refreshChrome()
         chrome.week:SetText(T.Paint("amber", "ZENNIT IS ON HIS WEEK OFF UNTIL " .. date("%a %d %b", untilT):upper()))
     else
         local week = W.Score(W.Start())
-        chrome.week:SetText(string.format("THIS WEEK  %s / %s", T.Paint("cyan", "GROUP " .. week.group),
-            T.Paint("pink", "ZENNIT " .. week.zennit)))
+        local score = string.format("%s / %s", T.Paint("cyan", "GROUP " .. week.group), T.Paint("pink", "ZENNIT " .. week.zennit))
+        if week.new then
+            -- the new race: how many summons of him have been filed this week, and how many dice he has left
+            chrome.week:SetText(string.format("%s · FILED %d/%d · DICE %d", score, week.counted, W.RULES.cap,
+                W.DiceLeft(W.Start())))
+        else
+            chrome.week:SetText("THIS WEEK  " .. score)
+        end
     end
     local channels = ST.Sync.channels()
     chrome.status:SetText(string.format("%d RECORDS · %d QUEUED · LINK: %s", ST.Store.Count(), #ST.Sync.state.queue,

@@ -18,12 +18,12 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 
 | Lens | Why here | Status |
 |---|---|---|
-| Essential Experience | Anchors the rest: what should a summon, an answer and a week feel like? | In progress |
-| Meaningful Choices | Zennit's four answers are the main decision in the game | Findings in, decision open |
-| Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | Next |
+| Essential Experience | Anchors the rest: what should a summon, an answer and a week feel like? | Week answered; summoner and Zennit still open |
+| Meaningful Choices | Zennit's four answers are the main decision in the game | Dice limited (3 a week); playtest |
+| Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
+| Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Next (the limit of 5 is a first answer) |
 | The Player | One friend group, and one of them (Zennit) is the target | |
 | Visible Progress / Feedback | The season band and answer colours in the hub | |
-| Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
 
 ## Entries
@@ -83,8 +83,57 @@ that the group wins a week, with every summon in a zone (3 points), from 20,000 
   show where the head start sits now, instead of guessing.
 - Still to answer: what a summon should feel like for the **summoner**, and for **Zennit** when the popup appears.
 
+### 2026-10-04 · Essential Experience, continued: what "trying" means
+
+**Our answer:** (c) **beating Zennit at his own answers.** Summoning him should be how the group wins, not a risk.
+Keep it tongue in cheek.
+
+**Today's rules work against it.** Going all out on him (6 far-flung summons, 2 helpers) won 18% of weeks, less than a
+moderate push (31%): more effort, worse odds.
+
+### 2026-10-04 · Lens of Fairness: the new race
+
+Built from the answer above, each rule tied to a finding:
+
+| Rule | Why |
+|---|---|
+| Only summons of Zennit count in the race (summons of each other still count for the tally and badges) | Essential Experience: he is the target, so volume between friends no longer wins |
+| He has **3 dice a week**; then he must accept, refuse or ask for the silver | Meaningful Choices: the dice stop being always right; *when* to roll becomes his decision, and the group can outlast them |
+| Each helper (up to two) adds **+5** to the summoner's roll | (c): the group beats his best answer by organising, not luck |
+| Only the first **5** summons of him a week count; later ones are "filed under 'enthusiasm'" | Fairness and Friendship: hounding him past five earns nothing |
+| Head start **2** (was 10) | The difficulty dial, chosen from the table below |
+
+**Fairness, Zennit's side.** He still needs a real chance at his week off. His list provides it: some summons he
+actually needs (his task list), and when one of those lands he gains the points too, so the gap does not move.
+
+The group's chance to win a week (20,000 simulated weeks per cell; 1 in 4 summons lands on his list; he rolls while
+he has dice):
+
+| Kind of week | Head start 0 | **2 (chosen)** | 3 | 5 |
+|---|---|---|---|---|
+| Quiet: 2 zone summons, no helpers | 15% | **15%** | 9% | 9% |
+| Normal: 3 zone summons, 1 helper | 27% | **28%** | 8% | 7% |
+| Trying: 5 dungeon summons, 2 helpers | 64% | **64%** | 63% | 40% |
+| All out: 8 far-flung, 2 helpers (only 5 count) | 64% | **64%** | 63% | 63% |
+
+Effort pays (15% → 28% → 64%), and he still takes about a third of the weeks the group tries hard. The limit means
+going all out is no better than trying, which is the point. Head start 2 gives the same curve as 0, but a week where he
+wins every roll is clearly his.
+
+**Built** in `Week.lua` (`Week.RULES`), `Respond.lua` and the hub's season band (`FILED 3/5 · DICE 2`), with
+self-tests. It starts with the week of Monday 5 October 2026; earlier weeks keep their old rules, so the season and
+the chapters already reached do not change.
+
+**To watch in playtests**
+- Does the group win about a quarter of normal weeks and two thirds of the weeks they try?
+- Does Zennit save his dice for the big summons? (If he always rolls the first three, the choice is still not meaningful.)
+- Is five a week the right limit, for the group and for Zennit? That is the Lens of Griefing / Friendship, next.
+- Intro scenes 9 and 10 still narrate the draft rules; re-voice them once these settle.
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
 |---|---|---|---|
 | 2026-10-04 | The group should have to try to beat Zennit; "he wins more weeks than he loses" no longer holds | Essential Experience | A win should be earned and reachable |
+| 2026-10-04 | "Trying" means beating him at his own answers; keep it tongue in cheek | Essential Experience | Summoning Zennit should be how to win, not a risk to avoid |
+| 2026-10-04 | New race from 5 Oct 2026: only summons of him count, 5 a week, 3 dice a week, +5 per helper, head start 2 | Fairness, Meaningful Choices | See the Fairness entry: effort pays, and his list keeps his week off within reach |

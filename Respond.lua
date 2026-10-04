@@ -28,11 +28,18 @@ local dlg, dlgSurface   -- the popup
 ----------------------------------------------------------------------
 -- Rules
 ----------------------------------------------------------------------
--- The dice are loaded his way, so the story keeps moving: Zennit adds EDGE to his roll, and a tie goes to him.
+-- The dice are loaded his way: Zennit adds EDGE to his roll, and a tie goes to him. Under the new race rules the
+-- summoner adds `bonus` (Week.HelperBonus: so much per helper), so a well-organised summon can beat his edge.
 -- "won" means Zennit won, so the summon does not count.
 Respond.EDGE = 10
-function Respond.Resolve(zroll, sroll)
-    return zroll + Respond.EDGE >= sroll and "won" or "lost"
+function Respond.Resolve(zroll, sroll, bonus)
+    return zroll + Respond.EDGE >= sroll + (bonus or 0) and "won" or "lost"
+end
+
+-- The summoner's roll as shown: "58", or "58+10" with the helpers' bonus.
+local function summonerRoll(ev, sroll)
+    local bonus = ST.Week.HelperBonus(ev)
+    return bonus > 0 and (sroll .. "+" .. bonus) or tostring(sroll)
 end
 
 -- A short outcome for the log, or nil if Zennit has not answered.
@@ -44,16 +51,25 @@ function Respond.Describe(ev)
     if r.result == "excused" then return "refused (on his list)" end
     if r.result == "owed" then return "owes " .. SILVER .. " silver" end
     if r.result == "paid" then return "paid " .. SILVER .. " silver" end
-    if r.result == "won" then return string.format("won the dice %d-%d", r.zroll, r.sroll) end
-    if r.result == "lost" then return string.format("lost the dice %d-%d", r.zroll, r.sroll) end
+    if r.result == "won" then return string.format("won the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
+    if r.result == "lost" then return string.format("lost the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
 end
 
 local function plural(n) return n == 1 and "" or "s" end
+
+-- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
+local DID = { accepted = "accepted", refused = "refused", excused = "refused", owed = "demanded 50 silver for",
+    paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
 
 -- One line for the chat window when Zennit has answered.
 function Respond.Announce(ev, resp)
     local who, pts = ev.target, ev.points or 0
     local r = resp.result
+    if not ST.Week.Counts(ev) then
+        return string.format("%s %s the summon from %s. It is past the %d summons of him that count this week, so the " ..
+            "race ignores it: the Index files it under 'enthusiasm'.", who, DID[r] or "answered", ev.caster, ST.Week.RULES.cap)
+    end
+    local sroll = summonerRoll(ev, resp.sroll or 0)
     local bonus = ""
     if resp.listed and ST.Store.Lands({ response = resp }) then
         bonus = string.format(" It is on his list: +%d point%s toward his week off.", pts, plural(pts))
@@ -63,8 +79,8 @@ function Respond.Announce(ev, resp)
     if r == "excused" then return string.format("%s refused the summon from %s. No points, but the destination is on his list, so it costs him nothing.", who, ev.caster) end
     if r == "owed" then return string.format("%s demands %d silver, in cash, with no receipt. The points land when he says it was paid.", who, SILVER) end
     if r == "paid" then return string.format("%s says the %d silver was paid. +%d point%s.%s", who, SILVER, pts, plural(pts), bonus) end
-    if r == "won" then return string.format("%s won the dice (%d to %d): the summon does not count, and he gains %d point%s toward his week off.", who, resp.zroll, resp.sroll, pts, plural(pts)) end
-    if r == "lost" then return string.format("%s lost the dice (%d to %d): the summon counts. +%d point%s.%s", who, resp.zroll, resp.sroll, pts, plural(pts), bonus) end
+    if r == "won" then return string.format("%s won the dice (%d to %s): the summon does not count, and he gains %d point%s toward his week off.", who, resp.zroll, sroll, pts, plural(pts)) end
+    if r == "lost" then return string.format("%s lost the dice (%d to %s): the summon counts. +%d point%s.%s", who, resp.zroll, sroll, pts, plural(pts), bonus) end
 end
 
 -- Zennit's secret list for the week: destination words kept on his client only (never synced or exported).
@@ -166,7 +182,7 @@ function Respond.OnDiceReply(id, ev, sroll)
     local st = state[id]
     if not st then return end
     state[id] = nil
-    Respond.Decide(id, Respond.Resolve(st.zroll, sroll), st.zroll, sroll)
+    Respond.Decide(id, Respond.Resolve(st.zroll, sroll, ST.Week.HelperBonus(ST.Store.Get(id) or ev)), st.zroll, sroll)
 end
 
 ----------------------------------------------------------------------
@@ -240,8 +256,9 @@ end
 function Respond.OnDiceChallenge(id, ev, zroll)
     if not diceDlg then buildDiceDialog() end
     diceCurrent = { id = id, ev = ev, zroll = zroll }
-    diceDlg.text:SetText(string.format("%s suggests dice for your summon of him, and has rolled %d.\n\nRoll 1-100: beat his roll plus 10 and the summon counts. A tie goes to him.",
-        ev.target, zroll))
+    local bonus = ST.Week.HelperBonus(ev)
+    diceDlg.text:SetText(string.format("%s suggests dice for your summon of him, and has rolled %d.\n\nRoll 1-100: beat his roll plus 10 and the summon counts. A tie goes to him.%s",
+        ev.target, zroll, bonus > 0 and string.format(" Your helpers add +%d to your roll.", bonus) or ""))
     diceDlg.rollBtn:Show()
     diceDlg:Show()
 end
@@ -278,11 +295,24 @@ local function setButtons(s, list)
         if item then
             b:SetText(item[1]:upper())
             b:SetScript("OnClick", item[2])
+            b:SetEnabled(not item[3])
             b:Show()
         else
             b:Hide()
         end
     end
+end
+
+-- Dice Zennit has left for the week of this summon (nil: no limit), not counting rolls still being decided.
+local function diceLeft(id, ev)
+    local start = ST.Week.Start(ev.time)
+    local left = ST.Week.DiceLeft(start)
+    if not left then return nil end
+    for other in pairs(state) do
+        local o = ST.Store.Get(other)
+        if other ~= id and o and not o.fake and ST.Week.Start(o.time) == start then left = left - 1 end
+    end
+    return math.max(0, left)
 end
 
 -- Draws one stage on a surface: "choose", "roll", "waiting" (extra = Zennit's roll), "noanswer" or "done".
@@ -292,20 +322,31 @@ local function render(s, stage, extra)
     s.stage = stage
     if stage == "choose" then
         local free = Respond.OnList(ev)
-        local cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
-            string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))
-        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\n\nHow will you deal with it?")
+        local cost
+        if not ST.Week.Counts(ev) then
+            cost = string.format("It is past the %d summons of you that count this week, so the race ignores it: the Index " ..
+                "files it under 'enthusiasm'. Answer however you like.", ST.Week.RULES.cap)
+        else
+            cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
+                string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))
+        end
+        local dice = diceLeft(id, ev)
+        if dice then cost = cost .. string.format(" Dice left this week: %d of %d.", dice, ST.Week.RULES.dice) end
+        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\nHow will you deal with it?")
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
             { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },
             { "Demand " .. SILVER .. " silver, in cash, no receipt", function() Respond.Decide(id, "owed") end },
-            { "Suggest dice (1-100)", function() render(s, "roll") end },
+            dice == 0 and { "No dice left this week", function() end, true }
+                or { "Suggest dice (1-100)", function() render(s, "roll") end },
         })
     elseif stage == "roll" then
-        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add 10 to your roll, higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
-            ev.caster))
+        local bonus = ST.Week.HelperBonus(ev)
+        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add 10 to your roll%s; higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
+            ev.caster, bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or ""))
         setButtons(s, {
             { "Roll 1-100", function()
+                if diceLeft(id, ev) == 0 then return render(s, "choose") end -- the last die went on another summon
                 Respond.RequestRoll("zennit", id)
                 render(s, "waiting")
             end },
@@ -336,19 +377,19 @@ end
 
 -- A place to draw the choices: some text and four buttons inside `parent`, in `columns` columns (default 1).
 -- closeFn runs for the Close button.
-function Respond.NewSurface(parent, x, y, width, closeFn, columns)
-    columns = columns or 1
+function Respond.NewSurface(parent, x, y, width, closeFn, columns, textHeight)
+    columns, textHeight = columns or 1, textHeight or 110
     local s = { buttons = {}, close = closeFn or function() end }
     s.text = T.Text(parent, 18, "green")
     s.text:SetPoint("TOPLEFT", x, y)
-    s.text:SetSize(width, 110)
+    s.text:SetSize(width, textHeight)
     s.text:SetJustifyV("TOP")
     s.text:SetSpacing(2)
     local bw = (width - (columns - 1) * 8) / columns
     for i = 1, 4 do
         local col, row = (i - 1) % columns, math.floor((i - 1) / columns)
         local b = T.Button(parent, "", bw, 28, nil, i == 1 and "primary" or nil)
-        b:SetPoint("TOPLEFT", x + col * (bw + 8), y - 116 - row * 34)
+        b:SetPoint("TOPLEFT", x + col * (bw + 8), y - textHeight - 6 - row * 34)
         s.buttons[i] = b
     end
     surfaces[#surfaces + 1] = s
@@ -374,11 +415,11 @@ function Respond.Stage(s) return s.stage end
 -- The popup, and opening it
 ----------------------------------------------------------------------
 local function buildDialog()
-    dlg = T.Window("SummonCoreRespond", 440, 300, { strata = "DIALOG", escape = false })
+    dlg = T.Window("SummonCoreRespond", 440, 380, { strata = "DIALOG", escape = false })
     dlg:ClearAllPoints()
     dlg:SetPoint("TOP", 0, -140)
     dlg.TitleText:SetText("A SUMMONING!")
-    dlgSurface = Respond.NewSurface(dlg, 18, -40, 404, function() dlg:Hide() end)
+    dlgSurface = Respond.NewSurface(dlg, 18, -40, 404, function() dlg:Hide() end, 1, 190)
 end
 
 -- A live summon of Zennit has arrived on his client (Sync calls this).
