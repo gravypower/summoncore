@@ -44,6 +44,8 @@ local scenes = {
     { label = "The debt", dur = 12.50 + PAUSE, text = [=[And so every completed summon is recorded as an installment on a debt Zennit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.]=] },
     { label = "The party", dur = 14.00 + PAUSE, text = [=[You, meanwhile, are a party of friends who have noticed that Zennit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.]=] },
     { label = "The week", dur = 14.30 + PAUSE, text = [=[This is the story of his week, and the week after that. If the form is ever found, you will be the first to know. Or the last. The Index is unclear.]=] },
+    { label = "The rules", dur = 26.70 + PAUSE, text = [=[The rules, such as they are. Each week, the group earns points by summoning Zennit, with more points for places that are remote, or dangerous, or frankly unreasonable. Zennit, for his part, holds a secret list, which he may complete at any time, and which he will not discuss. If the group has more points at the end of the week, the Index records a victory for persistence.]=] },
+    { label = "The options", dur = 25.40 + PAUSE, text = [=[If Zennit completes his list first, he wins the week, and cannot be summoned for the seven days that follow. He may refuse a summons. He may demand fifty silver, in cash, with no receipt. Or he may suggest dice. The Index will accept any of these. The Index accepts most things.]=] },
 }
 
 -- Scene lengths come from IntroCues.lua (measured from the narration); the table above is the fallback.

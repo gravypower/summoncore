@@ -440,6 +440,78 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
     }
   });
 
+  // A die with pips, 56 units square.
+  function die(x, y, n) {
+    var pips = { 1: [[1, 1]], 2: [[0, 0], [2, 2]], 3: [[0, 0], [1, 1], [2, 2]], 4: [[0, 0], [2, 0], [0, 2], [2, 2]],
+      5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]], 6: [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2]] }[n];
+    var s = '<rect x="' + x + '" y="' + y + '" width="56" height="56" rx="9" fill="#FFFFFF" stroke="#23202B" stroke-width="4"/>';
+    pips.forEach(function (p) { s += '<circle cx="' + (x + 12 + p[0] * 16) + '" cy="' + (y + 12 + p[1] * 16) + '" r="5" fill="#23202B"/>'; });
+    return s;
+  }
+
+  scenes.push({
+    label: 'The rules', dur: 27.3,
+    text: 'The rules, such as they are. Each week, the group earns points by summoning Zennit, with more points for places that are remote, or dangerous, or frankly unreasonable. Zennit, for his part, holds a secret list, which he may complete at any time, and which he will not discuss. If the group has more points at the end of the week, the Index records a victory for persistence.',
+    frame: function (k) {
+      var group = [24, 26, 27][k];
+      var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
+      // the scoreboard: the group against Zennit
+      out += '<rect x="40" y="60" width="440" height="270" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>';
+      out += T(260, 112, 'THIS WEEK', 34, '#23202B');
+      out += '<path d="M260 130 V310" stroke="#23202B" stroke-width="3" stroke-dasharray="8 8" fill="none"/>';
+      out += T(150, 170, 'THE GROUP', 22, '#23202B', 'middle', 'Special Elite, monospace');
+      out += T(150, 270, String(group), 96, '#3E5B4E');
+      out += T(370, 170, 'ZENNIT', 22, '#23202B', 'middle', 'Special Elite, monospace');
+      out += T(370, 270, '?', 96, '#B5432E');
+      // points for each kind of destination
+      [['CITY', 1], ['ZONE', 3], ['DUNGEON', 5], ['REMOTE', 10]].forEach(function (c, i) {
+        var x = 40 + i * 112;
+        out += '<rect x="' + x + '" y="360" width="104" height="70" fill="#F1E6CF" stroke="#23202B" stroke-width="3"/>' +
+          T(x + 52, 388, c[0], 15, '#23202B', 'middle', 'Special Elite, monospace') + T(x + 52, 420, String(c[1]), 32, '#B5432E');
+      });
+      out += T(260, 470, 'points for the place you summon him to', 17, '#EDE6D6', 'middle', 'Special Elite, monospace');
+      // Zennit's secret list: every line hidden
+      out += '<g transform="rotate(' + [-3, -1, -4][k] + ' 615 250)"><rect x="510" y="60" width="210" height="380" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' +
+        T(615, 100, 'SECRET LIST', 24, '#23202B');
+      for (var r = 0; r < 5; r++) {
+        out += '<rect x="528" y="' + (130 + r * 58) + '" width="22" height="22" fill="none" stroke="#23202B" stroke-width="3"/>' +
+          '<rect x="562" y="' + (132 + r * 58) + '" width="140" height="18" fill="#23202B"/>';
+      }
+      if (k === 2) out += '<path d="M531 143 l7 8 l12 -16" stroke="#3E5B4E" stroke-width="5" fill="none"/>';
+      out += '</g>';
+      out += zen(748, 190, 0.5, [-2, 2, 0][k]);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The options', dur: 26.1,
+    text: 'If Zennit completes his list first, he wins the week, and cannot be summoned for the seven days that follow. He may refuse a summons. He may demand fifty silver, in cash, with no receipt. Or he may suggest dice. The Index will accept any of these. The Index accepts most things.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
+      out += zen(40, 100, 0.66, [-2, 2, 0][k]);
+      // his three options
+      [['REFUSE', 330], ['50 SILVER', 520], ['DICE', 710]].forEach(function (c) {
+        out += '<rect x="' + c[1] + '" y="90" width="180" height="250" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' +
+          T(c[1] + 90, 128, c[0], 22, '#23202B');
+      });
+      out += '<circle cx="420" cy="230" r="58" fill="none" stroke="#B5432E" stroke-width="10"/>' +
+        '<path d="M380 190 L460 270 M460 190 L380 270" stroke="#B5432E" stroke-width="10" stroke-linecap="round" fill="none"/>';
+      var bob = [0, -10, -4][k];
+      out += '<g transform="translate(0 ' + bob + ')"><circle cx="610" cy="230" r="58" fill="#D9D9E3" stroke="#23202B" stroke-width="5"/>' +
+        '<circle cx="610" cy="230" r="44" fill="none" stroke="#23202B" stroke-width="3"/>' + T(610, 248, '50', 48, '#23202B') + '</g>';
+      var faces = [[1, 4], [3, 6], [5, 2]][k];
+      out += die(734, 195, faces[0]) + die(792, 240, faces[1]);
+      // the Index accepts
+      out += U('book', 330, 365, 90, 123);
+      out += '<g><rect x="440" y="376" width="300" height="82" rx="12" fill="#FFFFFF" stroke="#23202B" stroke-width="3"/>' +
+        '<path d="M440 420 L420 440 L452 432 Z" fill="#FFFFFF" stroke="#23202B" stroke-width="3"/>' +
+        T(590, 410, 'The Index accepts', 19, '#23202B', 'middle', 'Special Elite, monospace') +
+        T(590, 436, 'most things.', 19, '#23202B', 'middle', 'Special Elite, monospace') + '</g>';
+      return out;
+    }
+  });
+
   var starts = [], acc = 0;
   scenes.forEach(function (s, i) { s.start = acc; starts[i] = acc; acc += s.dur; });
   TOTAL = acc;

@@ -54,7 +54,8 @@ foreach ($name in $sfx.Keys) {
 "sound effects: " + ($sfx.Keys -join ", ")
 
 # ---------------------------------------------------------------- 2. scene lengths
-$voices = 1..8 | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
+$sceneCount = (Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg").Count
+$voices = 1..$sceneCount | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
 $pause = 0.6   # keep in step with PAUSE in Intro.lua
 $ending = 3.2   # extra seconds after the last scene: the music fades out while the picture fades to black
 $lengths = $voices | ForEach-Object { Duration $_ }
@@ -155,12 +156,12 @@ $musicWav = Join-Path $work "music.wav"
 # ---------------------------------------------------------------- 4. mix each scene
 # The music is one continuous track cut at the scene boundaries, so it carries on across scenes. It is
 # ducked while the narrator speaks (sidechain compression) and rises in the pauses.
-for ($i = 0; $i -lt 8; $i++) {
+for ($i = 0; $i -lt $sceneCount; $i++) {
     $n = $i + 1
     $len = $lengths[$i] + $pause
     $ci = [Globalization.CultureInfo]::InvariantCulture
     $musicFade = ""
-    if ($i -eq 7) {
+    if ($i -eq $sceneCount - 1) {
         $len += $ending
         $musicFade = ",afade=t=out:st={0}:d={1}" -f ($len - $ending).ToString("0.###", $ci), $ending.ToString("0.###", $ci)
     }
@@ -208,14 +209,24 @@ $cueSpec = @(
     @(7, "never been asked", "NEVER ASKED"),
     @(8, "the week after that", "THE WEEK AFTER THAT"),
     @(8, "Or the last", "OR THE LAST"),
-    @(8, "Index is unclear", "THE INDEX IS UNCLEAR")
+    @(8, "Index is unclear", "THE INDEX IS UNCLEAR"),
+    @(9, "earns points", "THE GROUP EARNS POINTS"),
+    @(9, "remote, or dangerous", "REMOTE. DANGEROUS. UNREASONABLE."),
+    @(9, "secret list", "ZENNIT'S SECRET LIST"),
+    @(9, "victory for persistence", "VICTORY FOR PERSISTENCE"),
+    @(10, "wins the week", "ZENNIT WINS THE WEEK"),
+    @(10, "seven days", "IMMUNE FOR 7 DAYS"),
+    @(10, "refuse a summons", "HE MAY REFUSE"),
+    @(10, "fifty silver", "50 SILVER. CASH. NO RECEIPT."),
+    @(10, "suggest dice", "OR DICE"),
+    @(10, "accepts most things", "THE INDEX ACCEPTS MOST THINGS")
 )
 $lead = 0.25   # show a cue a little before the words are spoken
 
 # The narration text lives in Intro.lua (one place); read it from there.
 $luaText = [IO.File]::ReadAllText((Join-Path $root "Intro.lua"))
 $texts = [regex]::Matches($luaText, 'text = \[=\[(.*?)\]=\]', "Singleline") | ForEach-Object { $_.Groups[1].Value.Trim() }
-if ($texts.Count -ne 8) { throw "expected 8 scene texts in Intro.lua, found $($texts.Count)" }
+if ($texts.Count -ne $sceneCount) { throw "expected $sceneCount scene texts in Intro.lua, found $($texts.Count)" }
 
 function SpeechSegments([string]$file, [double]$length) {
     $prev = $ErrorActionPreference
@@ -277,13 +288,23 @@ $highlightSpec = @(
     @(7, "no objection", 556, 226, 200, 260),
     @(8, "story of his week", 344, 0, 376, 524),
     @(8, "form is ever found", 640, 50, 150, 200),
-    @(8, "Index is unclear", 24, 374, 132, 172)
+    @(8, "Index is unclear", 24, 374, 132, 172),
+    @(9, "earns points", 36, 56, 236, 278),
+    @(9, "more points for places", 36, 356, 456, 78),
+    @(9, "remote, or dangerous", 376, 356, 112, 78),
+    @(9, "secret list", 500, 50, 240, 400),
+    @(9, "victory for persistence", 36, 56, 448, 278),
+    @(10, "wins the week", 36, 96, 272, 380),
+    @(10, "refuse a summons", 326, 86, 188, 258),
+    @(10, "fifty silver", 516, 86, 188, 258),
+    @(10, "suggest dice", 706, 86, 188, 258),
+    @(10, "accepts most things", 326, 356, 426, 140)
 )
 
 $cues = @{}
 $sentenceTimes = @{}
 $highlights = @{}
-for ($s = 1; $s -le 8; $s++) {
+for ($s = 1; $s -le $sceneCount; $s++) {
     $sentences = [regex]::Split($texts[$s - 1], '(?<=[.!?])\s+')
     $segs = SpeechSegments $voices[$s - 1] $lengths[$s - 1]
     $byCount = $segs.Count -ne $sentences.Count
@@ -327,7 +348,7 @@ $lines.Add("local ADDON, ST = ...")
 $lines.Add("ST.introEnding = " + $ending.ToString("0.00", $inv))
 $lines.Add("ST.introLength = { " + (($lengths | ForEach-Object { $_.ToString("0.00", $inv) }) -join ", ") + " }")
 $lines.Add("ST.introCues = {")
-for ($s = 1; $s -le 8; $s++) {
+for ($s = 1; $s -le $sceneCount; $s++) {
     $lines.Add("    [$s] = {")
     foreach ($c in $cues[$s]) { $lines.Add(("        {{ t = {0}, text = `"{1}`" }}," -f $c[0].ToString("0.00", $inv), $c[1].Replace('"', '\"'))) }
     $lines.Add("    },")
@@ -335,7 +356,7 @@ for ($s = 1; $s -le 8; $s++) {
 $lines.Add("}")
 $lines.Add("-- introSentences: when each sentence of the narration starts, for the subtitles.")
 $lines.Add("ST.introSentences = {")
-for ($s = 1; $s -le 8; $s++) {
+for ($s = 1; $s -le $sceneCount; $s++) {
     $lines.Add("    [$s] = {")
     foreach ($c in $sentenceTimes[$s]) { $lines.Add(("        {{ t = {0}, text = [=[{1}]=] }}," -f $c[0].ToString("0.00", $inv), $c[1])) }
     $lines.Add("    },")
@@ -343,7 +364,7 @@ for ($s = 1; $s -le 8; $s++) {
 $lines.Add("}")
 $lines.Add("-- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).")
 $lines.Add("ST.introHighlights = {")
-for ($s = 1; $s -le 8; $s++) {
+for ($s = 1; $s -le $sceneCount; $s++) {
     if ($highlights[$s].Count -eq 0) { continue }
     $lines.Add("    [$s] = {")
     foreach ($h in $highlights[$s]) { $lines.Add(("        {{ t = {0}, x = {1}, y = {2}, w = {3}, h = {4} }}," -f $h[0].ToString("0.00", $inv), $h[1], $h[2], $h[3], $h[4])) }

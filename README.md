@@ -101,15 +101,15 @@ newer-version strings are refused. This is the manual fallback if addon messages
 
 ### Intro
 
-`/st intro` plays "Zennit and the Index": 8 scenes of 3-frame flipbook art (about six flips a second), narrated, with
-a quiet synth music bed, about 2:30 in all. The whole narration is typed out, a sentence at a time and in step with the
+`/st intro` plays "Zennit and the Index": 10 scenes of 3-frame flipbook art (about six flips a second), narrated, with
+a quiet synth music bed, about 3:25 in all. The whole narration is typed out, a sentence at a time and in step with the
 voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. While the narrator mentions something (the three kinds of ritual, the book, the form, Zennit), a pulsing box lights up that part of the picture. The **Text**
 button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
 large), a Look button
 (`lines`: neon line drawing on black, the default; `storybook`: the original colours), and toggles for Sound and Music. `/st intro 3` starts at
 scene 3. `/st intro check` tries every intro sound
 file and lists the ones the game cannot play (after adding or replacing media, restart WoW: `/reload` does not pick
-up new files). The art lives in `Media/intro_l1.blp` to `intro_l8.blp` (lines) and `intro_1` to `intro_8` (storybook): 2048x1024 sheets, DXT1, about 1.3 MB each.
+up new files). The art lives in `Media/intro_l1.blp` to `intro_l10.blp` (lines) and `intro_1` to `intro_10` (storybook): 2048x1024 sheets, DXT1, about 1.3 MB each.
 `tools/intro/render_intro.ps1` rebuilds them from `tools/intro/source.html` using headless Edge or Chrome
 (`-Format tga` writes uncompressed TGAs instead if BLPs misbehave in your client).
 
@@ -123,7 +123,9 @@ up new files). The art lives in `Media/intro_l1.blp` to `intro_l8.blp` (lines) a
   sentence sits in the audio (silence detection between sentences) and where the phrase sits in the sentence.
   Nothing is sampled from any existing recording.
 
-The narration is `Media/intro_1.ogg` to `intro_8.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
+Scenes 9 and 10 explain the weekly challenge: the group earns points by place, Zennit holds a secret list, and he may refuse, ask for fifty silver, or suggest dice. They were rendered here from the draft rules and may need rewording once the rules are final.
+
+The narration is `Media/intro_1.ogg` to `intro_10.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
 start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
 mutes the narration.

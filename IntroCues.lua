@@ -2,7 +2,7 @@
 -- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.
 local ADDON, ST = ...
 ST.introEnding = 3.20
-ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30 }
+ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50 }
 ST.introCues = {
     [1] = {
         { t = 0.55, text = "THE COSMIC INDEX OF SUMMONABLE PERSONS" },
@@ -45,6 +45,20 @@ ST.introCues = {
         { t = 2.38, text = "THE WEEK AFTER THAT" },
         { t = 8.88, text = "OR THE LAST" },
         { t = 11.71, text = "THE INDEX IS UNCLEAR" },
+    },
+    [9] = {
+        { t = 4.73, text = "THE GROUP EARNS POINTS" },
+        { t = 9.29, text = "REMOTE. DANGEROUS. UNREASONABLE." },
+        { t = 14.82, text = "ZENNIT'S SECRET LIST" },
+        { t = 24.48, text = "VICTORY FOR PERSISTENCE" },
+    },
+    [10] = {
+        { t = 2.47, text = "ZENNIT WINS THE WEEK" },
+        { t = 5.09, text = "IMMUNE FOR 7 DAYS" },
+        { t = 7.78, text = "HE MAY REFUSE" },
+        { t = 11.33, text = "50 SILVER. CASH. NO RECEIPT." },
+        { t = 16.06, text = "OR DICE" },
+        { t = 23.14, text = "THE INDEX ACCEPTS MOST THINGS" },
     },
 }
 -- introSentences: when each sentence of the narration starts, for the subtitles.
@@ -90,6 +104,20 @@ ST.introSentences = {
         { t = 9.03, text = [=[Or the last.]=] },
         { t = 11.44, text = [=[The Index is unclear.]=] },
     },
+    [9] = {
+        { t = 0.40, text = [=[The rules, such as they are.]=] },
+        { t = 3.53, text = [=[Each week, the group earns points by summoning Zennit, with more points for places that are remote, or dangerous, or frankly unreasonable.]=] },
+        { t = 13.25, text = [=[Zennit, for his part, holds a secret list, which he may complete at any time, and which he will not discuss.]=] },
+        { t = 20.34, text = [=[If the group has more points at the end of the week, the Index records a victory for persistence.]=] },
+    },
+    [10] = {
+        { t = 0.40, text = [=[If Zennit completes his list first, he wins the week, and cannot be summoned for the seven days that follow.]=] },
+        { t = 7.42, text = [=[He may refuse a summons.]=] },
+        { t = 10.42, text = [=[He may demand fifty silver, in cash, with no receipt.]=] },
+        { t = 15.32, text = [=[Or he may suggest dice.]=] },
+        { t = 18.59, text = [=[The Index will accept any of these.]=] },
+        { t = 22.52, text = [=[The Index accepts most things.]=] },
+    },
 }
 -- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).
 ST.introHighlights = {
@@ -130,5 +158,19 @@ ST.introHighlights = {
         { t = 1.09, x = 344, y = 0, w = 376, h = 524 },
         { t = 5.01, x = 640, y = 50, w = 150, h = 200 },
         { t = 11.81, x = 24, y = 374, w = 132, h = 172 },
+    },
+    [9] = {
+        { t = 4.83, x = 36, y = 56, w = 236, h = 278 },
+        { t = 7.33, x = 36, y = 356, w = 456, h = 78 },
+        { t = 9.39, x = 376, y = 356, w = 112, h = 78 },
+        { t = 14.92, x = 500, y = 50, w = 240, h = 400 },
+        { t = 24.58, x = 36, y = 56, w = 448, h = 278 },
+    },
+    [10] = {
+        { t = 2.57, x = 36, y = 96, w = 272, h = 380 },
+        { t = 7.88, x = 326, y = 86, w = 188, h = 258 },
+        { t = 11.43, x = 516, y = 86, w = 188, h = 258 },
+        { t = 16.16, x = 706, y = 86, w = 188, h = 258 },
+        { t = 23.24, x = 326, y = 356, w = 426, h = 140 },
     },
 }

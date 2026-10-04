@@ -9,8 +9,9 @@
 #   powershell -ExecutionPolicy Bypass -File tools\intro\render_intro.ps1 [-Format tga]
 param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender,
       [ValidateSet("storybook", "lines")][string]$Style = "storybook",
-      [int[]]$SceneList = (1..8))
+      [string]$SceneList = "1,2,3,4,5,6,7,8,9,10")  # for example "9,10"; a text list because -File flattens 9,10 into 910
 $ErrorActionPreference = "Stop"
+$sceneIds = @($SceneList -split '[,\s]+' | Where-Object { $_ } | ForEach-Object { [int]$_ })
 $here = $PSScriptRoot
 $root = Split-Path -Parent (Split-Path -Parent $here)
 $media = Join-Path $root "Media"
@@ -74,7 +75,8 @@ $lineCss = 'html.shot.line .stage{background:#000}' +
   'html.shot.line .feature path,html.shot.line .feature circle,html.shot.line .feature ellipse,html.shot.line .feature rect,html.shot.line .feature polygon{fill:#07102e!important;stroke:#fff3b0!important;stroke-width:3px!important}' +
   'html.shot.line .feature path[fill="none"]{fill:none!important}' +
   # green leader lines and labels
-  'html.shot.line text{fill:#6dff9a!important;stroke:none!important}'
+  'html.shot.line text{fill:#6dff9a!important;stroke:none!important}' +
+  'html.shot.line text[fill][fill][fill][fill][fill]{fill:#6dff9a!important}'
 $baseCss = 'html.shot,html.shot body{margin:0;padding:0;overflow:hidden;background:#000}html.shot main>*:not(.stage){display:none}html.shot header,html.shot .bigplay{display:none}html.shot .stage{position:fixed;left:0;top:0;width:100vw;height:100vh;max-width:none;border:0;border-radius:0;aspect-ratio:auto}'
 $css = '<style>' + $baseCss + $lineCss + '</style></head>'
 $patched = $tail.Replace($html, { param($m) $patch }).Replace("</head>", $css)
@@ -92,8 +94,8 @@ $browser = @(
 if (-not $browser) { throw "Edge or Chrome not found" }
 $styleFlag = switch ($Style) { "lines" { "&line=1" } default { "" } }
 $namePrefix = switch ($Style) { "lines" { "intro_l" } default { "intro_" } }
-$scenes = 8
-foreach ($n in $SceneList) {
+$scenes = 10
+foreach ($n in $sceneIds) {
     if ($SkipRender) { break }
     $s = $n - 1
     for ($f = 0; $f -lt 3; $f++) {
@@ -273,14 +275,14 @@ public static class SheetGen {
 }
 "@
 
-foreach ($n in $SceneList) {
+foreach ($n in $sceneIds) {
     $s = $n - 1
     $frames = 0..2 | ForEach-Object { Join-Path $work ("{0}_s{1}_f{2}.png" -f $Style, $s, $_) }
     $sheet = [SheetGen]::Compose($frames)
     $name = "$namePrefix{0}" -f ($s + 1)
     if ($Format -eq "blp") { [SheetGen]::WriteBlp($sheet, (Join-Path $media "$name.blp")); $ext = "blp" }
     else { [SheetGen]::WriteTga($sheet, (Join-Path $media "$name.tga")); $ext = "tga" }
-    if ($n -eq $SceneList[0]) { $sheet.Save((Join-Path $work "sheet1_$Style.png")) }
+    if ($n -eq $sceneIds[0]) { $sheet.Save((Join-Path $work "sheet1_$Style.png")) }
     $sheet.Dispose()
     "{0}.{1}  {2:N2} MB" -f $name, $ext, ((Get-Item (Join-Path $media "$name.$ext")).Length / 1MB)
 }
