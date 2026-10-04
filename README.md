@@ -18,9 +18,9 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 
 | Command | What it does |
 |---|---|
-| `/sc` (also `/summoncore`) | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
+| `/sc` (also `/summoncore`) | Open the Summon Core window: Party (Summary, Tally and Badges), Zennit (his answers), Log, Story, Sync and Tools tabs; the Party tab is closed to Zennit (he gets the "ah ah ah" gag) and Zennit's tab to the party (a gag of its own; the admin can open both); Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
 | `/sc help` | List the commands in chat |
-| `/sc panel` | Open the window on the Summary tab |
+| `/sc panel` | Open the window on the Party tab |
 | `/sc log [n]` | Recent summons |
 | `/sc tally` | Cast, received and assisted counts and points per player |
 | `/sc badges` | Badge list |
@@ -39,10 +39,11 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc intro [scene\|z1..z5\|g1..g5\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes); a scene number starts there, a chapter key plays that chapter, `check` tests the sound files |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
-| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Answer tab |
+| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Zennit tab |
 | `/sc respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
+| `/sc party` | Toggle party test mode (admin only): this character acts as an ordinary party member, even on the admin's or Zennit's own account, so Zennit's tab gives the party's gag. It turns Zennit test mode off, and the other way round. Both are also switches on the Tools tab |
 
 ## How it works
 
@@ -61,7 +62,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
-| `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the summary, log, answer, tally, badges, story, sync and tools), and the Zennit access-denied gag |
+| `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the party, Zennit, the log, the story, sync and tools), and the Zennit access-denied gag |
 | `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the self-test (`/sc synctest`, admin only) |
 
 Only the caster's client needs to see a summon; everyone else is credited from the caster's snapshot.
@@ -210,8 +211,8 @@ a joke gate for friends, not security: addon files are plain text.
 Each clip is a sprite sheet: all frames in one power-of-two texture (`.tga` or `.blp`), played left to right,
 top to bottom, plus an optional short `.ogg`. Add an entry to `Gag.clips` in `Gag.lua`:
 `{ sheet = { file = ..., cols = 4, rows = 2, frames = 8, fps = 8 }, sound = ... }`. One is picked at random
-each time. The bundled placeholder, `Media/gag_wag_sheet.tga` (1024x512, 8 frames of 256), is made by
-`tools/make_gag_sheet.ps1`; replace it with your friends' frames. The diagnostics Sound/flip row looks for `Media/test.ogg`.
+each time (add `duration = <seconds>` to keep a clip up as long as its recording). The bundled sheet, `Media/gag_wag_sheet.tga` (1024x512, 8 frames of 256), is a neon line-art cartoon man wagging his finger with "AH AH AH!" beside him, in the addon's look (an original drawing), made by
+`tools/make_gag_sheet.ps1`; replace it with your friends' frames. Zennit's gag plays `Media/gag_zennit.ogg`, a recording of his voice line (normalised, trimmed and converted from `tools/gag/gag_zennit_source.m4a` with ffmpeg: highpass 80 Hz, loudnorm, limiter, mono Ogg Vorbis); the party's gag on his tab uses the same animation without the recording. The diagnostics Sound/flip row looks for `Media/test.ogg`.
 
 ### Large images
 
@@ -263,7 +264,7 @@ numbers behind it, is in `design/lenses.md`):
 - **Only summons of Zennit count**, up to **10** of them each week. Any after that are logged as usual but "filed under
   'enthusiasm'": the race ignores them. Summons of each other still count for the tally and badges.
 - **Zennit can close the Index** for the rest of the week once **5** have been filed and the latest of them answered:
-  a "Close the Index" button after his answer, and in the hub's Answer tab. It is free, and it travels with his answer,
+  a "Close the Index" button after his answer, and in the hub's Zennit tab. It is free, and it travels with his answer,
   so every client agrees. Summons after that are filed under 'enthusiasm', and their casters are told.
 - The group's score is the points of those summons that landed. Zennit's starts at **2** (a head start), gains the
   summon's points when he wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal.

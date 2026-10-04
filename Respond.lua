@@ -1,7 +1,7 @@
 -- Respond: how Zennit deals with a summon of him, and the dice.
 --
 -- When a live summon of Zennit reaches his client, a dialog gives him four choices (the same choices are in the
--- hub window's Answer tab):
+-- hub window's Zennit tab):
 --   Accept          the summon counts.
 --   Refuse          the summon does not count.
 --   50 silver       the summon counts once he says the silver was paid ("owes" until then).
@@ -22,7 +22,7 @@ local state = {}        -- Zennit's side: id -> { zroll } while waiting for the 
 local pendingRoll       -- { kind = "zennit" | "summoner", id, expires }
 local diceCurrent       -- the dice prompt on the summoner's side: { id, ev, zroll }
 local diceDlg           -- that prompt's window (built when first needed)
-local surfaces = {}     -- every place the four choices are drawn (the popup and the hub's Answer tab)
+local surfaces = {}     -- every place the four choices are drawn (the popup and the hub's Zennit tab)
 local dlg, dlgSurface   -- the popup
 
 ----------------------------------------------------------------------

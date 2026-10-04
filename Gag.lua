@@ -8,19 +8,27 @@ local MEDIA = "Interface\\AddOns\\summoncore\\Media\\"
 -- Each clip is a sprite sheet (all frames in one power-of-two texture) plus an optional sound:
 --   sheet = { file = <path without extension>, cols = n, rows = n, frames = n, fps = n }
 --   sound = ".ogg path" (optional; a built-in sound plays if missing)
+--   duration = seconds the clip stays up (optional; DURATION below), so it can last as long as its recording
 -- Frames run left to right, top to bottom. One clip is picked at random per block, so add more entries
 -- as friends record them. Convert each recording outside the game into an .ogg plus a sheet (.tga/.blp).
+-- The sheet (tools/make_gag_sheet.ps1) is a neon line-art man wagging his finger, with "AH AH AH!" beside him; the
+-- sound is a recording (tools/gag).
+local WAG = { file = MEDIA .. "gag_wag_sheet", cols = 4, rows = 2, frames = 8, fps = 10 }
 Gag.clips = {
-    { sheet = { file = MEDIA .. "gag_wag_sheet", cols = 4, rows = 2, frames = 8, fps = 8 } },
+    { sheet = WAG, sound = MEDIA .. "gag_zennit.ogg", duration = 2.9 },
 }
+-- The party's gag, on Zennit's tab: the same finger, but without his recording.
+local PARTY_CLIP = { sheet = WAG }
 
 local DURATION = 2.5
 local SHOW_SIZE = 192
 local CAPTION = "Ah ah ah! You didn't say the magic word!"
+local PARTY_CAPTION = "Zennit's paperwork. Your curiosity has been filed." -- the gag for the party, on his tab
 
 function Gag.IsZennit()
     local s = ST.db and ST.db.settings
     if not s then return false end
+    if s.partyTest then return false end -- party test mode: behave as an ordinary party member, even on his account
     if s.zenitTest then return true end
     if ST.IsZennitAccount() then return true end -- his Battle.net account counts, whichever character he plays
     local me = (UnitName("player") or ""):lower()
@@ -28,6 +36,12 @@ function Gag.IsZennit()
         if n:lower() == me then return true end
     end
     return false
+end
+
+-- True while the admin is trying the party's side: the admin's usual way into Zennit's tab is closed.
+function Gag.IsPartyTest()
+    local s = ST.db and ST.db.settings
+    return s ~= nil and s.partyTest == true
 end
 
 local frame, ticker
@@ -49,9 +63,12 @@ local function playSound(clip)
     pcall(PlaySound, SOUNDKIT and SOUNDKIT.IG_QUEST_LOG_ABANDON_QUEST or 857, "Master")
 end
 
-function Gag.Play()
-    local clip = Gag.clips[math.random(#Gag.clips)]
+-- caption (optional): what the gag says under the picture; the default is Zennit's "ah ah ah".
+-- clip (optional): which clip to play; the default is one of Gag.clips, picked at random.
+function Gag.Play(caption, clip)
+    clip = clip or Gag.clips[math.random(#Gag.clips)]
     local sheet = clip.sheet
+    local duration = clip.duration or DURATION
     playSound(clip)
     if not frame then
         frame = CreateFrame("Frame", nil, UIParent)
@@ -62,8 +79,8 @@ function Gag.Play()
         frame.tex:SetAllPoints()
         frame.text = ST.Theme.Text(frame, 28, "pink", "OVERLAY")
         frame.text:SetPoint("TOP", frame, "BOTTOM", 0, -6)
-        frame.text:SetText(CAPTION)
     end
+    frame.text:SetText(caption or CAPTION)
     frame.tex:SetTexture(sheet.file)
     local n = 0
     setFrame(frame.tex, sheet, 0)
@@ -71,13 +88,18 @@ function Gag.Play()
     frame:Show()
     ticker = C_Timer.NewTicker(1 / sheet.fps, function()
         n = n + 1
-        if n / sheet.fps >= DURATION then
+        if n / sheet.fps >= duration then
             ticker:Cancel()
             frame:Hide()
             return
         end
         setFrame(frame.tex, sheet, n % sheet.frames)
     end)
+end
+
+-- The same gag for the other side: the party opened Zennit's tab.
+function Gag.PlayParty()
+    Gag.Play(PARTY_CAPTION, PARTY_CLIP)
 end
 
 -- Returns true (after playing the gag) when the player is Zennit and the content is hidden.
