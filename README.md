@@ -158,7 +158,7 @@ up new files). The art lives in `Media/intro_l<n>.blp` (lines) and `intro_<n>.bl
   sentence sits in the audio (silence detection between sentences) and where the phrase sits in the sentence.
   Nothing is sampled from any existing recording.
 
-Scenes 9 and 10 explain the weekly challenge: the group earns points by place, Zennit holds a secret list, and he may refuse, ask for fifty silver, or suggest dice. They were rendered here from the draft rules and may need rewording once the rules are final.
+Scenes 9 and 10 explain the weekly challenge: the group earns points by place, ten summons a week count, Zennit holds a secret list that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), or close the Index once five are filed. Their wording follows the race rules from October 2026.
 
 The narration is `Media/intro_1.ogg` to `intro_32.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
@@ -279,8 +279,8 @@ numbers behind it, is in `design/lenses.md`):
 
 Earlier weeks keep the rules they were played under (his head start of 10, every landed summon counting for the group,
 unlimited dice), so the season and the chapters already reached do not change. Tune the race in `Week.RULES`
-(head start, the minimum before he can close and the limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro still
-narrate the draft rules.
+(head start, the minimum before he can close and the limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro
+narrate these rules; if they change, re-voice those two scenes (`.claude/skills/zenit-narrator-audio`).
 
 ### The season
 
