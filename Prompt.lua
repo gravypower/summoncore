@@ -1,4 +1,5 @@
--- Prompt: caster confirmation dialog for ritual assistants.
+-- Prompt: caster confirmation dialog for ritual assistants. It saves itself after AUTO_SAVE seconds with the names
+-- ticked (the helpers that were detected), so nobody has to do the bookkeeping; changing a tick stops the countdown.
 local ADDON, ST = ...
 local Prompt = {}
 ST.Prompt = Prompt
@@ -6,7 +7,8 @@ local T = ST.Theme
 
 local MAX_ASSISTANTS = 2
 local ROW_H = 26
-local frame, open
+local AUTO_SAVE = 20 -- seconds
+local frame, open, ticker
 
 local function build()
     frame = T.Window("SummonCorePrompt", 320, 110, { strata = "DIALOG", escape = false })
@@ -23,6 +25,7 @@ local function build()
 
     local ok = T.Button(frame, "CONFIRM", 110, 24, function() Prompt.Finish(true) end, "primary")
     ok:SetPoint("BOTTOMLEFT", 16, 12)
+    frame.ok = ok
     local skip = T.Button(frame, "SAVE UNCONFIRMED", 150, 24, function() Prompt.Finish(false) end)
     skip:SetPoint("BOTTOMRIGHT", -16, 12)
     frame:SetScript("OnHide", function() if open then Prompt.Finish(false) end end)
@@ -36,9 +39,16 @@ local function checkedNames()
     return out
 end
 
+local function stopCountdown()
+    if ticker then ticker:Cancel() end
+    ticker = nil
+    if frame then frame.ok:SetText("CONFIRM") end
+end
+
 -- Ends the dialog and hands the chosen names to the callback.
 function Prompt.Finish(confirmed)
     if not open then return end
+    stopCountdown()
     local session = open
     open = nil
     local names = checkedNames()
@@ -63,6 +73,7 @@ function Prompt.Ask(target, candidates, preselected, onDone)
             cb = T.Check(frame, 280)
             cb:SetPoint("TOPLEFT", 20, -82 - (i - 1) * ROW_H)
             cb:SetScript("OnClick", function(self)
+                stopCountdown() -- the caster is taking over: no rush
                 if self:GetChecked() and #checkedNames() > MAX_ASSISTANTS then
                     self:SetChecked(false)
                     frame.hint:SetText("Only two can be credited. Untick one first.")
@@ -80,4 +91,19 @@ function Prompt.Ask(target, candidates, preselected, onDone)
     for i = #candidates + 1, #frame.checks do frame.checks[i]:Hide() end
     frame:SetHeight(148 + #candidates * ROW_H)
     frame:Show()
+    -- the countdown: saves as ticked unless the caster changes something
+    frame.hint:SetText("Saves itself as ticked, unless you change something.")
+    stopCountdown()
+    local left = AUTO_SAVE
+    frame.ok:SetText(string.format("CONFIRM (%d)", left))
+    local session = open
+    ticker = C_Timer.NewTicker(1, function()
+        if open ~= session then return stopCountdown() end
+        left = left - 1
+        if left > 0 then return frame.ok:SetText(string.format("CONFIRM (%d)", left)) end
+        local names = checkedNames()
+        ST.print(#names > 0 and ("Assistants saved as detected: " .. table.concat(names, " and ") .. ".") or
+            "Saved with no assistants (none were detected).")
+        Prompt.Finish(false) -- saved by the countdown, not confirmed by the caster
+    end)
 end

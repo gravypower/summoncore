@@ -57,6 +57,16 @@ end
 
 local function plural(n) return n == 1 and "" or "s" end
 
+-- When the helpers' bonus is what beat him (he would have won the roll without it), the line that names them:
+-- " Al and Cy's +10 tipped it." Otherwise "".
+local function tippedBy(ev, resp)
+    local bonus = ST.Week.HelperBonus(ev)
+    if bonus == 0 or resp.result ~= "lost" or Respond.Resolve(resp.zroll, resp.sroll, 0) ~= "won" then return "" end
+    local names = {}
+    for i = 1, math.min(#ev.assistants, ST.Week.RULES.helpersMax) do names[i] = ev.assistants[i] end
+    return string.format(" %s's +%d tipped it.", table.concat(names, " and "), bonus)
+end
+
 -- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
 local DID = { accepted = "accepted", refused = "refused", excused = "refused", owed = "demanded 50 silver for",
     paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
@@ -82,7 +92,7 @@ function Respond.Announce(ev, resp)
     if r == "owed" then return string.format("%s demands %d silver, in cash, with no receipt. The points land when he says it was paid.", who, SILVER) end
     if r == "paid" then return string.format("%s says the %d silver was paid. +%d point%s.%s", who, SILVER, pts, plural(pts), bonus) end
     if r == "won" then return string.format("%s won the dice (%d to %s): the summon does not count, and he gains %d point%s toward his week off.", who, resp.zroll, sroll, pts, plural(pts)) end
-    if r == "lost" then return string.format("%s lost the dice (%d to %s): the summon counts. +%d point%s.%s", who, resp.zroll, sroll, pts, plural(pts), bonus) end
+    if r == "lost" then return string.format("%s lost the dice (%d to %s): the summon counts. +%d point%s.%s%s", who, resp.zroll, sroll, pts, plural(pts), bonus, tippedBy(ev, resp)) end
 end
 
 -- Zennit's secret list for the week: destination words kept on his client only (never synced or exported).
@@ -371,7 +381,7 @@ local function render(s, stage, extra)
         end
         local dice = diceLeft(id, ev) -- the week line below says how many are left
         local week = ST.Week.StatusLine(ST.Week.Start(ev.time), ST.Gag.IsZennit())
-        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\n" .. (week and (week .. " ") or "") .. "How will you deal with it?")
+        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\n" .. (week and (week .. " ") or "") .. "How will you deal with it? (Ignore it and it counts as accepted.)")
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
             { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },

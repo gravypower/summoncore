@@ -992,6 +992,24 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
     end)
 end)
 
+add("helpers are named when their bonus wins the roll, and only then", function()
+    return newRules(function()
+        local W, R, a = ST.Week, ST.Respond, newClient("Alpha")
+        local out = {}
+        with(a, function()
+            local ev = { caster = "Alpha", target = "Zennit", assistants = { "Al", "Cy", "Ed" }, time = W.Start() + 60,
+                points = 5, kind = "dungeon" }
+            local function line(z, sr, result) return R.Announce(ev, { result = result, zroll = z, sroll = sr, time = W.Start() + 61 }) end
+            out.tipped = line(55, 58, "lost") -- 65 against 58+10: without the helpers he'd have won
+            out.anyway = line(20, 58, "lost") -- 30 against 68: the summoner won without them
+            out.won = line(70, 58, "won")
+        end)
+        local ok = out.tipped:find("Al and Cy's +10 tipped it.", 1, true) ~= nil and not out.anyway:find("tipped", 1, true)
+            and not out.won:find("tipped", 1, true)
+        return ok, out.tipped
+    end)
+end)
+
 function T.Run()
     realEventClosed = ST.Week.EventClosed
     ST.Week.EventClosed = function() return false end -- the other tests use old summons

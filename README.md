@@ -79,8 +79,9 @@ License, `Media/fonts/VT323-OFL.txt`); if the game cannot load it, the standard 
 ### Assistants
 
 Exactly two group members seen channeling the ritual are credited automatically, in a party or anywhere in a
-raid. With any other count, the prompt opens and you tick up to two names (detected helpers first; in a raid
-the list stops at 12). Solo or in a two-person party it saves without asking.
+raid. With any other count, the prompt opens with the detected helpers ticked (listed first; in a raid the list
+stops at 12). It saves itself as ticked after 20 seconds, so you only need to touch it to correct the names;
+changing a tick stops the countdown. Solo or in a two-person party it saves without asking.
 
 ### Scoring
 
@@ -271,7 +272,9 @@ numbers behind it, is in `design/lenses.md`):
 - **Where the week stands is shown when it changes**, not only in the hub:
   - as a ritual on Zennit begins, the caster is told whether it will count, who leads, his dice left and what helpers add;
   - after each summon of him and each of his answers, a chat line: "Week: the group leads by 1, 4 of 10 filed, 1 die left.";
-  - his answer popup says the same, worded for him ("you lead by 2");
+  - his answer popup says the same, worded for him ("you lead by 2"), and reminds him that ignoring a summon
+    counts as accepting it;
+  - when the helpers' bonus is what beat him on the dice, the line names them ("Al and Cy's +10 tipped it.");
   - the hub's season band shows the lead (`WEEK: GROUP +1 · FILED 4/10 · DICE 1`, or `CLOSED`).
 
 Earlier weeks keep the rules they were played under (his head start of 10, every landed summon counting for the group,

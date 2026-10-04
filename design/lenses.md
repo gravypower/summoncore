@@ -23,7 +23,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
-| The Player | One friend group, and one of them (Zennit) is the target | Answered; changes proposed |
+| The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
 
 ## Entries
@@ -295,6 +295,18 @@ Unlike the other lenses, this one is about real people, so the code can only sho
 | — | "They paid": watch at the playtest first; it depends on how Zennit plays | Not sure yet |
 | — | Dropped: helper badges or points | The group is not achievement-driven |
 
+**Built: A to C.**
+- A: "Zennit lost the dice (55 to 58+10): the summon counts. +5 points. Al and Cy's +10 tipped it." Only when the
+  bonus decided the roll; a roll the summoner would have won anyway names nobody.
+- B: Confirm counts down from 20 and saves with the ticked names (the detected helpers), marked unconfirmed because
+  nobody confirmed them; ticking or unticking anything stops the countdown.
+- C: the popup's question ends "(Ignore it and it counts as accepted.)"
+
+**To watch in playtests**
+- Do the helpers notice, and enjoy, being named? Does it start banter?
+- Does anyone still have to touch the prompt? If the detected names are usually wrong, the countdown saves wrong names.
+- Does Zennit answer, or ignore? If he ignores most summons, the dice and the list never come into play.
+
 **A lesson about this lens:** I expected the answer to be "reward helpers". Asking showed the group doesn't care
 about rewards; it cares about banter and not doing chores. Assumptions about players are exactly what this lens
 exists to test.
@@ -308,3 +320,4 @@ exists to test.
 | 2026-10-04 | New race from 5 Oct 2026: only summons of him count, 5 a week, 3 dice a week, +5 per helper, head start 2 | Fairness, Meaningful Choices | See the Fairness entry: effort pays, and his list keeps his week off within reach |
 | 2026-10-04 | 5 to 10 summons of him count a week; he can close the Index for free once 5 are filed | Griefing / Friendship | He gets a way out; closing can't lock in a lead before the fair minimum |
 | 2026-10-04 | Show where the week stands when it changes: briefing at the ritual, a chat line after summons and answers, in his popup, and the lead in the band | Visible Progress, Feedback | Progress was only in the hub, and the facts that decide how to summon him came too late |
+| 2026-10-04 | Helpers named when their bonus wins a roll; the assistants prompt saves itself; Zennit told he can ignore a summon; no helper badges | The Player | The group likes banter and doing things together, and hates bookkeeping; rewards don't motivate them |
