@@ -76,10 +76,9 @@ function Respond.Announce(ev, resp)
     local who, pts = ev.target, ev.points or 0
     local r = resp.result
     if not ST.Week.Counts(ev) then
-        local why = ST.Week.IsClosed(ST.Week.Start(ev.time)) and "He has closed the Index for the week" or
-            string.format("It is past the %d summons of him that count this week", ST.Week.RULES.cap)
-        return string.format("%s %s the summon from %s. %s, so the race ignores it: the Index files it under 'enthusiasm'.",
-            who, DID[r] or "answered", ev.caster, why)
+        local why, filing = ST.Week.Why(ST.Week.Start(ev.time))
+        return string.format("%s %s the summon from %s. %s, so the race ignores it: the Index files it under '%s'.",
+            who, DID[r] or "answered", ev.caster, why, filing)
     end
     local sroll = summonerRoll(ev, resp.sroll or 0)
     local bonus = ""
@@ -372,9 +371,8 @@ local function render(s, stage, extra)
         local free = Respond.OnList(ev)
         local cost
         if not ST.Week.Counts(ev) then
-            cost = string.format("%s, so the race ignores it: the Index files it under 'enthusiasm'. Answer however you like.",
-                ST.Week.IsClosed(ST.Week.Start(ev.time)) and "You have closed the Index for the week" or
-                    string.format("It is past the %d summons of you that count this week", ST.Week.RULES.cap))
+            local why, filing = ST.Week.Why(ST.Week.Start(ev.time), true)
+            cost = string.format("%s, so the race ignores it: the Index files it under '%s'. Answer however you like.", why, filing)
         else
             cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
                 string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))

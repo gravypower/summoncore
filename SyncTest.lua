@@ -995,6 +995,37 @@ add("closing the Index: allowed after five answered, it travels to everyone, and
     end)
 end)
 
+add("his week off is real: summons of him are filler, nobody wins it, and the week after is a normal one", function()
+    return newRules(function()
+        local a = newClient("Alpha")
+        local W = ST.Week
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local last = this - 7 * 86400
+            local function put(key, at, resp)
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone",
+                    response = resp }
+            end
+            put("won", last + 3600, { result = "won", zroll = 90, sroll = 10, time = last + 3700 }) -- he wins last week
+            out.last = W.Score(last)
+            for n = 1, 3 do put("off" .. n, this + 3600 * n, { result = "accepted", zroll = 0, sroll = 0, time = this + 3600 * n + 5 }) end
+            out.week = W.Score(this)
+            out.counts = W.Counts(a.db.events.off1)
+            out.said = ST.Respond.Announce(a.db.events.off1, a.db.events.off1.response):find("filler") ~= nil
+            out.season = W.Season()
+            out.next = W.IsOff(this + 7 * 86400) -- nobody won this week, so the next one is not off
+        end)
+        local l, w, season = out.last, out.week, out.season
+        local ok = l.winner == "zennit" and not l.off and w.off and w.winner == nil and w.counted == 0 and w.extra == 3
+            and w.group == 0 and not out.counts and out.said and season.zennit == 1 and season.group == 0
+            and #season.chapters == 1 and not out.next
+        return ok, string.format("last: %s; off week: %s, %d counted, %d filler, winner %s; season %d-%d; next week off: %s",
+            tostring(l.winner), tostring(w.off), w.counted, w.extra, tostring(w.winner), season.zennit, season.group,
+            tostring(out.next))
+    end)
+end)
+
 add("where the week stands: the lead, a tie, Zennit's wording, and the briefing as a ritual on him begins", function()
     return newRules(function()
         local W, a = ST.Week, newClient("Alpha")

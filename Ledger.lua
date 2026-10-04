@@ -32,7 +32,7 @@ end
 local function weekLine(s)
     local w = s.score
     if s.immune then
-        return "This week is Zennit's. He is on leave and cannot be summoned, and the Index has noted the attempts.",
+        return "This week is Zennit's. He is on leave and cannot be summoned, and the Index files the attempts as filler.",
             "ZENNIT IS ON LEAVE"
     elseif w.closed then
         return "Zennit has closed the Index for the week. Anything more is filed under enthusiasm.", "THE INDEX IS CLOSED"

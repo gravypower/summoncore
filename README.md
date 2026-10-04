@@ -272,6 +272,10 @@ numbers behind it, is in `design/lenses.md`):
 
 - **Only summons of Zennit count**, up to **10** of them each week. Any after that are logged as usual but "filed under
   'enthusiasm'": the race ignores them. Summons of each other still count for the tally and badges.
+- **His week off is real.** After a week Zennit wins, the next week is his: summons of him are still logged, answered and
+  gagged as usual (the warnings, his popup, the dice), but they are filed as **filler**: the race ignores them, nobody
+  wins the week, and no chapter is unlocked. So a win for Zennit is a pause for the group, not a head start; the week
+  after it is a normal one. His leave ends with a line at login.
 - **Zennit can close the Index** for the rest of the week once **5** have been filed and the latest of them answered:
   a "Close the Index" button after his answer, and in the hub's Zennit tab. It is free, and it travels with his answer,
   so every client agrees. Summons after that are filed under 'enthusiasm', and their casters are told.
@@ -287,7 +291,7 @@ numbers behind it, is in `design/lenses.md`):
   - when the helpers' bonus is what beat him on the dice, the line names them ("Al and Cy's +10 tipped it.");
   - the hub's season band shows the lead (`WEEK: GROUP +1 · FILED 4/10 · DICE 1`, or `CLOSED`).
 
-Earlier weeks keep the rules they were played under (his head start of 10, every landed summon counting for the group,
+Earlier weeks keep the rules they were played under (his head start of 10, a week off that was only a warning, every landed summon counting for the group,
 unlimited dice), so the season and the chapters already reached do not change. Tune the race in `Week.RULES`
 (head start, the minimum before he can close and the limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro
 narrate these rules; if they change, re-voice those two scenes (`.claude/skills/zenit-narrator-audio`).

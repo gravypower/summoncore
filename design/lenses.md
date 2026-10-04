@@ -24,7 +24,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
-| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; the change waits for a decision (below) |
+| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C built (his week off); A, a catch-up, is next |
 
 ## Entries
 
@@ -359,10 +359,24 @@ using the Fairness entry's chance of the group winning a week: 15% quiet, 28% no
 | E | **Season 2 is new**: new chapters, or the old ones return changed (the Ledger's idea, per chapter) | 5 | Writing, art, voice: the largest |
 | F | **Hold the announcement until the week is frozen**, or word it as provisional | 6 | Pacing: the payoff arrives two days later |
 
+**Our answer:** build **C**, and keep the gags going: the week off is filler, not a rule that silences the joke, so his
+popup, the dice, the warnings and the gag all carry on. A close finish is the goal, so **A** (catch-up) is next.
+
+**Built: C.** Under the new rules, after a week Zennit wins, summons of him are filed as **filler**: logged, answered and
+gagged as usual (the briefing and the warning say so), but the race ignores them, **nobody wins the week** and no chapter
+unlocks. The week after is a normal one. A first simulation of the cost: with no week off a season is about 6.7 weeks at
+normal effort (28% a week); with a rest after each of his wins it is **10.7**, and at 45% it goes from 7.5 to 11
+(simulated, 100,000 seasons each). That is long: C and the season's five wins need to be looked at together (see below).
+
+**Found while building:** the week off had no effect on the score at all (only `Week.Warn` and `Week.Briefing` mentioned it),
+so a win for Zennit left the group's next week unchanged. And a new week off must not become a free win for him: with
+no summons counted his head start of 2 would beat 0, so a week off has no winner at all.
+
 **To decide before building**
 - Is a close finish the goal, or is a lopsided season fine when the group simply tries harder (or less hard)?
 - Does a win for Zennit have to *cost* the group something, or is the story enough?
-- How long should a season last? About 7 to 10 weeks today: one chapter a week for a couple of months.
+- How long should a season last? With C, about 11 weeks (nearly three months) at normal effort. Options: fewer wins to a
+  finale (4), or letting the group win during his week off (no).
 
 **To watch in playtests**
 - How many weeks does a first season really take, and how many are quiet?
@@ -379,3 +393,4 @@ using the Fairness entry's chance of the group winning a week: 15% quiet, 28% no
 | 2026-10-04 | 5 to 10 summons of him count a week; he can close the Index for free once 5 are filed | Griefing / Friendship | He gets a way out; closing can't lock in a lead before the fair minimum |
 | 2026-10-04 | Show where the week stands when it changes: briefing at the ritual, a chat line after summons and answers, in his popup, and the lead in the band | Visible Progress, Feedback | Progress was only in the hub, and the facts that decide how to summon him came too late |
 | 2026-10-04 | Helpers named when their bonus wins a roll; the assistants prompt saves itself; Zennit told he can ignore a summon; no helper badges | The Player | The group likes banter and doing things together, and hates bookkeeping; rewards don't motivate them |
+| 2026-10-04 | His week off is real: summons of him are filler, the race skips the week, and the gags carry on | Interest Curve | His wins were a story beat with no effect; a pause makes them count without silencing the joke |
