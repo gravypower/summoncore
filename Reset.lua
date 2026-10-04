@@ -29,7 +29,7 @@ function Reset.Apply(stamp)
     end
     ST.db.resetAt = stamp
     ST.db.badges = {}
-    if ST.db.settings then ST.db.settings.weekSeen = nil end
+    if ST.db.settings then ST.db.settings.weekSeen, ST.db.settings.weekFrozen = nil, nil end
     if ST.Hub then ST.Hub.Refresh() end
     return removed
 end

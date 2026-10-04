@@ -104,7 +104,7 @@ function Respond.Pending()
     local me, out = ST.Store.me(), {}
     for _, r in ipairs(ST.Store.Recent(200)) do
         local res = r.ev.response and r.ev.response.result
-        if r.ev.target == me and (not res or res == "owed") then out[#out + 1] = r end
+        if r.ev.target == me and (not res or res == "owed") and not ST.Week.EventClosed(r.ev) then out[#out + 1] = r end
     end
     return out
 end
@@ -118,6 +118,7 @@ local refreshSurfaces
 function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
     if not ev or not ST.Store.RESULTS[result] then return nil end
+    if ST.Week.EventClosed(ev) then return nil end -- that week is over; answers no longer change it
     local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0, time = time(),
         listed = Respond.OnList(ev) or nil }
     ST.Store.SetResponse(id, resp)

@@ -7,6 +7,7 @@ ST.SyncTest = T
 
 local BASE = 1717000000
 local clock = 1000
+local realEventClosed -- set in T.Run (Week.lua loads after this file)
 
 local function newClient(name)
     return {
@@ -644,6 +645,29 @@ add("a friend who missed Zennit's answer gets it from the next HELLO", function(
     return got ~= nil and got.result == "owed", got and got.result or "still missing"
 end)
 
+add("a closed week is frozen: Zennit can no longer answer into it and a late summon cannot flip it", function()
+    local a = newClient("Alpha")
+    local W = ST.Week
+    local fake = W.EventClosed
+    W.EventClosed = realEventClosed -- the other tests use old summons, so Run turns closing off
+    local ok, res = pcall(with, a, function()
+        local id = Store.Add({ caster = "Alpha", target = "Zennit", assistants = {}, mapID = 1436, subzone = "Sentinel Hill",
+            time = BASE + 3600, confirmed = true }, true)
+        a.db.events[id].points, a.db.events[id].kind = 3, "zone"
+        local week = W.Start(BASE + 3600)
+        local answered = ST.Respond.Decide(id, "refused")
+        W.Freeze()
+        a.db.events["late-1"] = { caster = "Alpha", target = "Other", assistants = {}, points = 50, kind = "zone",
+            time = BASE + 7200 }
+        return { answered = answered, winner = W.Score(week).winner, closed = W.Closed(week),
+            frozen = a.db.settings.weekFrozen[week], pending = #ST.Respond.Pending() }
+    end)
+    W.EventClosed = fake
+    if not ok then return false, tostring(res) end
+    return res.answered == nil and res.closed and res.frozen == "zennit" and res.winner == "zennit" and res.pending == 0,
+        string.format("answered=%s winner=%s frozen=%s pending=%d", tostring(res.answered), tostring(res.winner), tostring(res.frozen), res.pending)
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge
@@ -716,6 +740,8 @@ add("pending summons: the unanswered and the ones owing silver, newest first", f
 end)
 
 function T.Run()
+    realEventClosed = ST.Week.EventClosed
+    ST.Week.EventClosed = function() return false end -- the other tests use old summons
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -728,5 +754,6 @@ function T.Run()
         ST.print(string.format("%s %s%s", r.ok and "|cff33ff66PASS|r" or "|cffff4444FAIL|r", r.name,
             r.detail ~= "" and ("  (" .. r.detail .. ")") or ""))
     end
+    ST.Week.EventClosed = realEventClosed
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end
