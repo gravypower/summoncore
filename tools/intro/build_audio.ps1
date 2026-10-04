@@ -212,7 +212,7 @@ $cueSpec = @(
     @(7, "very easy to summon", "VERY EASY TO SUMMON"),
     @(7, "no objection", "NO OBJECTION"),
     @(7, "never been asked", "NEVER ASKED"),
-    @(8, "the week after that", "THE WEEK AFTER THAT"),
+    @(8, "every week after that", "EVERY WEEK AFTER THAT"),
     @(8, "Or the last", "OR THE LAST"),
     @(8, "Index is unclear", "THE INDEX IS UNCLEAR"),
     @(9, "earns points", "THE GROUP EARNS POINTS"),

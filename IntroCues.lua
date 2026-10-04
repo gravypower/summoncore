@@ -2,7 +2,7 @@
 -- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.
 local ADDON, ST = ...
 ST.introEnding = 3.20
-ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50, 24.70, 27.00, 27.70, 26.50, 25.90, 29.80, 27.60, 29.40, 24.50, 22.70, 25.70, 28.80, 26.70, 21.40, 22.70, 22.00, 23.90, 25.30, 29.40, 19.10, 23.70, 28.80 }
+ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.40, 26.70, 25.50, 24.70, 27.00, 27.70, 26.50, 25.90, 29.80, 27.60, 29.40, 24.50, 22.70, 25.70, 28.80, 26.70, 21.40, 22.70, 22.00, 23.90, 25.30, 29.40, 19.10, 23.70, 28.80 }
 ST.introCues = {
     [1] = {
         { t = 0.55, text = "THE COSMIC INDEX OF SUMMONABLE PERSONS" },
@@ -42,9 +42,9 @@ ST.introCues = {
         { t = 11.87, text = "NEVER ASKED" },
     },
     [8] = {
-        { t = 2.38, text = "THE WEEK AFTER THAT" },
-        { t = 8.88, text = "OR THE LAST" },
-        { t = 11.71, text = "THE INDEX IS UNCLEAR" },
+        { t = 2.37, text = "EVERY WEEK AFTER THAT" },
+        { t = 8.99, text = "OR THE LAST" },
+        { t = 11.81, text = "THE INDEX IS UNCLEAR" },
     },
     [9] = {
         { t = 4.73, text = "THE GROUP EARNS POINTS" },
@@ -242,10 +242,10 @@ ST.introSentences = {
         { t = 10.94, text = [=[The Index has never been asked.]=] },
     },
     [8] = {
-        { t = 0.41, text = [=[This is the story of his week, and the week after that.]=] },
-        { t = 4.62, text = [=[If the form is ever found, you will be the first to know.]=] },
-        { t = 9.03, text = [=[Or the last.]=] },
-        { t = 11.44, text = [=[The Index is unclear.]=] },
+        { t = 0.41, text = [=[This is the story of his week, and every week after that.]=] },
+        { t = 4.72, text = [=[If the form is ever found, you will be the first to know.]=] },
+        { t = 9.14, text = [=[Or the last.]=] },
+        { t = 11.54, text = [=[The Index is unclear.]=] },
     },
     [9] = {
         { t = 0.40, text = [=[The rules, such as they are.]=] },
@@ -448,9 +448,9 @@ ST.introHighlights = {
         { t = 8.56, x = 556, y = 226, w = 200, h = 260 },
     },
     [8] = {
-        { t = 1.09, x = 344, y = 0, w = 376, h = 524 },
-        { t = 5.01, x = 640, y = 50, w = 150, h = 200 },
-        { t = 11.81, x = 24, y = 374, w = 132, h = 172 },
+        { t = 1.08, x = 344, y = 0, w = 376, h = 524 },
+        { t = 5.11, x = 640, y = 50, w = 150, h = 200 },
+        { t = 11.91, x = 24, y = 374, w = 132, h = 172 },
     },
     [9] = {
         { t = 4.83, x = 36, y = 56, w = 236, h = 278 },
