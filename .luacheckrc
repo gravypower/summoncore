@@ -21,5 +21,5 @@ read_globals = {
     "GetTime", "GetUnitName", "GetZoneText", "IsInGroup", "IsInGuild", "IsInInstance", "IsInRaid",
     "PlaySound", "PlaySoundFile", "RANDOM_ROLL_RESULT", "RandomRoll", "StopSound", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo",
     "UnitExists", "UnitFullName", "UnitGUID", "UnitHealth", "UnitInRange", "UnitIsConnected", "UnitName",
-    "BNGetInfo", "StaticPopup_Show", "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert",
+    "BNGetInfo", "CreateFont", "StaticPopup_Show", "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert",
 }

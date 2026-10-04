@@ -7,6 +7,7 @@
 local ADDON, ST = ...
 local Export = {}
 ST.Export = Export
+local T = ST.Theme
 
 local Codec = {}
 Export.Codec = Codec
@@ -250,7 +251,7 @@ end
 local window, preview
 
 local function setStatus(text, good)
-    window.status:SetText((good == true and "|cff33ff66" or good == false and "|cffff6644" or "") .. text)
+    window.status:SetText(good == true and T.Paint("green", text) or good == false and T.Paint("red", text) or text)
 end
 
 local function describe(p)
@@ -302,38 +303,37 @@ local function doImport()
     for _, name in ipairs(badges) do ST.print("|cffffd100Badge earned:|r " .. name) end
 end
 
-local function button(parent, text, width, x, onClick, y)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    b:SetSize(width, 24)
-    b:SetText(text)
+local function button(parent, text, width, x, onClick, y, style)
+    local b = T.Button(parent, text:upper(), width, 24, onClick, style)
     b:SetPoint("BOTTOMLEFT", x, y or 12)
-    b:SetScript("OnClick", onClick)
     return b
 end
 
 local function build()
-    window = CreateFrame("Frame", "SummonCoreExport", UIParent, "BasicFrameTemplateWithInset")
-    window:SetSize(640, 490)
-    window:SetPoint("CENTER")
-    window:SetFrameStrata("DIALOG")
-    window:SetMovable(true)
-    window:EnableMouse(true)
-    window:RegisterForDrag("LeftButton")
-    window:SetScript("OnDragStart", window.StartMoving)
-    window:SetScript("OnDragStop", window.StopMovingOrSizing)
-    window.TitleText:SetText("Summon Core: Import / Export")
-    tinsert(UISpecialFrames, "SummonCoreExport")
+    window = T.Window("SummonCoreExport", 640, 490, { strata = "DIALOG" })
+    window.TitleText:SetText("IMPORT / EXPORT")
 
-    local sf = CreateFrame("ScrollFrame", nil, window, "UIPanelScrollFrameTemplate")
-    sf:SetPoint("TOPLEFT", 14, -34)
-    sf:SetPoint("BOTTOMRIGHT", -34, 112)
+    local box = CreateFrame("Frame", nil, window)
+    box:SetPoint("TOPLEFT", 12, -34)
+    box:SetPoint("BOTTOMRIGHT", -12, 104)
+    T.Panel(box)
+    local sf = T.Scroll(box)
+    sf:SetPoint("TOPLEFT", 6, -6)
+    sf:SetPoint("BOTTOMRIGHT", -14, 6)
     local eb = CreateFrame("EditBox", nil, sf)
     eb:SetMultiLine(true)
     eb:SetAutoFocus(false)
     eb:SetMaxLetters(0)
-    eb:SetFontObject(ChatFontNormal)
-    eb:SetWidth(570)
+    eb:SetFontObject(T.Font(18, "cyan"))
+    eb:SetWidth(580)
     eb:SetScript("OnEscapePressed", eb.ClearFocus)
+    sf:SetScrollChild(eb) -- the edit box grows with its text; keep the cursor in view
+    eb:SetScript("OnCursorChanged", function(_, _, y, _, h)
+        local top, view = sf:GetVerticalScroll(), sf:GetHeight()
+        if -y < top then sf.ScrollTo(-y) elseif -y + h > top + view then sf.ScrollTo(-y + h - view) end
+    end)
+    sf:EnableMouse(true)
+    sf:SetScript("OnMouseDown", function() eb:SetFocus() end)
     eb:SetScript("OnTextChanged", function(_, userInput)
         if userInput then
             preview = nil
@@ -341,10 +341,9 @@ local function build()
             setStatus("Press Preview to check the pasted string.")
         end
     end)
-    sf:SetScrollChild(eb)
     window.edit = eb
 
-    window.status = window:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    window.status = T.Text(window, 18, "green")
     window.status:SetPoint("BOTTOMLEFT", 16, 76)
     window.status:SetPoint("RIGHT", -16, 0)
     window.status:SetJustifyH("LEFT")
@@ -352,7 +351,7 @@ local function build()
     button(window, "Export all", 90, 14, function() doExport("all") end)
     button(window, "Export mine", 100, 110, function() doExport("mine") end)
     button(window, "Preview", 80, 316, doPreview)
-    window.importBtn = button(window, "Import", 80, 402, doImport)
+    window.importBtn = button(window, "Import", 80, 402, doImport, nil, "primary")
     window.importBtn:Disable()
     button(window, "Clear", 70, 556, function()
         window.edit:SetText("")
@@ -384,8 +383,9 @@ local function build()
         ST.SyncTest.Run()
         setStatus("Self-test results are in the chat window.")
     end, 44)
-    local label = window:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    local label = T.Text(window, 16, "dim")
     label:SetPoint("BOTTOMLEFT", 370, 50)
+    label:SetPoint("RIGHT", -14, 0)
     label:SetText("Test tools (fake summons are never shared)")
 end
 

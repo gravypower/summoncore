@@ -51,10 +51,21 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Store.lua` | Store | The only code that touches `SummonTrackerDB`; tallies are derived from the event log |
 | `Sync.lua` | Sync | The only code that touches the network |
 | `Scoring.lua` | Scoring | Zone value table, points, badge rules |
+| `Theme.lua` | Theme | The "Neon Index" look: windows, buttons, tabs, text boxes and scroll areas, all drawn from flat colours |
 | `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the summary, log, answer, tally, badges, story, sync and tools), and the Zennit access-denied gag |
 | `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the sync self-test |
 
 Only the caster's client needs to see a summon; everyone else is credited from the caster's snapshot.
+
+### Look
+
+Every window the players use (the hub, the assistants prompt, Zennit's answer popup, the dice prompt, Import / Export,
+and the intro's buttons) is drawn in one style, the "Neon Index": green-on-black terminal panels, cyan for the summoners,
+pink for Zennit and amber for his answers. The hub shows the season race (each side's weekly wins out of five, and this
+week's score) above every tab, and a command prompt with the log and sync counts along the bottom. `Theme.lua` holds the
+colours and the pieces; there is no art to rebuild. The font is VT323 (`Media/fonts/VT323-Regular.ttf`, SIL Open Font
+License, `Media/fonts/VT323-OFL.txt`); if the game cannot load it, the standard font is used instead. The admin tools
+(Diagnostics, the large-image test) keep the standard Blizzard look.
 
 ### Assistants
 

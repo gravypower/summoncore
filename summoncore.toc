@@ -6,6 +6,7 @@
 ## SavedVariables: SummonTrackerDB
 
 Core.lua
+Theme.lua
 Scoring.lua
 ClipList.lua
 Clips.lua

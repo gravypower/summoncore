@@ -2,38 +2,26 @@
 local ADDON, ST = ...
 local Prompt = {}
 ST.Prompt = Prompt
+local T = ST.Theme
 
 local MAX_ASSISTANTS = 2
 local ROW_H = 26
 local frame, open
 
 local function build()
-    frame = CreateFrame("Frame", "SummonCorePrompt", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetWidth(320)
+    frame = T.Window("SummonCorePrompt", 320, 110, { strata = "DIALOG", escape = false })
+    frame:ClearAllPoints()
     frame:SetPoint("CENTER", 0, 120)
-    frame:SetFrameStrata("DIALOG")
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-    frame.TitleText:SetText("Summon logged")
-    frame.question = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    frame.question:SetPoint("TOPLEFT", 16, -34)
+    frame.TitleText:SetText("SUMMON LOGGED")
+    frame.question = T.Text(frame, 18, "green")
+    frame.question:SetPoint("TOPLEFT", 16, -36)
     frame.question:SetWidth(288)
-    frame.question:SetJustifyH("LEFT")
     frame.checks = {}
 
-    local ok = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    ok:SetSize(110, 24)
-    ok:SetText("Confirm")
+    local ok = T.Button(frame, "CONFIRM", 110, 24, function() Prompt.Finish(true) end, "primary")
     ok:SetPoint("BOTTOMLEFT", 16, 12)
-    ok:SetScript("OnClick", function() Prompt.Finish(true) end)
-    local skip = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-    skip:SetSize(110, 24)
-    skip:SetText("Save unconfirmed")
+    local skip = T.Button(frame, "SAVE UNCONFIRMED", 150, 24, function() Prompt.Finish(false) end)
     skip:SetPoint("BOTTOMRIGHT", -16, 12)
-    skip:SetScript("OnClick", function() Prompt.Finish(false) end)
     frame:SetScript("OnHide", function() if open then Prompt.Finish(false) end end)
 end
 
@@ -67,8 +55,8 @@ function Prompt.Ask(target, candidates, preselected, onDone)
     for i, name in ipairs(candidates) do
         local cb = frame.checks[i]
         if not cb then
-            cb = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-            cb:SetPoint("TOPLEFT", 20, -62 - (i - 1) * ROW_H)
+            cb = T.Check(frame, 280)
+            cb:SetPoint("TOPLEFT", 20, -66 - (i - 1) * ROW_H)
             cb:SetScript("OnClick", function(self)
                 if self:GetChecked() and #checkedNames() > MAX_ASSISTANTS then self:SetChecked(false) end
             end)
@@ -80,6 +68,6 @@ function Prompt.Ask(target, candidates, preselected, onDone)
         cb:Show()
     end
     for i = #candidates + 1, #frame.checks do frame.checks[i]:Hide() end
-    frame:SetHeight(110 + #candidates * ROW_H)
+    frame:SetHeight(116 + #candidates * ROW_H)
     frame:Show()
 end

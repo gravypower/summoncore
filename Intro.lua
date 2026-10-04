@@ -355,11 +355,8 @@ end
 -- Button helper: lays buttons out left to right along the bottom.
 local nextX = 12
 local function button(parent, text, width, onClick)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    b:SetSize(width, 24)
-    b:SetText(text)
+    local b = ST.Theme.Button(parent, text, width, 24, onClick)
     b:SetPoint("BOTTOMLEFT", nextX, 10)
-    b:SetScript("OnClick", onClick)
     nextX = nextX + width + 6
     return b
 end
@@ -424,7 +421,8 @@ local function build()
 
     local bg = frame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.07, 0.06, 0.1, 0.96)
+    bg:SetColorTexture(0.016, 0.024, 0.04, 0.96)
+    ST.Theme.Border(frame, "green", 1, 2)
 
     picture = frame:CreateTexture(nil, "ARTWORK")
     picture:SetSize(w, h)
@@ -576,7 +574,7 @@ function Intro.Check()
         try(SFX .. name .. ".ogg")
     end
     if bad == 0 then
-        ST.print("all intro sound files play. If the pictures are blank, try Terminal art: on/off, or tell me.")
+        ST.print("all intro sound files play. If the pictures are blank, try Look: lines or storybook, or tell me.")
     else
         ST.print(bad .. " file(s) failed. If files were added or replaced while WoW was running, quit WoW completely and start it again: /reload does not pick up new media files.")
     end

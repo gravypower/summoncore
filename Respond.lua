@@ -12,6 +12,7 @@
 local ADDON, ST = ...
 local Respond = {}
 ST.Respond = Respond
+local T = ST.Theme
 
 local SILVER = 50
 local WAIT = 90         -- seconds to wait for the summoner to roll back
@@ -204,37 +205,23 @@ end)
 -- The summoner's side: Zennit suggested dice
 ----------------------------------------------------------------------
 local function buildDiceDialog()
-    diceDlg = CreateFrame("Frame", "SummonCoreDice", UIParent, "BasicFrameTemplateWithInset")
-    diceDlg:Hide()
-    diceDlg:SetSize(400, 200)
+    diceDlg = T.Window("SummonCoreDice", 400, 200, { strata = "DIALOG", escape = false })
+    diceDlg:ClearAllPoints()
     diceDlg:SetPoint("TOP", 0, -180)
-    diceDlg:SetFrameStrata("DIALOG")
-    diceDlg:SetMovable(true)
-    diceDlg:EnableMouse(true)
-    diceDlg:RegisterForDrag("LeftButton")
-    diceDlg:SetScript("OnDragStart", diceDlg.StartMoving)
-    diceDlg:SetScript("OnDragStop", diceDlg.StopMovingOrSizing)
-    diceDlg.TitleText:SetText("Dice!")
-    diceDlg.text = diceDlg:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    diceDlg.TitleText:SetText("DICE!")
+    diceDlg.text = T.Text(diceDlg, 18, "green")
     diceDlg.text:SetPoint("TOPLEFT", 18, -40)
     diceDlg.text:SetSize(364, 90)
-    diceDlg.text:SetJustifyH("LEFT")
     diceDlg.text:SetJustifyV("TOP")
-    diceDlg.rollBtn = CreateFrame("Button", nil, diceDlg, "UIPanelButtonTemplate")
-    diceDlg.rollBtn:SetSize(170, 28)
-    diceDlg.rollBtn:SetPoint("BOTTOMLEFT", 18, 16)
-    diceDlg.rollBtn:SetText("Roll 1-100")
-    diceDlg.rollBtn:SetScript("OnClick", function()
+    diceDlg.rollBtn = T.Button(diceDlg, "ROLL 1-100", 170, 28, function()
         if diceCurrent then
             Respond.RequestRoll("summoner", diceCurrent.id)
             diceDlg.text:SetText("Rolling...")
         end
-    end)
-    local close = CreateFrame("Button", nil, diceDlg, "UIPanelButtonTemplate")
-    close:SetSize(170, 28)
+    end, "primary")
+    diceDlg.rollBtn:SetPoint("BOTTOMLEFT", 18, 16)
+    local close = T.Button(diceDlg, "CLOSE", 170, 28, function() diceDlg:Hide() end)
     close:SetPoint("BOTTOMRIGHT", -18, 16)
-    close:SetText("Close")
-    close:SetScript("OnClick", function() diceDlg:Hide() end)
 end
 
 -- Sync calls this when Zennit has rolled and suggests dice for our summon of him.
@@ -268,15 +255,15 @@ ST.Sync.onDiceReply = Respond.OnDiceReply
 local function summonText(ev)
     local where = (ev.subzone and ev.subzone ~= "") and ev.subzone or "somewhere"
     local helpers = #ev.assistants > 0 and table.concat(ev.assistants, ", ") or "nobody"
-    return string.format("%s has summoned you to %s.\n(%s, %d point%s. Helped by %s.)", ev.caster, where,
-        ev.kind or "?", ev.points or 0, plural(ev.points or 0), helpers)
+    return string.format("%s has summoned you to %s.\n(%s, %s. Helped by %s.)", T.Paint("cyan", ev.caster), where,
+        ev.kind or "?", T.Paint("amber", (ev.points or 0) .. " point" .. plural(ev.points or 0)), helpers)
 end
 
 local function setButtons(s, list)
     for i, b in ipairs(s.buttons) do
         local item = list[i]
         if item then
-            b:SetText(item[1])
+            b:SetText(item[1]:upper())
             b:SetScript("OnClick", item[2])
             b:Show()
         else
@@ -334,18 +321,21 @@ function refreshSurfaces(id, stage, extra)
     end
 end
 
--- A place to draw the choices: some text and four buttons inside `parent`. closeFn runs for the Close button.
-function Respond.NewSurface(parent, x, y, width, closeFn)
+-- A place to draw the choices: some text and four buttons inside `parent`, in `columns` columns (default 1).
+-- closeFn runs for the Close button.
+function Respond.NewSurface(parent, x, y, width, closeFn, columns)
+    columns = columns or 1
     local s = { buttons = {}, close = closeFn or function() end }
-    s.text = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    s.text = T.Text(parent, 18, "green")
     s.text:SetPoint("TOPLEFT", x, y)
     s.text:SetSize(width, 110)
-    s.text:SetJustifyH("LEFT")
     s.text:SetJustifyV("TOP")
+    s.text:SetSpacing(2)
+    local bw = (width - (columns - 1) * 8) / columns
     for i = 1, 4 do
-        local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-        b:SetSize(width, 28)
-        b:SetPoint("TOPLEFT", x, y - 116 - (i - 1) * 34)
+        local col, row = (i - 1) % columns, math.floor((i - 1) / columns)
+        local b = T.Button(parent, "", bw, 28, nil, i == 1 and "primary" or nil)
+        b:SetPoint("TOPLEFT", x + col * (bw + 8), y - 116 - row * 34)
         s.buttons[i] = b
     end
     surfaces[#surfaces + 1] = s
@@ -371,17 +361,10 @@ function Respond.Stage(s) return s.stage end
 -- The popup, and opening it
 ----------------------------------------------------------------------
 local function buildDialog()
-    dlg = CreateFrame("Frame", "SummonCoreRespond", UIParent, "BasicFrameTemplateWithInset")
-    dlg:Hide()
-    dlg:SetSize(440, 300)
+    dlg = T.Window("SummonCoreRespond", 440, 300, { strata = "DIALOG", escape = false })
+    dlg:ClearAllPoints()
     dlg:SetPoint("TOP", 0, -140)
-    dlg:SetFrameStrata("DIALOG")
-    dlg:SetMovable(true)
-    dlg:EnableMouse(true)
-    dlg:RegisterForDrag("LeftButton")
-    dlg:SetScript("OnDragStart", dlg.StartMoving)
-    dlg:SetScript("OnDragStop", dlg.StopMovingOrSizing)
-    dlg.TitleText:SetText("A summoning!")
+    dlg.TitleText:SetText("A SUMMONING!")
     dlgSurface = Respond.NewSurface(dlg, 18, -40, 404, function() dlg:Hide() end)
 end
 

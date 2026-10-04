@@ -60,7 +60,7 @@ function Gag.Play()
         frame:SetFrameStrata("FULLSCREEN_DIALOG")
         frame.tex = frame:CreateTexture(nil, "ARTWORK")
         frame.tex:SetAllPoints()
-        frame.text = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        frame.text = ST.Theme.Text(frame, 28, "pink", "OVERLAY")
         frame.text:SetPoint("TOP", frame, "BOTTOM", 0, -6)
         frame.text:SetText(CAPTION)
     end

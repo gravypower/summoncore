@@ -26,6 +26,7 @@ local function isZennit(name)
     end
     return false
 end
+Week.IsZennit = isZennit
 
 -- The score for the week starting at `start`: { start, group, zennit, summons, winner, over }.
 -- winner is "zennit", "group", or nil when there were no summons that week.
