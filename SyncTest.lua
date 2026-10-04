@@ -1026,6 +1026,41 @@ add("his week off is real: summons of him are filler, nobody wins it, and the we
     end)
 end)
 
+add("the Index remembers: tipped rolls, the heaviest hand, a run of dice and the silver, by name, over one season", function()
+    local L = ST.Ledger
+    local ctx = { isZennit = function(n) return n == "Zennit" end, name = function(n) return n end,
+        bonus = function(ev) return math.min(#(ev.assistants or {}), 2) * 5 end, edge = function() return 10 end,
+        resolve = ST.Respond.Resolve, silver = 50, helpersMax = 2 }
+    local function ev(t, caster, helpers, result, zroll, sroll)
+        return { caster = caster, target = "Zennit", assistants = helpers or {}, time = t,
+            response = result and { result = result, zroll = zroll or 0, sroll = sroll or 0, time = t + 1 } }
+    end
+    local events = {
+        a = ev(10, "Bo", { "Al", "Cy" }, "lost", 45, 52),   -- 45+10 beats 52 alone, but 52+10 beats 55: the helpers tipped it
+        b = ev(20, "Bo", {}, "paid"), c = ev(30, "Bo", {}, "owed"), d = ev(40, "Bo", { "Al" }, "won", 90, 10),
+        e = ev(50, "Di", {}, "won", 90, 10), f = ev(60, "Di", {}, "won", 90, 10),
+        g = { caster = "Bo", target = "Someone", assistants = {}, time = 70 },   -- not a summon of him
+        h = ev(500, "Bo", {}, "paid"),                                          -- outside the window
+    }
+    local d = L.Collect(events, 0, 100, ctx)
+    local tip = d.tipped
+    if not (d.summons == 6 and d.silverPaid == 50 and d.silverOwed == 50 and d.streak == 3 and d.heaviest
+        and d.heaviest.name == "Bo" and d.heaviest.n == 4 and tip and tip.caster == "Bo" and #tip.helpers == 2) then
+        return false, string.format("facts wrong: %d summons, silver %d/%d, streak %d", d.summons, d.silverPaid, d.silverOwed, d.streak)
+    end
+    local moments = L.Moments(d)
+    if #moments ~= 2 or not moments[1].text:find("Al and Cy's %+10 tipped") or not moments[2].text:find("Bo has summoned Zennit 4") then
+        return false, "the moments do not name the players"
+    end
+    local keep = table.concat(L.Keepsake(1, { start = 7 * 86400, side = "group", from = 0 }, d), " ")
+    if not (keep:find("Season 1, 2 weeks") and keep:find("In the room: Al, Bo, Cy and Di") and keep:find("paid Zennit 50 silver")
+        and keep:find("freed")) then
+        return false, "the keepsake is missing something"
+    end
+    local tie = L.Collect({ x = ev(1, "Al"), y = ev(2, "Bo") }, 0, 100, ctx)
+    return tie.heaviest == nil, "tipped roll, heaviest hand, dice run, silver and who was there, and a tie names nobody"
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

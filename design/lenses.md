@@ -26,7 +26,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
 | Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
-| Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; the change waits for a decision (below) |
+| Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
 
 ## Entries
 
@@ -507,9 +507,29 @@ target is **banter and doing things together, with no bookkeeping**, and Zennit 
 | D | **A season keepsake**: when a finale lands, record it with who was there (a list of past seasons in the Tools tab, and a line in chat) | 3, 5 | Small; stored in the log or settings |
 | E | **New chapters for season 2** | 5 | The largest: writing, art, voice |
 
+**Our answer:** build **A, C and D**, and **name the players** by character name.
+
+**Built** (`Ledger.lua`; every line is worked out from the log, so all clients tell the same story)
+- **A, the Index remembers.** "The Index today" now tells up to two moments of the season: the roll a pair of helpers tipped
+  ("Al and Cy's +10 tipped one of Bo's rolls: 52+10 against his 45+10. The Index has framed it."), who has summoned him most
+  (three or more, and no tie), and a run of three or more dice he won. A tipped roll is the same test the chat line uses:
+  he would have won without the bonus.
+- **C, the silver reaches the story.** The silver Zennit marks as paid is counted for the season ("The group has paid Zennit
+  100 silver, in cash, with no receipt. The Ritual has asked to be kept informed."), with what is still owed. It shows in the
+  scene, in the keepsake, and on the tooltips of the group's last two chapters, where the Ritual names its price (g4) and
+  receives it (g5). The recorded narration is unchanged: the number is not spoken.
+- **D, the keepsake.** When a finale lands, the chat gets the Index's record of that season, and `/sc seasons` (or the Tools
+  tab's **Past seasons**) lists them all: how it ended, how many weeks it took, who was in the room, the silver, the moments.
+  Nothing is stored: each season is recomputed from the log, so a client that syncs later still gets it.
+
+The scene grew, so it is capped at two lines of memory (the silver counts as one). `Week.Season` now gives each finale a
+`from` (the first week of that season) and the season in progress a `since`.
+
+**Not built.** B (the Index's voice in the five lines of a normal summon) and E (new chapters for season 2) wait for the
+playtest: B adds reading to chat the group may not want, and E is the largest piece of work.
+
 **To decide before building**
-- Which feeling matters most at the end of a season: the group's pride, affection for Zennit, or the joke?
-- Should the story name real players, or only describe what they did?
+- Which feeling matters most at the end of a season: the group's pride, affection for Zennit, or the joke? (Asked at the playtest.)
 
 **To watch in playtests**
 - Which lines does the group quote back to each other: the chapters, the chat, or the gags?
@@ -530,3 +550,4 @@ target is **banter and doing things together, with no bookkeeping**, and Zennit 
 | 2026-10-04 | Catch-up: Zennit's dice edge moves 5 (a lead of 2 wins) or 10 (3 or more) toward the side that is behind | Interest Curve | Blowouts were 49% of seasons at normal effort; the Index now leans on the scale, gently |
 | 2026-10-04 | Keep five weekly wins to a finale (a season of about 11 weeks at normal effort) until a real season shows how long it takes | Interest Curve | Simulated length is long, but the group's real pace is unknown; shortening later is one constant (`Week.WINS`) |
 | 2026-10-04 | No rule change for Skill and Chance; say so when his last die is spent | Skill and Chance | A week is mostly chance and a season mostly skill, and the group's best order depends on how he rolls; the moment their ordering pays off was invisible |
+| 2026-10-04 | The Index remembers named moments, the silver he is paid, and a keepsake of each finished season; players named by character | Story and Emotion | The personal material was in the log and scrolled away; naming players is what a friend group repeats |

@@ -326,6 +326,15 @@ function commands.week(rest)
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
 
+-- The Index's keepsake of each finished season, newest first.
+function commands.seasons()
+    local seasons = ST.Ledger.Seasons()
+    if #seasons == 0 then return print_("No season has finished yet. The Index is keeping the file open.") end
+    for _, s in ipairs(seasons) do
+        for _, line in ipairs(s.lines) do print_(line) end
+    end
+end
+
 function commands.respond(rest)
     if rest == "test" then
         if not ST.IsAdmin() then return print_("that is an admin tool") end
@@ -380,6 +389,7 @@ local HELP = {
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
     "/sc respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/sc gag - preview the Zennit gag",
     "/sc comic [256|512|1024|2048] - large-image test pattern viewer",

@@ -466,6 +466,7 @@ local function buildStory(f)
         local reached = {}
         for _, c in ipairs(season.chapters) do reached[c.key] = true end
         local admin = ST.IsAdmin()
+        local silver = ST.Ledger.SilverLine(ST.Ledger.Facts(season))
 
         setNode(root, { border = "green", tag = "THE INTRO", state = "", stateColor = "dim", title = "Zennit and the Index",
             titleColor = "green" })
@@ -500,6 +501,9 @@ local function buildStory(f)
                     look.border, look.state, look.stateColor = "line", admin and "ADMIN" or "LOCKED", admin and "amber" or "line"
                     look.titleColor = admin and "dim" or "line"
                     node.tip = { show and full or "???", "Not reached yet." .. (admin and " (Admin: click to play.)" or "") }
+                end
+                if silver and side == "group" and tier >= ST.Week.WINS - 1 and node.tip then
+                    node.tip[#node.tip + 1] = silver -- the Ritual's price, as the season stands
                 end
                 node.playable = written and show or false
                 setNode(node, look)
@@ -584,6 +588,14 @@ local function buildTools(f)
                 season.group, W.WINS, #season.finales),
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
         }, "\n"))
+    end)
+    tool(try, "PAST SEASONS", function()
+        local lines = {}
+        for _, s in ipairs(ST.Ledger.Seasons()) do
+            for _, line in ipairs(s.lines) do lines[#lines + 1] = line end
+            lines[#lines + 1] = ""
+        end
+        show(#lines > 0 and table.concat(lines, "\n") or "No season has finished yet. The Index is keeping the file open.")
     end)
     tool(try, "BATTLE.NET CHECK", function() show(ST.TagReport()) end)
     tool(try, "LIST VOICE CLIPS", function()
