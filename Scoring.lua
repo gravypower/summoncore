@@ -17,10 +17,33 @@ Scoring.mapKinds = {
     [1458] = "city", -- Undercity
 }
 
+-- Far-flung places: a long way from anywhere a friend would be, so a summon there is worth the most.
+-- Classic uiMapIDs written from memory: confirm each with /st where before trusting it.
+local remote = {
+    [1451] = "Silithus", [1452] = "Winterspring", [1447] = "Azshara", [1448] = "Felwood",
+    [1449] = "Un'Goro Crater", [1423] = "Eastern Plaguelands", [1428] = "Burning Steppes",
+    [1419] = "Blasted Lands", [1430] = "Deadwind Pass", [1450] = "Moonglade",
+}
+for id in pairs(remote) do Scoring.mapKinds[id] = "remote" end
+Scoring.remoteNames = remote -- for reference and the self-test
+
 -- A dungeon entrance sits in an ordinary outdoor map, so it is matched by subzone text
 -- (lowercase). Stand at the spot and run /st where to learn the exact string, then add it.
 Scoring.subzoneKinds = {
     ["the deadmines"] = "dungeon",
+    -- Outdoor dungeon entrances, from memory (unverified): confirm each with /st where and fix the text here.
+    ["wailing caverns"] = "dungeon",
+    ["shadowfang keep"] = "dungeon",
+    ["blackfathom deeps"] = "dungeon",
+    ["gnomeregan"] = "dungeon",
+    ["razorfen kraul"] = "dungeon",
+    ["razorfen downs"] = "dungeon",
+    ["scarlet monastery"] = "dungeon",
+    ["uldaman"] = "dungeon",
+    ["zul'farrak"] = "dungeon",
+    ["maraudon"] = "dungeon",
+    ["the temple of atal'hakkar"] = "dungeon",
+    ["blackrock mountain"] = "dungeon",
 }
 
 function Scoring.Kind(mapID, subzone)

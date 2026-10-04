@@ -2,6 +2,7 @@
 -- Zennit's points toward a week off (see Store.Goal). He starts every week with a head start, and a tie goes to
 -- him, so he wins more weeks than he loses. When he wins, the seven days that follow are his: no summons.
 -- Everything is derived from the event log, so every client reaches the same result.
+-- A week closes two days after it ends: its winner is then frozen and Zennit can no longer answer into it.
 local ADDON, ST = ...
 local Week = {}
 ST.Week = Week
@@ -17,16 +18,35 @@ function Week.Start(t)
     return t - ((t - MONDAY) % LENGTH)
 end
 
+-- Zennit's characters: the listed names, plus the alts his own client has announced over sync (settings.zenitAlts).
 local function isZennit(name)
     local base = ST.baseName(name)
     if not base then return false end
-    local names = ST.db.settings and ST.db.settings.zenitNames or { "Zennit" }
-    for _, n in ipairs(names) do
-        if ST.baseName(n) and ST.baseName(n):lower() == base:lower() then return true end
+    local s = ST.db.settings
+    for _, list in ipairs({ s and s.zenitNames or { "Zennit" }, s and s.zenitAlts or {} }) do
+        for _, n in ipairs(list) do
+            if ST.baseName(n) and ST.baseName(n):lower() == base:lower() then return true end
+        end
     end
     return false
 end
 Week.IsZennit = isZennit
+
+-- A week closes GRACE after it ends, leaving time for late answers and late syncs. Once closed, its winner is
+-- frozen on this client (Week.Check), so a stray old answer or late-synced summon cannot flip a decided week.
+Week.GRACE = 2 * DAY
+
+function Week.Closed(start, now)
+    return (now or time()) >= start + LENGTH + Week.GRACE
+end
+
+function Week.EventClosed(ev)
+    return Week.Closed(Week.Start(ev.time))
+end
+
+local function frozen()
+    return ST.db and ST.db.settings and ST.db.settings.weekFrozen
+end
 
 -- The score for the week starting at `start`: { start, group, zennit, summons, winner, over }.
 -- winner is "zennit", "group", or nil when there were no summons that week.
@@ -40,7 +60,28 @@ function Week.Score(start)
         end
     end
     if r.summons > 0 then r.winner = r.zennit >= r.group and "zennit" or "group" end
+    local f = frozen() and frozen()[start]
+    if f then r.winner = f ~= "none" and f or nil end
     return r
+end
+
+-- Freezes the winner of every closed week not yet frozen, from the first summon on.
+function Week.Freeze()
+    local settings = ST.db and ST.db.settings
+    if not settings then return end
+    local first
+    for _, ev in pairs(ST.db.events) do
+        if not ev.fake and (not first or ev.time < first) then first = ev.time end
+    end
+    if not first then return end
+    settings.weekFrozen = settings.weekFrozen or {}
+    local start = Week.Start(first)
+    while Week.Closed(start) do
+        if not settings.weekFrozen[start] then
+            settings.weekFrozen[start] = Week.Score(start).winner or "none"
+        end
+        start = start + LENGTH
+    end
 end
 
 -- Is Zennit on his week off right now? True when he won last week. Returns the end time as the second value.
@@ -97,9 +138,11 @@ end
 -- Says once when a finished week has been won, and points to that win's chapter of the story.
 function Week.Check()
     if not ST.db or not ST.db.settings then return end
+    Week.Freeze()
     local last = Week.Score(Week.Start() - LENGTH)
     if not last.winner or ST.db.settings.weekSeen == last.start then return end
     ST.db.settings.weekSeen = last.start
+    ST.Clips.Play("narrator_weekopen")
     local season = Week.Season()
     local chapter = season.chapters[#season.chapters]
     local key = chapter and chapter.start == last.start and chapter.key
@@ -128,4 +171,4 @@ end
 
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
-boot:SetScript("OnEvent", function() C_Timer.After(6, Week.Check) end)
+boot:SetScript("OnEvent", function() C_Timer.After(60, Week.Check) end) -- 60s: let the login sync bring in late summons first

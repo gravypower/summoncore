@@ -7,6 +7,7 @@ ST.SyncTest = T
 
 local BASE = 1717000000
 local clock = 1000
+local realEventClosed -- set in T.Run (Week.lua loads after this file)
 
 local function newClient(name)
     return {
@@ -19,7 +20,7 @@ end
 local function with(c, fn)
     local saved = {
         db = ST.db, state = Sync.state, name = Sync.nameOverride, transport = Sync.transport,
-        channels = Sync.channels, quiet = Sync.quiet, now = Sync.now, onAdd = Store.onAdd,
+        channels = Sync.channels, quiet = Sync.quiet, now = Sync.now, onAdd = Store.onAdd, onRemove = Store.onRemove,
     }
     ST.db, Sync.state, Sync.nameOverride, Sync.quiet = c.db, c.state, c.name, true
     Sync.transport = function(channel, target, payload)
@@ -28,9 +29,11 @@ local function with(c, fn)
     Sync.channels = function() return { "PARTY" } end
     Sync.now = function() return clock end
     Store.onAdd = function(id, ev) Sync.BroadcastEvent(id, ev) end
+    Store.onRemove = function(id) Sync.SendTombstone(id) end
     local ok, a, b = pcall(fn)
     ST.db, Sync.state, Sync.nameOverride, Sync.transport = saved.db, saved.state, saved.name, saved.transport
     Sync.channels, Sync.quiet, Sync.now, Store.onAdd = saved.channels, saved.quiet, saved.now, saved.onAdd
+    Store.onRemove = saved.onRemove
     if not ok then error(a, 0) end
     return a, b
 end
@@ -631,6 +634,156 @@ add("only Zennit can answer for himself, and a newer answer wins", function()
         and not landsAfterRefusal, string.format("%s, %s, %s", forged, old, newer)
 end)
 
+add("a friend who missed Zennit's answer gets it from the next HELLO", function()
+    local a, b, z = newClient("Alpha"), newClient("Beta"), newClient("Zennit")
+    local id = cast(a, 910, false, { target = "Zennit" })
+    settle({ a, b, z })
+    with(z, function() ST.Respond.Decide(id, "owed") end)
+    settle({ a, z }) -- Beta is offline for the broadcast
+    if b.db.events[id].response then return false, "Beta should have missed the answer" end
+    with(a, function() Sync.Hello() end)
+    settle({ a, b, z })
+    local got = b.db.events[id].response
+    return got ~= nil and got.result == "owed", got and got.result or "still missing"
+end)
+
+add("a closed week is frozen: Zennit can no longer answer into it and a late summon cannot flip it", function()
+    local a = newClient("Alpha")
+    local W = ST.Week
+    local fake = W.EventClosed
+    W.EventClosed = realEventClosed -- the other tests use old summons, so Run turns closing off
+    local ok, res = pcall(with, a, function()
+        local id = Store.Add({ caster = "Alpha", target = "Zennit", assistants = {}, mapID = 1436, subzone = "Sentinel Hill",
+            time = BASE + 3600, confirmed = true }, true)
+        a.db.events[id].points, a.db.events[id].kind = 3, "zone"
+        local week = W.Start(BASE + 3600)
+        local answered = ST.Respond.Decide(id, "refused")
+        W.Freeze()
+        a.db.events["late-1"] = { caster = "Alpha", target = "Other", assistants = {}, points = 50, kind = "zone",
+            time = BASE + 7200 }
+        return { answered = answered, winner = W.Score(week).winner, closed = W.Closed(week),
+            frozen = a.db.settings.weekFrozen[week], pending = #ST.Respond.Pending() }
+    end)
+    W.EventClosed = fake
+    if not ok then return false, tostring(res) end
+    return res.answered == nil and res.closed and res.frozen == "zennit" and res.winner == "zennit" and res.pending == 0,
+        string.format("answered=%s winner=%s frozen=%s pending=%d", tostring(res.answered), tostring(res.winner), tostring(res.frozen), res.pending)
+end)
+
+add("undo only removes your own summon, and the deletion sticks across sync, even for a friend who was offline", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
+    local mine = cast(a, 920, false)
+    local theirs = cast(b, 921, false)
+    settle({ a, b })
+    local removed = with(a, function() return Store.RemoveLast() end)
+    if not removed or removed.id ~= mine then return false, "undo removed " .. tostring(removed and removed.id) end
+    settle({ a }) -- Beta is offline when the deletion is broadcast
+    if not b.db.events[mine] then return false, "Beta should still hold it" end
+    with(b, function() Sync.Hello() end)
+    settle({ a, b })
+    local gone = b.db.events[mine] == nil and a.db.events[theirs] ~= nil
+    -- it must not come back by sync from a client that still holds it
+    local c = newClient("Gamma")
+    local back = with(c, function()
+        local _, ev = Sync.Decode(Sync.Encode(mine, { caster = "Alpha", target = "Target920", assistants = {}, time = BASE + 920, confirmed = true }))
+        c.db.deleted = { [mine] = 1 }
+        return Sync.Merge(mine, ev, "Beta", false)
+    end)
+    local forged = with(b, function() return Sync.OnMessage("1~T~" .. theirs, "PARTY", "Gamma") end)
+    return gone and back == "rejected:deleted" and forged == "rejected:sender" and b.db.events[theirs] ~= nil,
+        string.format("gone=%s back=%s forged=%s", tostring(gone), back, forged)
+end)
+
+add("a reset a client missed is asked again from the next HELLO", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
+    cast(a, 930, false)
+    settle({ a, b })
+    local stamp = BASE + 5000
+    with(a, function() ST.Reset.Apply(stamp) end) -- Beta never hears the request
+    local asked
+    local realAsk = Sync.onReset
+    Sync.onReset = function(_, s) asked = s end
+    with(b, function() Sync.OnMessage("1~H~0|0|x|0|" .. stamp, "WHISPER", "Alpha") end)
+    Sync.onReset = realAsk
+    return asked == stamp, tostring(asked)
+end)
+
+add("Zennit's alts are learned from his own client, and only a few", function()
+    local a, z = newClient("Alpha"), newClient("Zennit")
+    local savedGet = ST.bnGetInfo
+    ST.bnGetInfo = function() return 1, ST.ZENNIT_TAG end
+    with(z, function() Sync.Hello() end)
+    ST.bnGetInfo = savedGet
+    local sentA
+    for _, m in ipairs(z.out) do if m.payload:match("^%d+~A~") then sentA = m.payload end end
+    if not sentA then return false, "Zennit's client did not announce itself" end
+    local before = with(a, function() return ST.Week.IsZennit("Bankalt") end)
+    local r1 = with(a, function() return Sync.OnMessage(sentA, "PARTY", "Bankalt") end)
+    local r2 = with(a, function() return Sync.OnMessage(sentA, "PARTY", "Bankalt") end)
+    local after = with(a, function() return ST.Week.IsZennit("Bankalt-SomeRealm") end)
+    local other = with(a, function() return ST.Week.IsZennit("Gamma") end)
+    local capped
+    with(a, function() for i = 1, 12 do capped = Sync.OnMessage(sentA, "PARTY", "Alt" .. i) end end)
+    return not before and r1 == "learned" and r2 == "kept" and after and not other and capped == "rejected:full",
+        string.format("before=%s %s %s after=%s other=%s capped=%s", tostring(before), r1, r2, tostring(after), tostring(other), tostring(capped))
+end)
+
+add("test summons are not counted in tallies or badge stats", function()
+    local a = newClient("Alpha")
+    cast(a, 940, true)
+    cast(a, 941, true, { fake = true })
+    local tally, stats
+    with(a, function()
+        tally = ST.Store.Tallies().Alpha
+        stats = ST.Store.Stats("Alpha")
+    end)
+    return tally.cast == 1 and stats.cast == 1, string.format("tally %d, stats %d", tally.cast, stats.cast)
+end)
+
+add("assistants prompt in a raid: helpers from any subgroup come first, the list is capped, target and caster are left out", function()
+    local members = {}
+    for i = 1, 30 do members[i] = "Raider" .. i end
+    members[#members + 1] = "Target"
+    members[#members + 1] = "Me"
+    local list = ST.Detector.PickCandidates(members, { "Raider28", "Raider3", "Gone" }, "Target", "Me", 12)
+    local seen = {}
+    for _, n in ipairs(list) do seen[n] = (seen[n] or 0) + 1 end
+    local dupes = false
+    for _, c in pairs(seen) do if c > 1 then dupes = true end end
+    return #list == 12 and list[1] == "Raider28" and list[2] == "Raider3" and not seen.Target and not seen.Me
+        and not seen.Gone and not dupes, table.concat(list, ",")
+end)
+
+add("scoring: cities, far-flung maps and dungeon entrances score by kind, and a dungeon subzone beats its map", function()
+    local S = ST.Scoring
+    local city, cityPts = S.Score(1453, "Trade District")
+    local zone = S.Score(1436, "Sentinel Hill")
+    local remote, remotePts = S.Score(1451, "Cenarion Hold")
+    local dungeon, dungeonPts = S.Score(1451, "The Deadmines")
+    local wc = S.Kind(1413, "Wailing Caverns")
+    local ok = city == "city" and cityPts == 1 and zone == 3 and remote == "remote" and remotePts == 10
+        and dungeon == "dungeon" and dungeonPts == 5 and wc == "dungeon"
+    return ok, string.format("%s %s %s %s", tostring(city), tostring(remote), tostring(dungeon), tostring(wc))
+end)
+
+add("voice clips: a refusal and a dice win each play their own category, other answers are silent", function()
+    local a = newClient("Alpha")
+    local id = cast(a, 950, true, { target = "Zennit" })
+    local calls = {}
+    local realPlay = ST.Clips.Play
+    ST.Clips.Play = function(category) calls[#calls + 1] = category end
+    local ok, err = pcall(function()
+        for _, result in ipairs({ "refused", "won", "accepted", "excused" }) do
+            with(a, function()
+                ST.Respond.OnResponse(id, a.db.events[id], { result = result, zroll = 50, sroll = 20, time = BASE + 9 })
+            end)
+        end
+    end)
+    ST.Clips.Play = realPlay
+    if not ok then return false, tostring(err) end
+    return table.concat(calls, ",") == "zenit_refuse,zenit_win,zenit_refuse", table.concat(calls, ",")
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge
@@ -703,6 +856,8 @@ add("pending summons: the unanswered and the ones owing silver, newest first", f
 end)
 
 function T.Run()
+    realEventClosed = ST.Week.EventClosed
+    ST.Week.EventClosed = function() return false end -- the other tests use old summons
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -715,5 +870,6 @@ function T.Run()
         ST.print(string.format("%s %s%s", r.ok and "|cff33ff66PASS|r" or "|cffff4444FAIL|r", r.name,
             r.detail ~= "" and ("  (" .. r.detail .. ")") or ""))
     end
+    ST.Week.EventClosed = realEventClosed
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end

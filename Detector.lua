@@ -6,6 +6,7 @@ ST.Detector = Detector
 
 local PENDING_TTL = 30
 local TICK = 0.5
+local MAX_CANDIDATES = 12 -- longest list the assistants prompt offers
 local pending
 
 local function dbg(msg)
@@ -21,39 +22,67 @@ local function cleanName(v)
     return ST.baseName(v)
 end
 
+-- Unit tokens for everyone else in the group: party1-4, or the whole raid (helpers may be in any subgroup).
+local function groupUnits()
+    local out = {}
+    if IsInRaid() then
+        for i = 1, GetNumGroupMembers() do
+            local unit = "raid" .. i
+            if UnitExists(unit) and not UnitIsUnit(unit, "player") then out[#out + 1] = unit end
+        end
+    else
+        for i = 1, 4 do
+            local unit = "party" .. i
+            if UnitExists(unit) then out[#out + 1] = unit end
+        end
+    end
+    return out
+end
+
 local function partyMembers()
     local out = {}
-    for i = 1, 4 do
-        local unit = "party" .. i
-        if UnitExists(unit) then
-            local n = cleanName(UnitName(unit))
-            if n then out[#out + 1] = n end
-        end
+    for _, unit in ipairs(groupUnits()) do
+        local n = cleanName(UnitName(unit))
+        if n then out[#out + 1] = n end
     end
     return out
 end
 Detector.PartyMembers = partyMembers
 
--- Names of party members currently channeling the ritual.
+-- Names of group members currently channeling the ritual.
 local function channelers()
     local out = {}
     local rname = ST.SpellName(ST.RITUAL_ID)
-    for i = 1, 4 do
-        local unit = "party" .. i
-        if UnitExists(unit) then
-            local ok, cname, _, _, _, _, _, _, spellID = pcall(UnitChannelInfo, unit)
-            if ok then
-                local match = isRitualID(spellID)
-                if not match and rname and type(cname) == "string" and not ST.isSecret(cname) then
-                    match = cname == rname
-                end
-                if match then
-                    local n = cleanName(UnitName(unit))
-                    if n then out[#out + 1] = n end
-                end
+    for _, unit in ipairs(groupUnits()) do
+        local ok, cname, _, _, _, _, _, _, spellID = pcall(UnitChannelInfo, unit)
+        if ok then
+            local match = isRitualID(spellID)
+            if not match and rname and type(cname) == "string" and not ST.isSecret(cname) then
+                match = cname == rname
+            end
+            if match then
+                local n = cleanName(UnitName(unit))
+                if n then out[#out + 1] = n end
             end
         end
     end
+    return out
+end
+
+-- The names offered in the assistants prompt: not the target or the caster, detected helpers first, at most `max`
+-- (a raid can be 40 people, far too many to tick through).
+function Detector.PickCandidates(members, helpers, target, me, max)
+    local out, seen = {}, {}
+    local function add(n)
+        if n ~= target and n ~= me and not seen[n] and #out < max then
+            seen[n] = true
+            out[#out + 1] = n
+        end
+    end
+    local present = {}
+    for _, n in ipairs(members) do present[n] = true end
+    for _, n in ipairs(helpers) do if present[n] then add(n) end end
+    for _, n in ipairs(members) do add(n) end
     return out
 end
 
@@ -85,6 +114,7 @@ local function startPending(target)
         snapshotHelpers()
         if ticks * TICK > PENDING_TTL then clearPending() end
     end)
+    ST.Clips.Play("ritual") -- a recorded line as the ritual begins
     dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))
 end
@@ -103,10 +133,7 @@ end
 function Detector.Finish(info)
     local me = ST.Store.me()
     local target = info.target or "Unknown"
-    local candidates = {}
-    for _, n in ipairs(partyMembers()) do
-        if n ~= target and n ~= me then candidates[#candidates + 1] = n end
-    end
+    local candidates = Detector.PickCandidates(partyMembers(), info.helpers, target, me, MAX_CANDIDATES)
     local function save(assistants, confirmed)
         local _, ev, badges = ST.Store.Add({
             caster = me, target = target, assistants = assistants,

@@ -105,7 +105,7 @@ function Respond.Pending()
     local me, out = ST.Store.me(), {}
     for _, r in ipairs(ST.Store.Recent(200)) do
         local res = r.ev.response and r.ev.response.result
-        if r.ev.target == me and (not res or res == "owed") then out[#out + 1] = r end
+        if r.ev.target == me and (not res or res == "owed") and not ST.Week.EventClosed(r.ev) then out[#out + 1] = r end
     end
     return out
 end
@@ -115,15 +115,27 @@ end
 ----------------------------------------------------------------------
 local refreshSurfaces
 
+-- A recorded line for how Zennit answered (a refusal, or winning the dice); silent when no clip is recorded.
+local function playAnswerClip(resp)
+    if not resp then return end
+    if resp.result == "refused" or resp.result == "excused" then
+        ST.Clips.Play("zenit_refuse")
+    elseif resp.result == "won" then
+        ST.Clips.Play("zenit_win")
+    end
+end
+
 -- Records Zennit's decision on this client and tells everyone (test summons stay local).
 function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
     if not ev or not ST.Store.RESULTS[result] then return nil end
+    if ST.Week.EventClosed(ev) then return nil end -- that week is over; answers no longer change it
     local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0, time = time(),
         listed = Respond.OnList(ev) or nil }
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
+    playAnswerClip(resp)
     refreshSurfaces(id, "done")
     if ST.Hub then ST.Hub.Refresh() end
     return resp
@@ -237,6 +249,7 @@ end
 -- Sync calls this when Zennit's answer arrives. Tell the chat, and finish the dice prompt if we have one.
 function Respond.OnResponse(id, ev, resp)
     local line = Respond.Announce(ev, resp)
+    playAnswerClip(resp)
     if line then ST.print(line) end
     if ST.Hub then ST.Hub.Refresh() end
     if diceDlg and diceCurrent and diceCurrent.id == id then
