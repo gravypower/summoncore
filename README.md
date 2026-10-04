@@ -190,7 +190,7 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 - `zenit_refuse`: when Zennit refuses a summon (his client and the summoner's). `zenit_win`: when he wins the dice. `ritual`: as a ritual begins on your client. `narrator_weekopen`: when a finished week is announced.
   Clips are silent until recorded; none are so far.
 
-`design/private/recording-sheet.md` (also git-ignored, for the same reason) lists lines to record for each category and how to convert and name the takes.
+`design/recording-sheet.md` lists lines to record for each category and how to convert and name the takes (it is in the repo, so treat its lines as prompts: Zennit can read them).
 
 `Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zennit, and the repo is on GitHub. Add
 the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.

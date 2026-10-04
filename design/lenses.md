@@ -607,9 +607,9 @@ be earned. Ten far-flung maps have been marked for a while (from memory, to be c
   left out whims that change the dice (a fourth die moves a trying week from 63% to 45%, a second from 63% to 83%): too large for
   a week to survive, and he can already close the Index. Weeks off have none. `Week.RULES.whims = false` turns the layer off.
   It is said at login, in the briefing, in "The Index today" and in `/sc week`.
-- **C, the recording sheet** (`design/private/recording-sheet.md`, git-ignored so it cannot spoil the surprises in a public
-  repo): the six clip categories, what triggers each and who hears it, and six or so lines to start from, with how to convert,
-  name and install the takes. It makes the dormant random picks real.
+- **C, the recording sheet** (`design/recording-sheet.md`): the six clip categories, what triggers each and who hears it, and six
+  or so lines to start from, with how to convert, name and install the takes. It makes the dormant random picks real. It is in
+  the repo so it is not lost, which means Zennit can read it: its lines are prompts, and the takes stay git-ignored.
 - **D, the list remembers.** When a place on his list comes up a second time, the answer line adds "Darnassus again. The Index is
   beginning to see a pattern." (then "for the third time"). Never the first time, so the list keeps its secret until it hits. It
   reads only what his answers already say (`listed`), so every client agrees.
