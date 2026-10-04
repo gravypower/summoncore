@@ -25,6 +25,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
+| Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
 
 ## Entries
 
@@ -409,6 +410,54 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 - Does anyone replay a chapter, or ask what comes next?
 - Do the "Week:" lines build any excitement during the week, or is it only the Monday result?
 
+### 2026-10-04 · Lens of Skill, with the Lens of Chance: what the group controls
+
+**The questions (paraphrased):** what skills does the game ask of its players, and are they the ones we want? Is there room
+for a better player to do better? Where does chance enter, and does it make skill matter or swamp it? (Chance averages out
+over a long game, so the answer can differ by scale.)
+
+**Who decides what, as built**
+
+| | Decided by people (skill) | Decided by dice or luck (chance) |
+|---|---|---|
+| The group | How many summons (2 to 10), to which places (1, 3, 5 or 10 points), how many helpers (0 to 2), and the **order** of the summons against his dice left; getting 2 or 3 friends to the same spot in WoW | The summoner's roll back |
+| Zennit | Accept, refuse, silver or dice; **when** to spend 3 dice; his secret list; when to close the Index | His roll; whether a place is on his list (the group cannot see this) |
+
+**Numbers** (a weekly model that reproduces the Fairness table; 40,000 weeks per cell)
+
+| Question | Answer |
+|---|---|
+| How much does a helper matter? | +5 each is worth about **6 points** of a week's win chance (five dungeons: 52%, 58%, 64%; three zone summons: 22%, 27%, 33%) |
+| How much of a week is the group's plan, and how much dice? | Across 300 plausible plans, the plan explains **25%** of the variance in the result if he rolls the first three summons, **16%** if he saves dice for dungeons, **9%** if he rolls at random. The rest is dice and his choices |
+| Does skill show up over a season? | Yes: a group that moves from a 39% to a 63% weekly chance goes from **25% to 79%** to take the finale (race to 5) |
+| Is there a best order for the group? | **No: it depends on what he does.** One mixed week (three cheap summons, then three dungeons, 2 helpers): *cheap first* wins **97%** if he rolls the first three, **39%** if he saves for dungeons; *big first* wins **39%** and **97%** (the second against someone who rolls only on the last ones). Neither order beats every policy |
+
+**Findings**
+1. **A week is mostly chance; a season is mostly skill.** The best plan we sampled still loses 37% of weeks, and the group's
+   plan explains at most a quarter of one week. But the same plan decides about three in four seasons. For a group that
+   plays weekly, the drama sits in the week and the fairness in the season, which suits it.
+2. **The deep skill is a guessing game, and it is the one we wanted.** Limiting the dice to three made *when to roll* his
+   decision (the Meaningful Choices entry) and *what order to summon in* theirs. Each side's best move depends on the other's,
+   so neither has a dominant play: the aim of that change.
+3. **The moment skill pays is invisible.** When his last die is spent, every later summon is certain, which is exactly
+   when a group that sent its cheap summons first collects. Nothing said so; only the "Week:" line's "0 dice left".
+4. **The Fairness table assumed he rolls whatever comes first.** That is the best policy against a group that sends zone
+   summons, and a poor one against a group that baits. The playtest should record how he really spends dice.
+5. **Helpers are the dependable skill.** They are the one lever that needs no guess about the other side, and they ask for
+   togetherness, not bookkeeping: what this group likes (the Player entry).
+
+**Decision: no rule change.** Chance in a week is what makes the dice banter, and skill compounds across the season.
+**Built: the last-die line.** When his third die is spent, everyone gets "That was Zennit's last die this week. Every summon
+from here is certain: he can only accept, refuse or ask for the silver." (Zennit's own client: "That was your last die this
+week. From here you can only accept, refuse or ask for the silver.") It also begins to answer the Interest Curve's flat week,
+by giving the week one beat that comes from play.
+
+**To watch in playtests**
+- Does Zennit save dice, spend them at once, or forget he has them? Does his policy change after the first season?
+- Does the group learn to send cheap summons first? Does anyone say so out loud?
+- When the last-die line comes up, does the order of the summons change?
+- Do the helpers' +5 get noticed, or does the group still treat them as optional?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -422,3 +471,4 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 | 2026-10-04 | His week off is real: summons of him are filler, the race skips the week, and the gags carry on | Interest Curve | His wins were a story beat with no effect; a pause makes them count without silencing the joke |
 | 2026-10-04 | Catch-up: Zennit's dice edge moves 5 (a lead of 2 wins) or 10 (3 or more) toward the side that is behind | Interest Curve | Blowouts were 49% of seasons at normal effort; the Index now leans on the scale, gently |
 | 2026-10-04 | Keep five weekly wins to a finale (a season of about 11 weeks at normal effort) until a real season shows how long it takes | Interest Curve | Simulated length is long, but the group's real pace is unknown; shortening later is one constant (`Week.WINS`) |
+| 2026-10-04 | No rule change for Skill and Chance; say so when his last die is spent | Skill and Chance | A week is mostly chance and a season mostly skill, and the group's best order depends on how he rolls; the moment their ordering pays off was invisible |

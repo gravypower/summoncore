@@ -294,6 +294,7 @@ numbers behind it, is in `design/lenses.md`):
   - his answer popup says the same, worded for him ("you lead by 2"), and reminds him that ignoring a summon
     counts as accepting it;
   - when the helpers' bonus is what beat him on the dice, the line names them ("Al and Cy's +10 tipped it.");
+  - when his third die is spent, everyone is told that every summon from there is certain ("That was Zennit's last die this week…");
   - the hub's season band shows the lead (`WEEK: GROUP +1 · FILED 4/10 · DICE 1`, or `CLOSED`).
 
 Earlier weeks keep the rules they were played under (his head start of 10, a week off that was only a warning, every landed summon counting for the group,

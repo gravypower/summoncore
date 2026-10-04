@@ -161,6 +161,8 @@ end
 local function printWeek(ev, you)
     local line = not ev.fake and ST.Week.StatusLine(ST.Week.Start(ev.time), you)
     if line then ST.print(line) end
+    local last = ST.Week.LastDie(ev, you)
+    if last then ST.print(last) end
 end
 
 -- Records Zennit's decision on this client and tells everyone (test summons stay local).

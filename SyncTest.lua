@@ -1026,6 +1026,31 @@ add("his week off is real: summons of him are filler, nobody wins it, and the we
     end)
 end)
 
+add("the last die: said once, for everyone, when his third die is spent", function()
+    return newRules(function()
+        local a = newClient("Alpha")
+        local W = ST.Week
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local function put(n, result)
+                a.db.events["d" .. n] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + n * 60, points = 3,
+                    response = { result = result, zroll = 50, sroll = 40, time = this + n * 60 + 1 } }
+            end
+            put(1, "won"); put(2, "accepted")
+            out.second = W.LastDie(a.db.events.d1)           -- two dice left: nothing to say
+            put(3, "lost"); put(4, "won")
+            out.third = W.LastDie(a.db.events.d4)            -- the third die: the line, for the group
+            out.you = W.LastDie(a.db.events.d4, true)        -- and in his words
+            out.plain = W.LastDie(a.db.events.d2)            -- an accepted summon is not a die
+        end)
+        local ok = out.second == nil and out.plain == nil and out.third and out.third:find("last die")
+            and out.you and out.you:find("your last die")
+        return ok, string.format("second die %s, third die %s, accepted %s", tostring(out.second), tostring(out.third ~= nil),
+            tostring(out.plain))
+    end)
+end)
+
 add("catch-up: the season's lead moves his dice edge toward the side that is behind, and never below zero", function()
     return newRules(function()
         local a = newClient("Alpha")

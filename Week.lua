@@ -357,6 +357,17 @@ local function diceText(n)
     return string.format("%d %s left", n, n == 1 and "die" or "dice")
 end
 
+-- The line for the moment Zennit's last die of the week is spent, or nil: from then on every summon is certain, which is
+-- when the group's ordering of its summons pays off (design/lenses.md, Skill and Chance). `you` words it for Zennit.
+function Week.LastDie(ev, you)
+    local res = ev.response and ev.response.result
+    local start = Week.Start(ev.time)
+    if ev.fake or (res ~= "won" and res ~= "lost") or Week.DiceLeft(start) ~= 0 then return nil end
+    if Week.IsOff(start) or Week.IsClosed(start) then return nil end
+    if you then return "That was your last die this week. From here you can only accept, refuse or ask for the silver." end
+    return "That was Zennit's last die this week. Every summon from here is certain: he can only accept, refuse or ask for the silver."
+end
+
 -- One line on where the week starting at `start` stands (default: this week), for the chat after a summon of Zennit
 -- or an answer: "Week: the group leads by 1, 4 of 10 filed, 1 die left." nil under the old rules.
 function Week.StatusLine(start, you)
