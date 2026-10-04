@@ -218,7 +218,7 @@ function Sync.Pump(max)
 end
 
 local function helloBody()
-    return string.format("%d|%d|%s", ST.Store.Count(), ST.Store.Latest(), ST.version)
+    return string.format("%d|%d|%s|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse())
 end
 
 function Sync.Hello(channel, target)
@@ -287,19 +287,19 @@ function Sync.OnMessage(text, channel, sender)
     local now = Sync.now()
 
     if typ == "H" then
-        local count, latest = body:match("^(%d+)|(%d+)|")
-        count, latest = tonumber(count), tonumber(latest)
+        local count, latest, respT = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)")
+        count, latest, respT = tonumber(count), tonumber(latest), tonumber(respT) or 0
         if not count then return "bad" end
-        local myCount, myLatest = ST.Store.Count(), ST.Store.Latest()
+        local myCount, myLatest, myResp = ST.Store.Count(), ST.Store.Latest(), ST.Store.LatestResponse()
         local actions = {}
         -- They may hold something we lack: ask for everything (set union makes repeats harmless).
-        if count > myCount or latest > myLatest or (count == myCount and latest ~= myLatest) then
+        if count > myCount or latest > myLatest or (count == myCount and latest ~= myLatest) or respT > myResp then
             st.requested[sender] = now
             enqueue("WHISPER", sender, "R", "0")
             actions[#actions + 1] = "request"
         end
         -- We hold more than they do: tell them so they can ask us.
-        if count < myCount or latest < myLatest then
+        if count < myCount or latest < myLatest or respT < myResp then
             if not st.lastHelloBack[sender] or now - st.lastHelloBack[sender] >= HELLO_BACK_COOLDOWN then
                 st.lastHelloBack[sender] = now
                 enqueue("WHISPER", sender, "H", helloBody())

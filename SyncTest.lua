@@ -631,6 +631,19 @@ add("only Zennit can answer for himself, and a newer answer wins", function()
         and not landsAfterRefusal, string.format("%s, %s, %s", forged, old, newer)
 end)
 
+add("a friend who missed Zennit's answer gets it from the next HELLO", function()
+    local a, b, z = newClient("Alpha"), newClient("Beta"), newClient("Zennit")
+    local id = cast(a, 910, false, { target = "Zennit" })
+    settle({ a, b, z })
+    with(z, function() ST.Respond.Decide(id, "owed") end)
+    settle({ a, z }) -- Beta is offline for the broadcast
+    if b.db.events[id].response then return false, "Beta should have missed the answer" end
+    with(a, function() Sync.Hello() end)
+    settle({ a, b, z })
+    local got = b.db.events[id].response
+    return got ~= nil and got.result == "owed", got and got.result or "still missing"
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge

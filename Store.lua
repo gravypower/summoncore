@@ -87,6 +87,16 @@ function Store.Latest()
     return latest
 end
 
+-- Time of the newest answer from Zennit on any summon (0 if none); HELLO carries it so a changed answer resyncs.
+function Store.LatestResponse()
+    local latest = 0
+    for _, ev in pairs(ST.db.events) do
+        local r = ev.response
+        if not ev.fake and r and r.time > latest then latest = r.time end
+    end
+    return latest
+end
+
 -- Events with time > t, oldest first.
 function Store.Since(t)
     local list = {}
