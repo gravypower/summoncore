@@ -401,7 +401,8 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 - Is a close finish the goal, or is a lopsided season fine when the group simply tries harder (or less hard)?
 - Does a win for Zennit have to *cost* the group something, or is the story enough?
 - How long should a season last? With C, about 11 weeks (nearly three months) at normal effort. Options: fewer wins to a
-  finale (4), or letting the group win during his week off (no).
+  finale (4), or letting the group win during his week off (no). **Decided: keep five wins for now**; revisit after the
+  first real season shows how many weeks are quiet.
 
 **To watch in playtests**
 - How many weeks does a first season really take, and how many are quiet?
@@ -420,3 +421,4 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 | 2026-10-04 | Helpers named when their bonus wins a roll; the assistants prompt saves itself; Zennit told he can ignore a summon; no helper badges | The Player | The group likes banter and doing things together, and hates bookkeeping; rewards don't motivate them |
 | 2026-10-04 | His week off is real: summons of him are filler, the race skips the week, and the gags carry on | Interest Curve | His wins were a story beat with no effect; a pause makes them count without silencing the joke |
 | 2026-10-04 | Catch-up: Zennit's dice edge moves 5 (a lead of 2 wins) or 10 (3 or more) toward the side that is behind | Interest Curve | Blowouts were 49% of seasons at normal effort; the Index now leans on the scale, gently |
+| 2026-10-04 | Keep five weekly wins to a finale (a season of about 11 weeks at normal effort) until a real season shows how long it takes | Interest Curve | Simulated length is long, but the group's real pace is unknown; shortening later is one constant (`Week.WINS`) |
