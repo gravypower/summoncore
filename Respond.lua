@@ -6,7 +6,7 @@
 --   Refuse          the summon does not count.
 --   50 silver       the summon counts once he says the silver was paid ("owes" until then).
 --   Dice            he rolls 1-100 (a real /roll, so the party sees it); the summoner is asked to roll back;
---                   higher wins, a tie goes to Zennit. If he wins, the summon does not count.
+--                   Zennit adds 10 to his roll, higher wins and a tie goes to him. If he wins, the summon does not count.
 -- His answer is stored on the event and sent to everyone (message Z); only his own client can answer for him.
 -- The dice use messages D (his roll, to the summoner) and S (the summoner's roll, back to him).
 local ADDON, ST = ...
@@ -27,9 +27,11 @@ local dlg, dlgSurface   -- the popup
 ----------------------------------------------------------------------
 -- Rules
 ----------------------------------------------------------------------
--- Higher wins; a tie goes to Zennit. "won" means Zennit won, so the summon does not count.
+-- The dice are loaded his way, so the story keeps moving: Zennit adds EDGE to his roll, and a tie goes to him.
+-- "won" means Zennit won, so the summon does not count.
+Respond.EDGE = 10
 function Respond.Resolve(zroll, sroll)
-    return zroll >= sroll and "won" or "lost"
+    return zroll + Respond.EDGE >= sroll and "won" or "lost"
 end
 
 -- A short outcome for the log, or nil if Zennit has not answered.
@@ -239,7 +241,7 @@ end
 function Respond.OnDiceChallenge(id, ev, zroll)
     if not diceDlg then buildDiceDialog() end
     diceCurrent = { id = id, ev = ev, zroll = zroll }
-    diceDlg.text:SetText(string.format("%s suggests dice for your summon of him, and has rolled %d.\n\nRoll 1-100: beat him and the summon counts. A tie goes to him.",
+    diceDlg.text:SetText(string.format("%s suggests dice for your summon of him, and has rolled %d.\n\nRoll 1-100: beat his roll plus 10 and the summon counts. A tie goes to him.",
         ev.target, zroll))
     diceDlg.rollBtn:Show()
     diceDlg:Show()
@@ -300,7 +302,7 @@ local function render(s, stage, extra)
             { "Suggest dice (1-100)", function() render(s, "roll") end },
         })
     elseif stage == "roll" then
-        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. Higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
+        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add 10 to your roll, higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
             ev.caster))
         setButtons(s, {
             { "Roll 1-100", function()

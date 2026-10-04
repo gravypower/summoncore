@@ -2,7 +2,7 @@
 -- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.
 local ADDON, ST = ...
 ST.introEnding = 3.20
-ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50 }
+ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50, 24.70, 32.00 }
 ST.introCues = {
     [1] = {
         { t = 0.55, text = "THE COSMIC INDEX OF SUMMONABLE PERSONS" },
@@ -59,6 +59,19 @@ ST.introCues = {
         { t = 11.33, text = "50 SILVER. CASH. NO RECEIPT." },
         { t = 16.06, text = "OR DICE" },
         { t = 23.14, text = "THE INDEX ACCEPTS MOST THINGS" },
+    },
+    [11] = {
+        { t = 1.70, text = "THE INDEX COUNTED" },
+        { t = 13.90, text = "ZENNIT HAD WON" },
+        { t = 16.95, text = "HE WON THE DICE" },
+        { t = 22.75, text = "SEVERAL PLACES ON HIS LIST" },
+    },
+    [12] = {
+        { t = 2.02, text = "BY REGISTERED LETTER" },
+        { t = 7.26, text = "SEVEN DAYS. NO RITUAL COULD FIND HIM." },
+        { t = 19.16, text = "ON LEAVE" },
+        { t = 21.85, text = "DOING NOTHING AT ALL" },
+        { t = 30.10, text = "ACHOO. AGAIN." },
     },
 }
 -- introSentences: when each sentence of the narration starts, for the subtitles.
@@ -118,6 +131,19 @@ ST.introSentences = {
         { t = 18.59, text = [=[The Index will accept any of these.]=] },
         { t = 22.52, text = [=[The Index accepts most things.]=] },
     },
+    [11] = {
+        { t = 0.41, text = [=[At the end of the week, the Index counted.]=] },
+        { t = 4.16, text = [=[It counted the summons, and the places, and the refusals, and the dice, and then it counted them again, because the total was not the one it had expected.]=] },
+        { t = 14.05, text = [=[Zennit had won.]=] },
+        { t = 16.68, text = [=[He had won the dice when it mattered, and he had been summoned, entirely by accident, to several of the places on his list.]=] },
+    },
+    [12] = {
+        { t = 0.40, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice.]=] },
+        { t = 7.14, text = [=[For seven days, no ritual could find him.]=] },
+        { t = 11.14, text = [=[The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave.]=] },
+        { t = 20.77, text = [=[Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount.]=] },
+        { t = 27.20, text = [=[On the eighth day, somewhere around the letter Z, the clerk sneezed.]=] },
+    },
 }
 -- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).
 ST.introHighlights = {
@@ -172,5 +198,19 @@ ST.introHighlights = {
         { t = 11.43, x = 516, y = 86, w = 188, h = 258 },
         { t = 16.16, x = 706, y = 86, w = 188, h = 258 },
         { t = 23.24, x = 326, y = 356, w = 426, h = 140 },
+    },
+    [11] = {
+        { t = 1.80, x = 40, y = 60, w = 440, h = 270 },
+        { t = 14.00, x = 262, y = 140, w = 220, h = 170 },
+        { t = 17.05, x = 50, y = 365, w = 150, h = 100 },
+        { t = 22.85, x = 500, y = 50, w = 240, h = 400 },
+    },
+    [12] = {
+        { t = 2.12, x = 24, y = 110, w = 176, h = 150 },
+        { t = 7.36, x = 296, y = 26, w = 392, h = 60 },
+        { t = 13.36, x = 340, y = 140, w = 170, h = 66 },
+        { t = 19.26, x = 556, y = 104, w = 182, h = 84 },
+        { t = 21.95, x = 766, y = 200, w = 170, h = 280 },
+        { t = 30.20, x = 16, y = 330, w = 200, h = 210 },
     },
 }

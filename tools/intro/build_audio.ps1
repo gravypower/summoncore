@@ -58,9 +58,14 @@ $sceneCount = (Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg"
 $voices = 1..$sceneCount | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
 $pause = 0.6   # keep in step with PAUSE in Intro.lua
 $ending = 3.2   # extra seconds after the last scene: the music fades out while the picture fades to black
+$chapterEnds = @(10, 12)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua)
 $lengths = $voices | ForEach-Object { Duration $_ }
 $starts = @(); $acc = 0.0
-foreach ($l in $lengths) { $starts += $acc; $acc += $l + $pause }
+for ($k = 0; $k -lt $lengths.Count; $k++) {
+    $starts += $acc
+    $acc += $lengths[$k] + $pause
+    if ($chapterEnds -contains ($k + 1)) { $acc += $ending }
+}
 $totalSeconds = $acc + $ending + 3
 
 # ---------------------------------------------------------------- 3. music bed
@@ -161,7 +166,7 @@ for ($i = 0; $i -lt $sceneCount; $i++) {
     $len = $lengths[$i] + $pause
     $ci = [Globalization.CultureInfo]::InvariantCulture
     $musicFade = ""
-    if ($i -eq $sceneCount - 1) {
+    if ($chapterEnds -contains $n) {
         $len += $ending
         $musicFade = ",afade=t=out:st={0}:d={1}" -f ($len - $ending).ToString("0.###", $ci), $ending.ToString("0.###", $ci)
     }
@@ -219,7 +224,16 @@ $cueSpec = @(
     @(10, "refuse a summons", "HE MAY REFUSE"),
     @(10, "fifty silver", "50 SILVER. CASH. NO RECEIPT."),
     @(10, "suggest dice", "OR DICE"),
-    @(10, "accepts most things", "THE INDEX ACCEPTS MOST THINGS")
+    @(10, "accepts most things", "THE INDEX ACCEPTS MOST THINGS"),
+    @(11, "the Index counted", "THE INDEX COUNTED"),
+    @(11, "Zennit had won", "ZENNIT HAD WON"),
+    @(11, "won the dice", "HE WON THE DICE"),
+    @(11, "places on his list", "SEVERAL PLACES ON HIS LIST"),
+    @(12, "registered letter", "BY REGISTERED LETTER"),
+    @(12, "seven days", "SEVEN DAYS. NO RITUAL COULD FIND HIM."),
+    @(12, "on leave", "ON LEAVE"),
+    @(12, "doing nothing at all", "DOING NOTHING AT ALL"),
+    @(12, "the clerk sneezed", "ACHOO. AGAIN.")
 )
 $lead = 0.25   # show a cue a little before the words are spoken
 
@@ -298,7 +312,17 @@ $highlightSpec = @(
     @(10, "refuse a summons", 326, 86, 188, 258),
     @(10, "fifty silver", 516, 86, 188, 258),
     @(10, "suggest dice", 706, 86, 188, 258),
-    @(10, "accepts most things", 326, 356, 426, 140)
+    @(10, "accepts most things", 326, 356, 426, 140),
+    @(11, "the Index counted", 40, 60, 440, 270),
+    @(11, "Zennit had won", 262, 140, 220, 170),
+    @(11, "won the dice", 50, 365, 150, 100),
+    @(11, "places on his list", 500, 50, 240, 400),
+    @(12, "registered letter", 24, 110, 176, 150),
+    @(12, "seven days", 296, 26, 392, 60),
+    @(12, "said his name", 340, 140, 170, 66),
+    @(12, "on leave", 556, 104, 182, 84),
+    @(12, "doing nothing at all", 766, 200, 170, 280),
+    @(12, "the clerk sneezed", 16, 330, 200, 210)
 )
 
 $cues = @{}

@@ -29,6 +29,7 @@ function Store.Add(ev, localOnly)
     local id = newID(ev.caster, ev.time)
     ST.db.events[id] = ev
     if Store.onAdd and not localOnly then Store.onAdd(id, ev) end
+    if ST.Week and not localOnly then ST.Week.Warn(ev) end
     return id, ev, ST.Scoring.EvaluateBadges()
 end
 

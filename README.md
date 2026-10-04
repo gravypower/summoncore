@@ -33,7 +33,8 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st debug` | Toggle detector messages |
 | `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/st intro [scene]` | Play the illustrated intro, "Zennit and the Index" |
+| `/st intro [scene|victory]` | Play the illustrated intro, "Zennit and the Index"; `victory` plays chapter 2, the week Zennit wins (scenes 11-12) |
+| `/st week [victory]` | The weekly contest: this week and last, and whether Zennit is on his week off |
 | `/st clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/st zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Answer tab |
 | `/st respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
@@ -103,7 +104,7 @@ newer-version strings are refused. This is the manual fallback if addon messages
 
 ### Intro
 
-`/st intro` plays "Zennit and the Index": 10 scenes of 3-frame flipbook art (about six flips a second), narrated, with
+`/st intro` plays "Zennit and the Index": 10 scenes (chapter 1; scenes 11-12 are chapter 2, the week he wins) of 3-frame flipbook art (about six flips a second), narrated, with
 a quiet synth music bed, about 3:25 in all. The whole narration is typed out, a sentence at a time and in step with the
 voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. While the narrator mentions something (the three kinds of ritual, the book, the form, Zennit), a pulsing box lights up that part of the picture. The **Text**
 button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
@@ -127,7 +128,7 @@ up new files). The art lives in `Media/intro_l1.blp` to `intro_l10.blp` (lines) 
 
 Scenes 9 and 10 explain the weekly challenge: the group earns points by place, Zennit holds a secret list, and he may refuse, ask for fifty silver, or suggest dice. They were rendered here from the draft rules and may need rewording once the rules are final.
 
-The narration is `Media/intro_1.ogg` to `intro_10.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
+The narration is `Media/intro_1.ogg` to `intro_12.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
 start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
 mutes the narration.
@@ -157,7 +158,7 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 | Accept it | Counts. |
 | Refuse | Does not count. |
 | Demand 50 silver, in cash, no receipt | Does not count until he says it was paid ("They paid"); until then the log shows "owes 50 silver". |
-| Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; higher wins and a tie goes to Zennit. If Zennit wins, the summon does not count. |
+| Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, higher wins and a tie goes to him. If Zennit wins, the summon does not count. |
 
 His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
 own client can answer for him, a newer answer replaces an older one (owes, then paid), and the dice use two more
@@ -213,3 +214,13 @@ from `tools/` are git-ignored, so release zips do not include them and `/st comi
 Challenge import strings, emote bonus challenges, Zennit's side (refusing, roll-off, token payment),
 Zennit's secret list and objective, weekly reset and scoreboard, and the story layer. The event log leaves
 room to add these as new event types without changing stored summon records.
+
+## The weekly contest (draft rules)
+
+Weeks run Monday to Monday (UTC) and are worked out from the event log, so every client agrees. The group's score is
+the points of the summons that landed. Zennit's score starts at **10** (a head start) and gains the summon's points when he
+wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal; his dice roll also gets
+**+10**. A tie goes to him. If his score is at least the group's at the end of the week, **Zennit wins the week** and the
+next seven days are his: summoning him gets a warning, and `/st week victory` (also offered at login) plays chapter 2 of the
+story. The rules are tilted his way on purpose, so he wins more weeks than he loses and the story keeps moving. Change
+`Week.HEADSTART` and `Respond.EDGE` to tune it.

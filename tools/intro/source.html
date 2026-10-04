@@ -512,6 +512,72 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
     }
   });
 
+  // Chapter 2: the week Zennit wins.
+  scenes.push({
+    label: 'The count', dur: 24.0,
+    text: 'At the end of the week, the Index counted. It counted the summons, and the places, and the refusals, and the dice, and then it counted them again, because the total was not the one it had expected. Zennit had won. He had won the dice when it mattered, and he had been summoned, entirely by accident, to several of the places on his list.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
+      out += '<rect x="40" y="60" width="440" height="270" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>';
+      out += T(260, 112, 'THE COUNT', 34, '#23202B');
+      out += '<path d="M260 130 V310" stroke="#23202B" stroke-width="3" stroke-dasharray="8 8" fill="none"/>';
+      out += T(150, 170, 'THE GROUP', 22, '#23202B', 'middle', 'Special Elite, monospace');
+      out += T(150, 270, '24', 96, '#3E5B4E');
+      out += T(370, 170, 'ZENNIT', 22, '#23202B', 'middle', 'Special Elite, monospace');
+      out += T(370, 270 + [0, -8, -3][k], '31', 96, '#B5432E');
+      // the dice he won
+      out += die(60, 372, [6, 5, 6][k]) + die(128, 372, [5, 6, 6][k]);
+      out += T(110, 462, 'WON THE DICE', 18, '#EDE6D6', 'middle', 'Special Elite, monospace');
+      // the list, no longer secret
+      out += '<g transform="rotate(' + [-3, -1, -4][k] + ' 615 250)"><rect x="510" y="60" width="210" height="380" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' +
+        T(615, 100, 'HIS LIST', 24, '#23202B');
+      ['STORMWIND', 'DEADMINES', 'MUDSPROCKET', 'THE BARRENS', 'A HILL'].forEach(function (place, r) {
+        out += '<rect x="528" y="' + (130 + r * 58) + '" width="22" height="22" fill="none" stroke="#23202B" stroke-width="3"/>' +
+          '<path d="M531 ' + (143 + r * 58) + ' l7 8 l12 -16" stroke="#3E5B4E" stroke-width="5" fill="none"/>' +
+          T(562, 148 + r * 58, place, 17, '#23202B', 'start', 'Special Elite, monospace');
+      });
+      out += '</g>';
+      out += zen(748, 190, 0.5, [-2, 2, 0][k]);
+      out += burst(736, 120, 0.8, 'WINNER', 20);
+      out += U('book', 270, 360, 90, 123);
+      out += T(250, 506, 'counted four times', 17, '#EDE6D6', 'start', 'Special Elite, monospace');
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'Leave', dur: 28.0,
+    text: 'The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount. On the eighth day, somewhere around the letter Z, the clerk sneezed.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
+      // seven days, crossed off
+      ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d, i) {
+        var x = 300 + i * 52;
+        out += '<rect x="' + x + '" y="30" width="46" height="52" fill="#F7F0DF" stroke="#23202B" stroke-width="3"/>' + T(x + 23, 66, d, 26, '#23202B') +
+          '<path d="M' + (x + 6) + ' 36 L' + (x + 40) + ' 76 M' + (x + 40) + ' 36 L' + (x + 6) + ' 76" stroke="#B5432E" stroke-width="5" fill="none"/>';
+      });
+      // the registered letter
+      out += '<g transform="rotate(' + [-4, 3, -2][k] + ' 110 190)"><rect x="30" y="120" width="160" height="110" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' +
+        '<path d="M30 120 L110 185 L190 120" fill="none" stroke="#23202B" stroke-width="3"/>' +
+        '<rect x="150" y="128" width="30" height="34" fill="#E0674D" stroke="#23202B" stroke-width="3"/>' +
+        T(110, 252, 'REGISTERED', 18, '#EDE6D6', 'middle', 'Special Elite, monospace') + '</g>';
+      // the party in a circle, saying his name
+      out += ritualCircle(330, 330, 190, 0.85);
+      out += hero(280, 270, '#5B3FA0', 'wizard', k === 1) + hero(570, 270, '#7A3A22', 'spiky', k === 2);
+      out += '<rect x="350" y="150" width="150" height="46" rx="10" fill="#FFFFFF" stroke="#23202B" stroke-width="3"/>' + T(425, 182, 'ZENNIT?', 24, '#23202B');
+      // the answer: on leave
+      out += '<rect x="560" y="110" width="170" height="70" fill="#F7F0DF" stroke="#23202B" stroke-width="4" transform="rotate(' + [2, -2, 1][k] + ' 645 145)"/>' +
+        T(645, 156, 'ON LEAVE', 30, '#B5432E', 'middle', 'Patua One, serif', 'transform="rotate(' + [2, -2, 1][k] + ' 645 145)"');
+      // Zennit, doing nothing at all
+      out += zen(748, 200, 0.5, 0);
+      out += T(800 + k * 6, 180 - k * 8, 'z', 30, '#EDE6D6') + T(830 + k * 6, 150 - k * 8, 'Z', 40, '#EDE6D6');
+      // the clerk
+      out += clerk(30, 380, 0.3, k === 2 ? 'sneeze' : 'calm');
+      if (k === 2) out += burst(140, 340, 0.9, 'ACHOO!', 22);
+      return out;
+    }
+  });
+
   var starts = [], acc = 0;
   scenes.forEach(function (s, i) { s.start = acc; starts[i] = acc; acc += s.dur; });
   TOTAL = acc;

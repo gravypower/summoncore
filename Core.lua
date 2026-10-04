@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.17.1"
+ST.version = "0.18.0"
 
 local DB_VERSION = 1
 
@@ -232,6 +232,17 @@ function commands.clip(rest)
     print_(file and ("played " .. file) or ("nothing to play for '" .. rest .. "'"))
 end
 
+-- The weekly contest: how this week is going and how the last one ended.
+function commands.week(rest)
+    local W = ST.Week
+    if rest == "victory" then return ST.Intro.Toggle("victory") end
+    local this, last = W.Score(W.Start()), W.Score(W.Start() - 7 * 86400)
+    print_("This week: " .. W.Describe(this))
+    print_("Last week: " .. W.Describe(last))
+    local immune, untilT = W.Immune(time())
+    if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /st week victory plays the story.") end
+end
+
 function commands.respond(rest)
     if rest == "test" then ST.Respond.Test() else ST.Respond.Open() end
 end
@@ -265,6 +276,7 @@ local HELP = {
     "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
     "/st zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
+    "/st week [victory] - the weekly contest (Zennit starts 10 ahead); victory plays the story of the week he wins",
     "/st respond [test] -Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/st gag - preview the Zennit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",

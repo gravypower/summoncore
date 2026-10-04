@@ -538,6 +538,31 @@ add("a refusal costs Zennit the points unless the place is on his list", functio
         and won ~= nil, string.format("Zennit points=%d (expected %d), off-list=%s", tally.points, want, tostring(offList))
 end)
 
+add("the week: Zennit's head start wins small weeks, the group needs more, and a win is a week off", function()
+    local a = newClient("Alpha")
+    local W = ST.Week
+    local out
+    with(a, function()
+        local last = W.Start() - 7 * 86400
+        local function put(n, pts, extra)
+            local ev = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 3600 * n, points = pts, kind = "zone" }
+            for k, v in pairs(extra or {}) do ev[k] = v end
+            a.db.events["w-" .. n] = ev
+        end
+        put(1, 3)
+        local small = W.Score(last)
+        for n = 2, 5 do put(n, 3) end
+        local big = W.Score(last)
+        a.db.events["w-5"].response = { result = "won", zroll = 80, sroll = 10, time = last + 20000 } -- he won a roll: -3 group, +3 him
+        local rolled = W.Score(last)
+        local immune = W.Immune(time())
+        out = { small = small, big = big, rolled = rolled, immune = immune }
+    end)
+    local s, b, r = out.small, out.big, out.rolled
+    return s.winner == "zennit" and b.group == 15 and b.winner == "group" and r.winner == "zennit" and out.immune == true
+        and W.Start(W.Start() + 1) == W.Start(), string.format("small=%s big=%s/%d-%d rolled=%s", s.winner, b.winner, b.group, b.zennit, r.winner)
+end)
+
 add("only Zennit can answer for himself, and a newer answer wins", function()
     local a, z = newClient("Alpha"), newClient("Zennit")
     local id = cast(a, 900, false, { target = "Zennit" })
@@ -556,7 +581,8 @@ add("only Zennit can answer for himself, and a newer answer wins", function()
 end)
 
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
-    if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won" then
+    if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
+        or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge
         return false, "Resolve is wrong"
     end
     local a, z = newClient("Alpha"), newClient("Zennit")

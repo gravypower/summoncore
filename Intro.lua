@@ -46,17 +46,31 @@ local scenes = {
     { label = "The week", dur = 14.30 + PAUSE, text = [=[This is the story of his week, and the week after that. If the form is ever found, you will be the first to know. Or the last. The Index is unclear.]=] },
     { label = "The rules", dur = 26.70 + PAUSE, text = [=[The rules, such as they are. Each week, the group earns points by summoning Zennit, with more points for places that are remote, or dangerous, or frankly unreasonable. Zennit, for his part, holds a secret list, which he may complete at any time, and which he will not discuss. If the group has more points at the end of the week, the Index records a victory for persistence.]=] },
     { label = "The options", dur = 25.40 + PAUSE, text = [=[If Zennit completes his list first, he wins the week, and cannot be summoned for the seven days that follow. He may refuse a summons. He may demand fifty silver, in cash, with no receipt. Or he may suggest dice. The Index will accept any of these. The Index accepts most things.]=] },
+    -- chapter 2, the week Zennit wins: played on its own with /st intro victory (or /st intro 11)
+    { chapter = 2, label = "The count", dur = 24.00 + PAUSE, text = [=[At the end of the week, the Index counted. It counted the summons, and the places, and the refusals, and the dice, and then it counted them again, because the total was not the one it had expected. Zennit had won. He had won the dice when it mattered, and he had been summoned, entirely by accident, to several of the places on his list.]=] },
+    { chapter = 2, label = "Leave", dur = 28.00 + PAUSE, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount. On the eighth day, somewhere around the letter Z, the clerk sneezed.]=] },
 }
+
+-- A chapter is a run of scenes that plays on its own and ends with the fade to "THE END".
+local firstOf, lastOf = {}, {}
+for i, s in ipairs(scenes) do
+    s.chapter = s.chapter or 1
+    firstOf[s.chapter] = firstOf[s.chapter] or i
+    lastOf[s.chapter] = i
+end
 
 -- Scene lengths come from IntroCues.lua (measured from the narration); the table above is the fallback.
 local ENDING = ST.introEnding or 3.2 -- after the last line: the music fades out, the picture fades to black, "THE END"
 local starts, total = {}, 0
 for i, s in ipairs(scenes) do
     if ST.introLength and ST.introLength[i] then s.dur = ST.introLength[i] + PAUSE end
-    if i == #scenes then s.dur = s.dur + ENDING end
+    if i == lastOf[s.chapter] then s.dur = s.dur + ENDING end
     starts[i] = total
     total = total + s.dur
 end
+local lo, hi = 1, lastOf[1] -- the scenes of the chapter being played
+
+local function endTime() return starts[hi] + scenes[hi].dur end
 
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
 local pictureH, pictureW, buttonsWidth = 300, 533, 700
@@ -187,7 +201,7 @@ local function show(sec)
         lastCue = nil
         if playing then
             playClip(si, true)
-            if si > 1 and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
+            if si > lo and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
         end
     end
     if fi ~= shownFrame then
@@ -199,7 +213,7 @@ local function show(sec)
     local rel = sec - starts[si]
     -- the ending: after the last line the picture and text fade to black and "THE END" fades in
     local fade = 1
-    if si == #scenes then
+    if si == hi then
         local left = starts[si] + scenes[si].dur - sec
         if left < ENDING then fade = math.max(0, left / (ENDING * 0.75)) end
     end
@@ -267,8 +281,8 @@ local function show(sec)
         stopKeys()
     end
 
-    status:SetText(string.format("Scene %d/%d: %s     %s / %s%s", si, #scenes, scenes[si].label, fmt(sec),
-        fmt(total), audioMissing and "     (narration files missing)" or ""))
+    status:SetText(string.format("Scene %d/%d: %s     %s / %s%s", si - lo + 1, hi - lo + 1, scenes[si].label,
+        fmt(sec - starts[lo]), fmt(endTime() - starts[lo]), audioMissing and "     (narration files missing)" or ""))
 end
 
 local function setPlaying(p)
@@ -280,11 +294,11 @@ local function setPlaying(p)
     else
         stopClip()
     end
-    playBtn:SetText(p and "Pause" or (t >= total and "Replay" or "Play"))
+    playBtn:SetText(p and "Pause" or (t >= endTime() - 0.05 and "Replay" or "Play"))
 end
 
 local function seek(sec)
-    t = math.max(0, math.min(total - 0.01, sec))
+    t = math.max(starts[lo], math.min(endTime() - 0.01, sec))
     stopClip()
     shownScene = 0
     show(t)
@@ -426,16 +440,16 @@ local function build()
     status:SetPoint("BOTTOMRIGHT", -14, 16)
 
     nextX = 12
-    button(frame, "<", 30, function() seek(starts[math.max(1, sceneAt(t) - 1)]) end)
+    button(frame, "<", 30, function() seek(starts[math.max(lo, sceneAt(t) - 1)]) end)
     playBtn = button(frame, "Play", 70, function()
-        if t >= total - 0.05 then seek(0) end
+        if t >= endTime() - 0.05 then seek(starts[lo]) end
         setPlaying(not playing)
     end)
     button(frame, ">", 30, function()
         local nxt = sceneAt(t) + 1
-        if nxt <= #scenes then seek(starts[nxt]) end
+        if nxt <= hi then seek(starts[nxt]) end
     end)
-    button(frame, "Restart", 70, function() seek(0) setPlaying(true) end)
+    button(frame, "Restart", 70, function() seek(starts[lo]) setPlaying(true) end)
     button(frame, "Close", 60, function() frame:Hide() end)
     toggle(frame, 86, "Sound", "introSound", true, function()
         ST.db.settings.introMute = not ST.db.settings.introSound
@@ -485,8 +499,8 @@ local function build()
     frame:SetScript("OnUpdate", function(_, elapsed)
         if not playing then return end
         t = t + elapsed
-        if t >= total then
-            t = total - 0.01
+        if t >= endTime() then
+            t = endTime() - 0.01
             setPlaying(false)
         end
         show(t)
@@ -525,8 +539,11 @@ function Intro.Toggle(arg)
     if not frame then build() end
     if frame:IsShown() then frame:Hide() return end
     frame:Show()
-    local si = tonumber(arg)
-    seek(si and starts[math.max(1, math.min(#scenes, si))] or 0)
+    local si = arg == "victory" and firstOf[2] or tonumber(arg) or 1
+    si = math.max(1, math.min(#scenes, si))
+    lo, hi = firstOf[scenes[si].chapter], lastOf[scenes[si].chapter]
+    shownScene = 0
+    seek(starts[si])
     setPlaying(true)
 end
 

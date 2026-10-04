@@ -9,7 +9,7 @@
 #   powershell -ExecutionPolicy Bypass -File tools\intro\render_intro.ps1 [-Format tga]
 param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender,
       [ValidateSet("storybook", "lines")][string]$Style = "storybook",
-      [string]$SceneList = "1,2,3,4,5,6,7,8,9,10")  # for example "9,10"; a text list because -File flattens 9,10 into 910
+      [string]$SceneList = "1,2,3,4,5,6,7,8,9,10,11,12")  # for example "9,10"; a text list because -File flattens 9,10 into 910
 $ErrorActionPreference = "Stop"
 $sceneIds = @($SceneList -split '[,\s]+' | Where-Object { $_ } | ForEach-Object { [int]$_ })
 $here = $PSScriptRoot
@@ -94,7 +94,7 @@ $browser = @(
 if (-not $browser) { throw "Edge or Chrome not found" }
 $styleFlag = switch ($Style) { "lines" { "&line=1" } default { "" } }
 $namePrefix = switch ($Style) { "lines" { "intro_l" } default { "intro_" } }
-$scenes = 10
+$scenes = 12
 foreach ($n in $sceneIds) {
     if ($SkipRender) { break }
     $s = $n - 1
