@@ -161,13 +161,15 @@ function Store.Tallies()
         return t[name]
     end
     for _, ev in pairs(ST.db.events) do
-        local c = row(ev.caster)
-        c.cast = c.cast + 1
-        if Store.Lands(ev) then c.points = c.points + (ev.points or 0) end
-        local tr = row(ev.target)
-        tr.received = tr.received + 1
-        tr.points = tr.points + Store.Goal(ev)
-        for _, a in ipairs(ev.assistants or {}) do row(a).assisted = row(a).assisted + 1 end
+        if not ev.fake then -- test summons are not counted
+            local c = row(ev.caster)
+            c.cast = c.cast + 1
+            if Store.Lands(ev) then c.points = c.points + (ev.points or 0) end
+            local tr = row(ev.target)
+            tr.received = tr.received + 1
+            tr.points = tr.points + Store.Goal(ev)
+            for _, a in ipairs(ev.assistants or {}) do row(a).assisted = row(a).assisted + 1 end
+        end
     end
     return t
 end
@@ -177,7 +179,7 @@ function Store.Stats(caster)
     local s = { cast = 0, kinds = {}, distinctMaps = 0, points = 0 }
     local maps = {}
     for _, ev in pairs(ST.db.events) do
-        if ev.caster == caster and Store.Lands(ev) then
+        if ev.caster == caster and not ev.fake and Store.Lands(ev) then
             s.cast = s.cast + 1
             s.points = s.points + (ev.points or 0)
             if ev.kind then s.kinds[ev.kind] = (s.kinds[ev.kind] or 0) + 1 end

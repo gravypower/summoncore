@@ -728,6 +728,18 @@ add("Zennit's alts are learned from his own client, and only a few", function()
         string.format("before=%s %s %s after=%s other=%s capped=%s", tostring(before), r1, r2, tostring(after), tostring(other), tostring(capped))
 end)
 
+add("test summons are not counted in tallies or badge stats", function()
+    local a = newClient("Alpha")
+    cast(a, 940, true)
+    cast(a, 941, true, { fake = true })
+    local tally, stats
+    with(a, function()
+        tally = ST.Store.Tallies().Alpha
+        stats = ST.Store.Stats("Alpha")
+    end)
+    return tally.cast == 1 and stats.cast == 1, string.format("tally %d, stats %d", tally.cast, stats.cast)
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge
