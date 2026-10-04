@@ -28,6 +28,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
 | Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
 | Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; A, B, C and D built; playtest |
+| Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -621,6 +622,72 @@ be earned. Ten far-flung maps have been marked for a while (from memory, to be c
 - Which lines does the group stop reading? Which do they repeat to each other?
 - Does Zennit use his list to surprise, or does he forget it is there?
 - Does anyone ask what next week's rules will be?
+
+### 2026-10-04 · Lens of Elegance, with the Lens of Balance: which rules earn their place
+
+**The questions (paraphrased):** what does each rule do for the game? Could it go without changing the experience? Do the
+rules interact in ways the players cannot see? Is there a small core a player can hold in their head? We have added a rule
+or two with every lens, so this is the moment to take stock.
+
+**An ablation of the weekly race.** The weekly model that reproduces the Fairness table (15%, 28%, 64%), with one rule changed
+at a time. The group's chance of winning a week: quiet (2 summons, no helpers), normal (3, one helper), trying (5 dungeons, 2 helpers).
+
+| Rule changed | Quiet | Normal | Trying |
+|---|---|---|---|
+| **As built** | 15% | 27% | 63% |
+| No head start (0 instead of 2) | 15% | 28% | 63% |
+| No helper bonus | 15% | 23% | 52% |
+| No edge for him on the dice (the most catch-up can give) | 23% | 39% | 74% |
+| His edge at +20 (the most it can take) | 9% | 18% | 52% |
+| No dice limit | 15% | 27% | **30%** |
+| No secret list | 16% | **42%** | **87%** |
+| The list on half of all places | 12% | 16% | 42% |
+| The list on three places in four | 7% | 7% | 20% |
+| **The list on every place** | **0%** | **0%** | **0%** |
+
+**The rules, and what each is worth** (the numbers are points of a normal week's chance)
+
+| Rule | What it does | Worth | Verdict |
+|---|---|---|---|
+| Only summons of him count | He is the target (Essential Experience) | The premise | Core |
+| Three dice a week | Makes *when to roll* a choice | 33 points on a trying week | Core |
+| His +10 edge, with catch-up and the whim | The one smooth dial | 12 points either way | Core |
+| Helpers add +5 (two at most) | Gives the helpers a part | 4 to 11 points | Core: it is the helpers' story |
+| Cap of 10, he may close after 5 | His way out, neutral by design (Griefing entry) | About 0 | Keep |
+| His week off is filler | Makes his wins a pause | 0 a week, 4 weeks a season | Keep |
+| Whims | Variety | 3 to 5 points, on purpose | Keep |
+| **Head start of 2** | Was the difficulty dial | **0 to 1 point** | **Dead weight** |
+| **His secret list** | Something for him to win | **15 to 24 points, unbounded** | **The strongest rule, and the one with no limit** |
+
+**Findings**
+1. **The list is the strongest rule and has no bound.** At the 1 in 4 we assumed, it is worth 15 points of a normal week. But it
+   is whatever Zennit makes it: an entry matches any place whose subzone or zone name contains its text, with no minimum length and
+   no limit on entries, so a single letter matches most places. At every place the group's chance is 0% at any effort.
+   The design (Griefing entry) was that he can say "enough", not that he can decide the week; this decides it.
+2. **The head start does nothing.** From 2 to 0 the chance moves by a point, because it only matters in a week of one or two
+   points of summons (a city). It is still printed in several lines ("including a 2 point head start") and the season band.
+3. **The rules are a dozen, and no line says them all.** A player has to hold what counts, the cap and the close, the dice,
+   the edge, the helpers, the list, the week off, the catch-up, the whim, the season and the points by place. The intro narrates
+   eight of them and was written before the catch-up, the whim, the filler and the last die; the README is the only whole list.
+4. **Two edges stack.** The whim (5 either way) and the catch-up (5 or 10) both move his edge, so it ranges from 0 to 25 and
+   the group's trying week from about 47% to over 74%. The floor at 0 stops it being a handicap; nothing else bounds it.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Bound the list**: at most 5 entries, each at least 4 letters (a place, not a letter). Entries beyond the fifth or shorter than four letters stop matching | 1 | Two constants and a check |
+| B | **Drop the head start** (0 for the new rules; the old weeks keep theirs): the lines and the band no longer mention it | 2 | One constant, a few strings, the Fairness table's note |
+| C | **A rules card**: `/sc rules` (and a Tools button) prints this week's rules with the live numbers: what counts, the cap and the close, his dice, his edge with its catch-up and whim, what a helper adds, the list's size, the week off. One source of truth, never stale | 3, 4 | A function that reads the same numbers the game does |
+| D | **Re-voice intro scenes 9 and 10** to the current rules | 3 | Wording, then re-recording: the largest |
+
+**To decide before building**
+- Bound the list, and how tightly? (Five entries of four letters or more is the proposal.)
+- Is the head start worth keeping for its tie-breaking, or does it go?
+
+**To watch in playtests**
+- How wide does Zennit make his list, and how often does the Index say "again"?
+- Can the group say the rules back? (If not, the card is not enough and the intro needs redoing.)
 
 ## Decisions
 
