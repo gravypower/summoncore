@@ -1,9 +1,8 @@
 # Recording sheet: voice clips for Summon Core
 
-**This sheet is in the repo so it is not lost, and the repo is public.** If Zennit reads it, the lines meant to surprise
-him (`zenit_land`, `zenit_refuse`, `zenit_win`) are spoiled, so treat the lines below as prompts, not a script: record your
-own versions and keep the actual takes to yourselves. The takes are different: `Media/clips/*.ogg` is git-ignored, so pass
-them round by hand and add them to the release zip yourselves.
+**The sheet and the takes are both in the repo, and the repo is public.** If Zennit looks, the lines meant to surprise him
+(`zenit_land`, `zenit_refuse`, `zenit_win`) are spoiled. Everything is committed so nothing is lost; the surprise is only as
+safe as he is incurious.
 
 ## How to record (one evening)
 
@@ -12,7 +11,8 @@ them round by hand and add them to the release zip yourselves.
 - Name each file `<category>_<NN>_<who>.ogg`: `wag_01_aaron.ogg`, `zenit_land_03_sam.ogg`. NN is 01, 02, 03... per category;
   `who` is whoever is speaking.
 - Put them in `Media/clips/`, run `powershell -ExecutionPolicy Bypass -File tools\build_clip_manifest.ps1` (it writes
-  `ClipList.lua` and warns about badly named files), then **restart WoW** (`/reload` does not pick up new media).
+  `ClipList.lua` and warns about badly named files), commit the takes with `ClipList.lua`, then **restart WoW** (`/reload`
+  does not pick up new media).
 - Check with `/sc clip` (lists the categories) and `/sc clip zenit_land` (plays one). The addon picks a random clip per
   category and never plays the same one twice running, so **three or more per category** is where it starts to feel alive.
 

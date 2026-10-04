@@ -192,8 +192,9 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 
 `design/recording-sheet.md` lists lines to record for each category and how to convert and name the takes (it is in the repo, so treat its lines as prompts: Zennit can read them).
 
-`Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zennit, and the repo is on GitHub. Add
-the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.
+The clips are committed with the rest of the addon (and so go into the release zip), which means Zennit can listen to them in the
+repo: the lines meant to surprise him will not be a surprise if he looks. Run the manifest script after adding clips and commit
+`ClipList.lua` with them.
 
 ### Zennit's answer
 
@@ -247,7 +248,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
 | Scoring tables | Ten far-flung places are marked `remote` from memory (Silithus, Winterspring and so on) and the dungeon entrance subzone strings are guesses; confirm each with `/sc where` |
 | Gag and voice clips | Not recorded yet; the gag is still the placeholder sheet |
-| Release | None published yet (no git tags); clips are git-ignored, so a release zip has none |
+| Release | None published yet (no git tags); a release zip carries whatever clips are committed |
 
 Known limits of the 12.0 API: no combat log, party data may be secret, no web requests. Secret values on
 other units (`UnitInRange`, `UnitHealth`) were confirmed, so the addon does not rely on them.
