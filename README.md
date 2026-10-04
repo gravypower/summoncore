@@ -36,7 +36,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc debug` | Toggle detector messages |
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/sc intro [scene\|z1..z5\|g1..g5\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes); a scene number starts there, a chapter key plays that chapter, `check` tests the sound files |
+| `/sc intro [scene\|z1..z5\|g1..g5\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter, `now` plays only "The Index today", `check` tests the sound files |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Zennit tab |
@@ -61,6 +61,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Reset.lua` | Reset | `/sc reset`: wipe this client, and the admin's request to everyone else |
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
+| `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
 | `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the party, Zennit, the log, the story, sync and tools), and the Zennit access-denied gag |
 | `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the self-test (`/sc synctest`, admin only) |
@@ -158,6 +159,14 @@ up new files). The art lives in `Media/intro_l<n>.blp` (lines) and `intro_<n>.bl
   `IntroCues.lua` (scene lengths, key phrases, sentence times, and the highlight boxes: edit `$highlightSpec` in that script to change what lights up and when). The key phrases and what they say are listed in that script; each is timed from where its
   sentence sits in the audio (silence detection between sentences) and where the phrase sits in the sentence.
   Nothing is sampled from any existing recording.
+
+The intro does not end where the recording does. After scene 10 it plays **The Index today** (`Ledger.lua`), a scene
+written from the season each time it plays, so the story moves with the tree: who leads the season, how far down each
+trunk the race has got (a line for the latest win on each side, and only for chapters already reached, so nothing is
+spoiled), a warning when a side is one win from its finale, how the last season ended once there has been one, and how
+this week stands (his week off, the Index closed, or the lead and the summons filed). Its picture is the latest chapter
+reached, or "The week" before any. It is typed out under the key clicks with no voice, because it is never the same
+twice; `/sc intro now` plays it alone. Tune the wording in `Ledger.lua` (`RECAP`, `LAST_SEASON` and `Ledger.Build`).
 
 Scenes 9 and 10 explain the weekly challenge: the group earns points by place, ten summons a week count, Zennit holds a secret list that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), or close the Index once five are filed. Their wording follows the race rules from October 2026.
 

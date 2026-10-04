@@ -459,7 +459,7 @@ local function buildStory(f)
     local root = treeNode(f, MID_X, ROOT_TOP, ROOT_W)
     root.key, root.playable = "1", true
     root.tag:SetText("THE INTRO")
-    root.tip = { "The intro: Zennit and the Index", "Click to play." }
+    root.tip = { "The intro: Zennit and the Index", "Click to play. It ends with the Index today: where the season stands, and how far down each trunk the race has got." }
 
     return function()
         local season = ST.Week.Season()

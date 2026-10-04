@@ -482,6 +482,39 @@ add("intro highlights: a box is up while its subject is mentioned, and the gener
     return #bad == 0, #bad == 0 and "all generated boxes are ordered and inside the picture" or ("scenes " .. table.concat(bad, ","))
 end)
 
+add("the Index today: the intro's last scene follows the season, and holds back chapters not yet reached", function()
+    local L = ST.Ledger
+    local function state(z, g, finales, score)
+        return { wins = 5, cap = 10, immune = false, season = { zennit = z, group = g, finales = finales or {}, chapters = {} },
+            score = score or { summons = 0, group = 0, zennit = 2, counted = 0, new = true } }
+    end
+    local function say(s)
+        local all = {}
+        for _, item in ipairs(L.Build(s)) do all[#all + 1] = item.text end
+        return table.concat(all, " ")
+    end
+    local fresh, ahead, behind = say(state(0, 0)), say(state(1, 3)), say(state(3, 1))
+    if not fresh:find("empty") or not ahead:find("group leads") or not behind:find("Zennit leads") then
+        return false, "the standing does not follow the season"
+    end
+    if fresh:find("syllabus") or ahead:find("syllabus") or not behind:find("syllabus") then
+        return false, "a trunk is recapped before the race reached it"
+    end
+    if not say(state(4, 4)):find("Both sides are one win") or not say(state(0, 4)):find("one win from the finale") then
+        return false, "the last win is not flagged"
+    end
+    if not say(state(0, 0, { { side = "group" } })):find("receipt") then return false, "last season is not recalled" end
+    local sentences, cues, length = L.Timed(L.Build(state(2, 2)))
+    for i = 2, #sentences do
+        if sentences[i].t <= sentences[i - 1].t then return false, "sentence times are not ordered" end
+    end
+    for _, c in ipairs(cues) do
+        if c.t >= length then return false, "a cue falls outside the scene" end
+    end
+    local key = L.ArtKey({ chapters = { { key = "z1" }, { key = "g1" } } })
+    return key == "g1" and L.ArtKey({ chapters = {} }) == nil, "standing, trunks, last wins and last season all follow the tree"
+end)
+
 add("Zennit's answer rides on the record; malformed answers are rejected", function()
     local id, ev = sample({ target = "Zennit", response = { result = "won", zroll = 64, sroll = 31, time = BASE + 300 } })
     local rid, back = Sync.Decode(Sync.Encode(id, ev))
