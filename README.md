@@ -242,7 +242,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
-| Scoring tables | No place is marked `remote`, so the Far Flung badge cannot be earned yet; the Deadmines entrance subzone string is a guess |
+| Scoring tables | Ten far-flung places are marked `remote` from memory (Silithus, Winterspring and so on) and the dungeon entrance subzone strings are guesses; confirm each with `/sc where` |
 | Gag and voice clips | Not recorded yet; the gag is still the placeholder sheet |
 | Release | None published yet (no git tags); clips are git-ignored, so a release zip has none |
 
