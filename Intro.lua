@@ -557,7 +557,9 @@ local function build()
         setPlaying(false)
         local after = onClose
         onClose = nil
-        if after then after() end
+        -- One frame later: Esc hides every special frame in one pass, so a window reopened right here (the
+        -- hub, when it was registered after the viewer) would be hidden again by the same keypress.
+        if after then C_Timer.After(0, after) end
     end)
     layout()
 end
