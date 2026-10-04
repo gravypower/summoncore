@@ -75,6 +75,29 @@ local function split(s, sep)
     return out
 end
 
+-- Zennit's answer to a summon of him travels with the record as "result:zroll:sroll:time" (empty if none).
+local function respString(r)
+    if not r then return "" end
+    return string.format("%s:%d:%d:%d", r.result, r.zroll or 0, r.sroll or 0, r.time)
+end
+
+-- nil for none, false for a malformed answer, otherwise the answer.
+local function parseResp(str)
+    if str == "" then return nil end
+    local result, z, r, t = str:match("^(%a+):(%d+):(%d+):(%d+)$")
+    if not result or not ST.Store.RESULTS[result] then return false end
+    z, r, t = tonumber(z), tonumber(r), tonumber(t)
+    if z > 100 or r > 100 or t <= 0 or t > time() + 86400 then return false end
+    return { result = result, zroll = z, sroll = r, time = t }
+end
+
+-- The later of two answers (an answer can change: owes 50 silver, then paid).
+local function laterResponse(a, b)
+    if not a then return b end
+    if not b then return a end
+    return b.time > a.time and b or a
+end
+
 function Sync.Encode(id, ev)
     local assist = {}
     for _, a in ipairs(ev.assistants or {}) do assist[#assist + 1] = esc(a) end
@@ -82,6 +105,7 @@ function Sync.Encode(id, ev)
         esc(id), esc(ev.caster), esc(ev.target), table.concat(assist, ","),
         ev.mapID and tostring(ev.mapID) or "", esc((ev.subzone or ""):sub(1, MAX_SUBZONE)),
         tostring(ev.time), ev.confirmed and "1" or "0", tostring(ev.wrote or ev.time),
+        respString(ev.response),
     }, "|")
 end
 
@@ -92,7 +116,7 @@ end
 -- Returns id, ev on success, or nil, reason. Never trusts the sender's field values.
 function Sync.Decode(record)
     local f = split(record, "|")
-    if #f ~= 9 then return nil, "fields" end
+    if #f ~= 9 and #f ~= 10 then return nil, "fields" end
     local id, caster, target = unesc(f[1]), unesc(f[2]), unesc(f[3])
     if not validName(caster) or not validName(target) then return nil, "name" end
     if #id > 48 or id:sub(1, #caster + 1) ~= caster .. "-" then return nil, "id" end
@@ -116,9 +140,12 @@ function Sync.Decode(record)
     if not t or not wrote or t <= 0 or wrote <= 0 then return nil, "time" end
     if t > time() + 86400 or wrote > time() + 86400 then return nil, "future" end
     if f[8] ~= "0" and f[8] ~= "1" then return nil, "confirmed" end
+    local resp = parseResp(f[10] or "")
+    if resp == false then return nil, "response" end
     return id, {
         caster = caster, target = target, assistants = assistants, mapID = mapID,
         subzone = subzone, time = t, wrote = wrote, confirmed = f[8] == "1",
+        response = resp,
     }
 end
 
@@ -137,7 +164,10 @@ function Sync.Merge(id, ev, sender, live, opts)
     local cur = store.Get(id)
     if ev.caster == Sync.myName() then
         -- Nobody can write entries against the receiver. Our own copy is authoritative.
-        if cur then return "kept" end
+        if cur then
+            if not opts.dryRun then cur.response = laterResponse(cur.response, ev.response) end
+            return "kept"
+        end
         if not opts.allowSelf then return "rejected:self" end
     end
     ev.points, ev.kind = ST.Scoring.Score(ev.mapID, ev.subzone)
@@ -151,7 +181,14 @@ function Sync.Merge(id, ev, sender, live, opts)
     else
         replace = (ev.wrote or ev.time) < (cur.wrote or cur.time) -- both confirmed or both not: earlier write
     end
-    if replace and not opts.dryRun then store.Put(id, ev) end
+    if not opts.dryRun then
+        if replace then
+            ev.response = laterResponse(ev.response, cur.response)
+            store.Put(id, ev)
+        else
+            cur.response = laterResponse(cur.response, ev.response)
+        end
+    end
     return replace and "replaced" or "kept"
 end
 
@@ -193,6 +230,21 @@ end
 function Sync.BroadcastEvent(id, ev)
     local rec = Sync.Encode(id, ev)
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "E", rec) end
+end
+
+-- Zennit tells everyone how he dealt with a summon of him.
+function Sync.SendResponse(id, resp)
+    local body = string.format("%s|%s|%d|%d|%d", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time)
+    for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
+end
+
+-- Dice: Zennit's roll goes to the summoner, who rolls back; both by whisper.
+function Sync.SendDice(id, zroll, toName)
+    enqueue("WHISPER", toName, "D", esc(id) .. "|" .. zroll)
+end
+
+function Sync.SendDiceReply(id, sroll, toName)
+    enqueue("WHISPER", toName, "S", esc(id) .. "|" .. sroll)
 end
 
 ----------------------------------------------------------------------
@@ -274,9 +326,51 @@ function Sync.OnMessage(text, channel, sender)
             st.added = st.added + 1
             announceSoon()
             -- Zennit hears a recorded complaint when a friend summons him (live events only, not history).
-            if typ == "E" and ev.target == Sync.myName() and ST.Gag.IsZennit() then ST.Clips.Play("zenit_land") end
+            if typ == "E" and ev.target == Sync.myName() and ST.Gag.IsZennit() then
+                ST.Clips.Play("zenit_land")
+                if ST.Respond then ST.Respond.Incoming(id, ev) end
+            end
         end
         return result
+    elseif typ == "Z" then
+        -- Zennit's answer: only he can answer for himself
+        local rid, result, z, r, rt = body:match("^([^|]+)|(%a+)|(%d+)|(%d+)|(%d+)$")
+        if not rid then return "bad" end
+        rid = unesc(rid)
+        local ev = ST.Store.Get(rid)
+        if not ev then return "rejected:unknown" end
+        if sender ~= ev.target then return "rejected:sender" end
+        if not ST.Store.RESULTS[result] then return "rejected:result" end
+        local resp = { result = result, zroll = tonumber(z), sroll = tonumber(r), time = tonumber(rt) }
+        if resp.zroll > 100 or resp.sroll > 100 or resp.time > time() + 86400 then return "rejected:values" end
+        if laterResponse(ev.response, resp) ~= resp then return "kept" end
+        ST.Store.SetResponse(rid, resp)
+        if Sync.onResponse then Sync.onResponse(rid, ev, resp) end
+        return "applied"
+
+    elseif typ == "D" then
+        -- Zennit suggests dice for a summon of him, and has rolled; we are the summoner
+        local rid, z = body:match("^([^|]+)|(%d+)$")
+        if not rid then return "bad" end
+        rid, z = unesc(rid), tonumber(z)
+        local ev = ST.Store.Get(rid)
+        if not ev then return "rejected:unknown" end
+        if sender ~= ev.target or ev.caster ~= Sync.myName() then return "rejected:sender" end
+        if z < 1 or z > 100 then return "rejected:values" end
+        if Sync.onDice then Sync.onDice(rid, ev, z) end
+        return "dice"
+
+    elseif typ == "S" then
+        -- the summoner's roll, back to Zennit
+        local rid, sroll = body:match("^([^|]+)|(%d+)$")
+        if not rid then return "bad" end
+        rid, sroll = unesc(rid), tonumber(sroll)
+        local ev = ST.Store.Get(rid)
+        if not ev then return "rejected:unknown" end
+        if sender ~= ev.caster or ev.target ~= Sync.myName() then return "rejected:sender" end
+        if sroll < 1 or sroll > 100 then return "rejected:values" end
+        if Sync.onDiceReply then Sync.onDiceReply(rid, ev, sroll) end
+        return "dice-reply"
     end
     return "bad"
 end

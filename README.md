@@ -35,6 +35,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
 | `/st intro [scene]` | Play the illustrated intro, "Zennit and the Index" |
 | `/st clip [category|file]` | List or play voice clips from `Media/clips` |
+| `/st respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
 | `/st gag` | Preview the Zennit gag |
 | `/st zenit` | Toggle Zennit test mode on this character |
 
@@ -145,6 +146,26 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 
 `Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zennit, and the repo is on GitHub. Add
 the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.
+
+### Zennit's answer
+
+When a live summon of Zennit reaches his client, a dialog gives him four choices:
+
+| Choice | What happens to the summon |
+|---|---|
+| Accept it | Counts. |
+| Refuse | Does not count. |
+| Demand 50 silver, in cash, no receipt | Does not count until he says it was paid ("They paid"); until then the log shows "owes 50 silver". |
+| Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; higher wins and a tie goes to Zennit. If Zennit wins, the summon does not count. |
+
+His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
+own client can answer for him, a newer answer replaces an older one (owes, then paid), and the dice use two more
+messages (`D`: his roll to the summoner, `S`: the roll back). Points, tallies and badges only count summons that
+land. The same choices are in the hub window's **Answer** tab (`/st`, then Answer): the summons waiting for his answer with Previous/Next, the four choices drawn in the window, and a list of the ones he has already answered. `/st respond` reopens the dialog for the latest summon that is still waiting; `/st respond test` (or the
+Tools tab's "Test a summoning") tries it on a pretend summon from "Tester", with a pretend summoner rolling back.
+
+Test summons (`/st fake`, the buttons that add them, and `respond test`) are marked and stay on that client: they
+are not counted for sync, not sent in batches and not exported.
 
 ### Zennit mode
 

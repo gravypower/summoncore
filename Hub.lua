@@ -6,8 +6,8 @@ local Hub = {}
 ST.Hub = Hub
 
 local ROW_H = 18
-local ORDER = { "summary", "log", "tally", "badges", "sync", "tools" }
-local LABELS = { summary = "Summary", log = "Log", tally = "Tally", badges = "Badges", sync = "Sync", tools = "Tools" }
+local ORDER = { "summary", "log", "answer", "tally", "badges", "sync", "tools" }
+local LABELS = { summary = "Summary", log = "Log", answer = "Answer", tally = "Tally", badges = "Badges", sync = "Sync", tools = "Tools" }
 local GATED = { summary = true, tally = true, badges = true } -- hidden on Zennit's client
 
 local window
@@ -137,9 +137,9 @@ local function buildSummary(f)
 end
 
 local function buildLog(f)
-    local list = scrollList(f, { { "When", 110 }, { "Summoner -> target", 220 }, { "Helpers", 200 },
-        { "Kind", 70 }, { "Pts", 40, "RIGHT" } }, 40)
-    local status = label(f, "", 440, -420, "GameFontDisableSmall")
+    local list = scrollList(f, { { "When", 100 }, { "Summoner -> target", 190 }, { "Helpers", 140 },
+        { "Zennit's answer", 170 }, { "Kind", 60 }, { "Pts", 40, "RIGHT" } }, 40)
+    local status = label(f, "", 520, -420, "GameFontDisableSmall")
     local function refresh()
         local zenit = ST.Gag.IsZennit()
         local rows = {}
@@ -147,8 +147,9 @@ local function buildLog(f)
             local ev = r.ev
             rows[#rows + 1] = {
                 fmtTime(ev.time, "%m-%d %H:%M"),
-                ev.caster .. " -> " .. ev.target .. (ev.confirmed and "" or " ?"),
+                ev.caster .. " -> " .. ev.target .. (ev.confirmed and "" or " ?") .. (ev.fake and " (test)" or ""),
                 #ev.assistants > 0 and table.concat(ev.assistants, ", ") or "-",
+                ST.Respond.Describe(ev) or "",
                 zenit and "" or (ev.kind or ""),
                 zenit and "" or tostring(ev.points or 0),
             }
@@ -167,7 +168,71 @@ local function buildLog(f)
         ST.AddFake(names[n], { names[n % #names + 1], names[(n + 1) % #names + 1] })
         Hub.Refresh()
     end)
+    button(f, "Answer a summon", 250, -420, 140, function() Hub.Open("answer") end)
     return refresh
+end
+
+local function buildAnswer(f)
+    local info = label(f, "", 16, -12, "GameFontNormal")
+    local counter = label(f, "", 252, -306, "GameFontDisableSmall")
+    local surface
+    surface = ST.Respond.NewSurface(f, 16, -40, 704, function()
+        ST.Respond.Clear(surface)
+        Hub.Refresh()
+    end)
+
+    -- the summons already answered, below
+    local recentFrame = CreateFrame("Frame", nil, f)
+    recentFrame:SetPoint("TOPLEFT", 0, -338)
+    recentFrame:SetPoint("BOTTOMRIGHT", 0, 0)
+    local recent = scrollList(recentFrame, { { "When", 100 }, { "Summoner", 150 }, { "Your answer", 300 }, { "Pts", 60, "RIGHT" } }, 8)
+
+    local function indexOf(pending, id)
+        for i, r in ipairs(pending) do if r.id == id then return i end end
+    end
+
+    local function go(step)
+        local pending = ST.Respond.Pending()
+        if #pending == 0 then return end
+        local at = surface.current and indexOf(pending, surface.current.id)
+        local target = at and ((at - 1 + step) % #pending) + 1 or (step > 0 and 1 or #pending)
+        ST.Respond.Select(surface, pending[target].id, pending[target].ev)
+        Hub.Refresh()
+    end
+    button(f, "< Previous", 16, -300, 110, function() go(-1) end)
+    button(f, "Next >", 132, -300, 110, function() go(1) end)
+
+    return function()
+        local pending = ST.Respond.Pending()
+        local current = surface.current
+        -- keep what is on show (a summon being answered, or its outcome) until the user moves on
+        if not (current and (indexOf(pending, current.id) or ST.Respond.Stage(surface) == "done")) then
+            if #pending > 0 then
+                ST.Respond.Select(surface, pending[1].id, pending[1].ev)
+            else
+                ST.Respond.Clear(surface)
+            end
+        end
+        local n = #pending
+        if n == 0 and not ST.Gag.IsZennit() then
+            info:SetText("This tab is for Zennit's character: summons of him wait here for his answer. Try it with Tools > Test a summoning.")
+        else
+            info:SetText(n == 0 and "Nothing is waiting for your answer." or
+                string.format("%d summon%s waiting for your answer", n, n == 1 and "" or "s"))
+        end
+        local at = surface.current and indexOf(pending, surface.current.id)
+        counter:SetText(at and string.format("showing %d of %d", at, n) or "")
+
+        local me, rows = ST.Store.me(), {}
+        for _, r in ipairs(ST.Store.Recent(200)) do
+            local ev = r.ev
+            if ev.target == me and ev.response and ev.response.result ~= "owed" and #rows < 40 then
+                rows[#rows + 1] = { fmtTime(ev.time, "%m-%d %H:%M"), ev.caster .. (ev.fake and " (test)" or ""),
+                    ST.Respond.Describe(ev) or "", ST.Store.Lands(ev) and tostring(ev.points or 0) or "0" }
+            end
+        end
+        recent.Set(rows, "No answered summons yet.")
+    end
 end
 
 local function buildTally(f)
@@ -242,6 +307,7 @@ local function buildTools(f)
     label(f, "Try things", 210, -10)
     button(f, "Preview Zennit gag", 210, -34, 170, function() ST.Gag.Play() end)
     button(f, "Intro sound check", 210, -64, 170, function() ST.Intro.Check() end)
+    button(f, "Test a summoning", 404, -124, 200, function() ST.Respond.Test() end)
     button(f, "Assistants prompt demo", 210, -94, 170, function()
         ST.Prompt.Ask("Target", { "Alice", "Bob", "Cara" }, {}, function(names, confirmed)
             show(string.format("Prompt result: %s (%s)", #names > 0 and table.concat(names, ", ") or "nobody",
@@ -300,7 +366,7 @@ local function buildTools(f)
     return function() end
 end
 
-local BUILDERS = { summary = buildSummary, log = buildLog, tally = buildTally, badges = buildBadges,
+local BUILDERS = { summary = buildSummary, log = buildLog, answer = buildAnswer, tally = buildTally, badges = buildBadges,
     sync = buildSync, tools = buildTools }
 
 ----------------------------------------------------------------------

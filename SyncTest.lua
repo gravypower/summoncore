@@ -118,7 +118,7 @@ add("malformed records are rejected", function()
     local id, ev = sample()
     local rec = Sync.Encode(id, ev)
     local cases = {
-        { rec .. "|x", "fields" },
+        { rec .. "|x|y", "fields" },
         { mutate(rec, 7, "abc"), "time" },
         { mutate(rec, 7, tostring(time() + 10 * 86400)), "future" },
         { mutate(rec, 1, "Other-1717000100"), "id" },
@@ -453,7 +453,7 @@ end)
 
 add("hub window: builds and every tab refreshes without errors", function()
     local ok, err = ST.Hub.SelfCheck()
-    return ok, ok and "all six tabs refreshed" or tostring(err)
+    return ok, ok and "every tab refreshed" or tostring(err)
 end)
 
 add("intro highlights: a box is up while its subject is mentioned, and the generated boxes fit the picture", function()
@@ -477,6 +477,127 @@ add("intro highlights: a box is up while its subject is mentioned, and the gener
         end
     end
     return #bad == 0, #bad == 0 and "all generated boxes are ordered and inside the picture" or ("scenes " .. table.concat(bad, ","))
+end)
+
+add("Zennit's answer rides on the record; malformed answers are rejected", function()
+    local id, ev = sample({ target = "Zennit", response = { result = "won", zroll = 64, sroll = 31, time = BASE + 300 } })
+    local rid, back = Sync.Decode(Sync.Encode(id, ev))
+    local r = back and back.response
+    if not (rid == id and r and r.result == "won" and r.zroll == 64 and r.sroll == 31 and r.time == BASE + 300) then
+        return false, "answer lost in the round trip"
+    end
+    local rec = Sync.Encode(id, ev)
+    for _, bad in ipairs({ "nonsense:1:2:3", "won:101:2:5", "dance:1:2:5", "won:1:2" }) do
+        local ok, reason = Sync.Decode(mutate(rec, 10, bad))
+        if ok or reason ~= "response" then return false, bad .. " gave " .. tostring(reason or "accepted") end
+    end
+    local plainID, plain = sample()
+    local _, noAnswer = Sync.Decode(Sync.Encode(plainID, plain))
+    return noAnswer ~= nil and noAnswer.response == nil, "4 bad answers refused; no answer stays no answer"
+end)
+
+add("points only count for summons that land", function()
+    local a = newClient("Alpha")
+    local results = { "accepted", "refused", "owed", "paid", "won", "lost" }
+    for i, res in ipairs(results) do
+        cast(a, 700 + i, true, { target = "Zennit", response = { result = res, zroll = 40, sroll = 10, time = BASE + 5 } })
+    end
+    cast(a, 800, true, { target = "Zennit" }) -- no answer yet: counts
+    local tally, stats
+    with(a, function()
+        tally = ST.Store.Tallies().Alpha
+        stats = ST.Store.Stats("Alpha")
+    end)
+    -- accepted, paid, lost and the unanswered one land: 4 summons x 3 points
+    return tally.cast == 7 and tally.points == 12 and stats.cast == 4,
+        string.format("cast=%d points=%d landed=%d", tally.cast, tally.points, stats.cast)
+end)
+
+add("only Zennit can answer for himself, and a newer answer wins", function()
+    local a, z = newClient("Alpha"), newClient("Zennit")
+    local id = cast(a, 900, false, { target = "Zennit" })
+    settle({ a, z })
+    with(z, function() ST.Respond.Decide(id, "refused") end)
+    settle({ a, z })
+    local first = a.db.events[id].response
+    if not (first and first.result == "refused") then return false, "the refusal did not reach the summoner" end
+    local landsAfterRefusal = with(a, function() return Store.Lands(a.db.events[id]) end)
+    local body = id .. "|accepted|0|0|"
+    local forged = with(a, function() return Sync.OnMessage("1~Z~" .. body .. (time() + 5), "PARTY", "Gamma") end)
+    local old = with(a, function() return Sync.OnMessage("1~Z~" .. body .. (first.time - 100), "PARTY", "Zennit") end)
+    local newer = with(a, function() return Sync.OnMessage("1~Z~" .. body .. (first.time + 100), "PARTY", "Zennit") end)
+    return forged == "rejected:sender" and old == "kept" and newer == "applied" and a.db.events[id].response.result == "accepted"
+        and not landsAfterRefusal, string.format("%s, %s, %s", forged, old, newer)
+end)
+
+add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
+    if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won" then
+        return false, "Resolve is wrong"
+    end
+    local a, z = newClient("Alpha"), newClient("Zennit")
+    local realDice = Sync.onDice
+    local summonerRoll
+    Sync.onDice = function(id, ev, zroll) Sync.SendDiceReply(id, summonerRoll, ev.target) end -- the summoner's side, rolling back
+    local out = {}
+    local ok, err = pcall(function()
+        for i, c in ipairs({ { 64, 31, "won" }, { 20, 80, "lost" }, { 50, 50, "won" } }) do
+            local id = cast(a, 910 + i, false, { target = "Zennit" })
+            settle({ a, z })
+            summonerRoll = c[2]
+            with(z, function() ST.Respond.StartDice(id, c[1]) end)
+            settle({ a, z })
+            local resp = a.db.events[id].response
+            out[#out + 1] = resp and (resp.result .. " " .. resp.zroll .. "-" .. resp.sroll) or "no answer"
+            if not (resp and resp.result == c[3] and resp.zroll == c[1] and resp.sroll == c[2]) then
+                error("roll " .. i .. " gave " .. out[#out])
+            end
+        end
+    end)
+    Sync.onDice = realDice
+    return ok, ok and table.concat(out, ", ") or tostring(err)
+end)
+
+add("dice challenges and replies are only accepted from the right player", function()
+    local a, z = newClient("Alpha"), newClient("Zennit")
+    local id = cast(a, 930, false, { target = "Zennit" })
+    settle({ a, z })
+    local seen = {}
+    local realDice, realReply = Sync.onDice, Sync.onDiceReply
+    Sync.onDice = function() seen.dice = (seen.dice or 0) + 1 end
+    Sync.onDiceReply = function() seen.reply = (seen.reply or 0) + 1 end
+    local r = {}
+    r[1] = with(a, function() return Sync.OnMessage("1~D~" .. id .. "|50", "WHISPER", "Gamma") end)   -- not the target
+    r[2] = with(a, function() return Sync.OnMessage("1~D~" .. id .. "|50", "WHISPER", "Zennit") end)  -- the real thing
+    r[3] = with(z, function() return Sync.OnMessage("1~S~" .. id .. "|50", "WHISPER", "Gamma") end)   -- not the summoner
+    r[4] = with(z, function() return Sync.OnMessage("1~S~" .. id .. "|50", "WHISPER", "Alpha") end)   -- the real thing
+    r[5] = with(a, function() return Sync.OnMessage("1~D~" .. id .. "|500", "WHISPER", "Zennit") end)  -- out of range
+    Sync.onDice, Sync.onDiceReply = realDice, realReply
+    local ok = r[1] == "rejected:sender" and r[2] == "dice" and r[3] == "rejected:sender" and r[4] == "dice-reply"
+        and r[5] == "rejected:values" and seen.dice == 1 and seen.reply == 1
+    return ok, table.concat(r, ", ")
+end)
+
+add("test summons never count for sync or export", function()
+    local a = newClient("Alpha")
+    cast(a, 1, true)
+    with(a, function() ST.AddFake("Bob", {}) end)
+    local count = with(a, function() return Store.Count() end)
+    local since = with(a, function() return #Store.Since(0) end)
+    local _, exported = with(a, function() return ST.Export.Build("all") end)
+    return count == 1 and since == 1 and exported == 1,
+        string.format("count=%d since=%d exported=%s", count, since, tostring(exported))
+end)
+
+add("pending summons: the unanswered and the ones owing silver, newest first", function()
+    local a = newClient("Alpha")
+    local me = ST.Store.me()
+    cast(a, 940, true, { target = me })
+    cast(a, 941, true, { target = me, response = { result = "owed", zroll = 0, sroll = 0, time = BASE + 1 } })
+    cast(a, 942, true, { target = me, response = { result = "accepted", zroll = 0, sroll = 0, time = BASE + 2 } })
+    cast(a, 943, true, { target = "Somebody" })
+    local pending = with(a, function() return ST.Respond.Pending() end)
+    local ok = #pending == 2 and pending[1].ev.time == BASE + 941 and pending[2].ev.time == BASE + 940
+    return ok, ok and "2 waiting: the one owing silver, then the unanswered one" or ("found " .. #pending)
 end)
 
 function T.Run()

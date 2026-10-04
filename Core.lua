@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.16.0"
+ST.version = "0.17.1"
 
 local DB_VERSION = 1
 
@@ -102,6 +102,7 @@ function ST.AddFake(target, assistants)
     local _, ev, badges = ST.Store.Add({
         caster = ST.Store.me(), target = target, assistants = assistants or {},
         mapID = C_Map.GetBestMapForUnit("player"), subzone = GetSubZoneText(), confirmed = true,
+        fake = true, -- test summons stay on this client: not counted for sync, not sent, not exported
     }, true)
     return ev, badges
 end
@@ -218,6 +219,10 @@ function commands.clip(rest)
     print_(file and ("played " .. file) or ("nothing to play for '" .. rest .. "'"))
 end
 
+function commands.respond(rest)
+    if rest == "test" then ST.Respond.Test() else ST.Respond.Open() end
+end
+
 function commands.gag()
     ST.Gag.Play()
 end
@@ -246,6 +251,7 @@ local HELP = {
     "/st export / /st import - copy-paste strings of the summon log",
     "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
+    "/st respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/st gag - preview the Zennit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
     "/st undo - remove the latest summon    /st debug - toggle detector messages",

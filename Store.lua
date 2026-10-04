@@ -32,6 +32,23 @@ function Store.Add(ev, localOnly)
     return id, ev, ST.Scoring.EvaluateBadges()
 end
 
+
+-- Zennit's answer to a summon of him (set by his client, carried by sync): { result, zroll, sroll, time }.
+-- A summon still counts unless it was refused, still owes the 50 silver, or he won the dice.
+Store.RESULTS = { accepted = true, refused = true, owed = true, paid = true, won = true, lost = true }
+local NO_POINTS = { refused = true, owed = true, won = true }
+
+function Store.Lands(ev)
+    return not (ev.response and NO_POINTS[ev.response.result])
+end
+
+function Store.SetResponse(id, resp)
+    local ev = ST.db.events[id]
+    if not ev then return false end
+    ev.response = resp
+    return true
+end
+
 function Store.Has(id) return ST.db.events[id] ~= nil end
 function Store.Get(id) return ST.db.events[id] end
 
@@ -42,14 +59,16 @@ end
 
 function Store.Count()
     local n = 0
-    for _ in pairs(ST.db.events) do n = n + 1 end
+    for _, ev in pairs(ST.db.events) do
+        if not ev.fake then n = n + 1 end
+    end
     return n
 end
 
 function Store.Latest()
     local latest = 0
     for _, ev in pairs(ST.db.events) do
-        if ev.time > latest then latest = ev.time end
+        if not ev.fake and ev.time > latest then latest = ev.time end
     end
     return latest
 end
@@ -58,7 +77,7 @@ end
 function Store.Since(t)
     local list = {}
     for id, ev in pairs(ST.db.events) do
-        if ev.time > t then list[#list + 1] = { id = id, ev = ev } end
+        if ev.time > t and not ev.fake then list[#list + 1] = { id = id, ev = ev } end
     end
     table.sort(list, function(a, b)
         if a.ev.time ~= b.ev.time then return a.ev.time < b.ev.time end
@@ -94,7 +113,7 @@ function Store.Tallies()
     for _, ev in pairs(ST.db.events) do
         local c = row(ev.caster)
         c.cast = c.cast + 1
-        c.points = c.points + (ev.points or 0)
+        if Store.Lands(ev) then c.points = c.points + (ev.points or 0) end
         row(ev.target).received = row(ev.target).received + 1
         for _, a in ipairs(ev.assistants or {}) do row(a).assisted = row(a).assisted + 1 end
     end
@@ -106,7 +125,7 @@ function Store.Stats(caster)
     local s = { cast = 0, kinds = {}, distinctMaps = 0, points = 0 }
     local maps = {}
     for _, ev in pairs(ST.db.events) do
-        if ev.caster == caster then
+        if ev.caster == caster and Store.Lands(ev) then
             s.cast = s.cast + 1
             s.points = s.points + (ev.points or 0)
             if ev.kind then s.kinds[ev.kind] = (s.kinds[ev.kind] or 0) + 1 end
