@@ -740,6 +740,20 @@ add("test summons are not counted in tallies or badge stats", function()
     return tally.cast == 1 and stats.cast == 1, string.format("tally %d, stats %d", tally.cast, stats.cast)
 end)
 
+add("assistants prompt in a raid: helpers from any subgroup come first, the list is capped, target and caster are left out", function()
+    local members = {}
+    for i = 1, 30 do members[i] = "Raider" .. i end
+    members[#members + 1] = "Target"
+    members[#members + 1] = "Me"
+    local list = ST.Detector.PickCandidates(members, { "Raider28", "Raider3", "Gone" }, "Target", "Me", 12)
+    local seen = {}
+    for _, n in ipairs(list) do seen[n] = (seen[n] or 0) + 1 end
+    local dupes = false
+    for _, c in pairs(seen) do if c > 1 then dupes = true end end
+    return #list == 12 and list[1] == "Raider28" and list[2] == "Raider3" and not seen.Target and not seen.Me
+        and not seen.Gone and not dupes, table.concat(list, ",")
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge
