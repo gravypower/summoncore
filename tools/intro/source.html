@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Zenit Intro Flipbook</title>
+<title>Zennit Intro Flipbook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Patua+One&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
@@ -201,7 +201,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 <g fill="#C99A3B" stroke="#23202B" stroke-width="2"><path d="M222 36 H246 V60 Q222 60 222 36 Z"/><path d="M222 340 H246 V316 Q222 316 222 340 Z"/></g>
 <rect x="92" y="84" width="136" height="124" fill="#C99A3B" stroke="#23202B" stroke-width="3"/>
 <g font-family="Patua One, serif" font-size="14" fill="#23202B" text-anchor="middle"><text x="160" y="112">COSMIC INDEX</text><text x="160" y="134">OF SUMMONABLE</text><text x="160" y="156">PERSONS</text></g>
-<text x="160" y="190" text-anchor="middle" font-family="Special Elite, monospace" font-size="11" fill="#23202B">Vol. A to Zed</text>
+<text x="160" y="190" text-anchor="middle" font-family="Special Elite, monospace" font-size="11" fill="#23202B">Vol. A to Z</text>
 <text x="160" y="274" text-anchor="middle" font-family="Patua One, serif" font-size="56" fill="#C99A3B">A-Z</text>
 </symbol>
 
@@ -230,7 +230,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 
 <main class="wrap">
 <header>
-<h1>Zenit and the Index</h1>
+<h1>Zennit and the Index</h1>
 <p class="sub">An illustrated intro, read by the Narrator</p>
 </header>
 
@@ -322,7 +322,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 
   scenes.push({
     label: 'The sneeze', dur: 9.095,
-    text: 'Somewhere around the letter Zed, the clerk sneezed. This is generally accepted to be the origin of the entire problem.',
+    text: 'Somewhere around the letter Z, the clerk sneezed. This is generally accepted to be the origin of the entire problem.',
     frame: function (k) {
       var shake = k === 1 ? 3 : 0;
       var out = '<rect width="960" height="540" fill="url(#gGreen)"/>' +
@@ -340,28 +340,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 
   scenes.push({
     label: 'The wrong ritual', dur: 25.047,
-    text: 'As a result of the sneeze, a Licensed Summoning Liaison, Third Class, named Zenit was entered into the Index as the default recipient of every Ritual of Summoning completed within range of his name. This includes rituals meant for other people. It includes rituals meant for nobody. It includes at least one ritual intended for a goat.',
+    text: 'As a result of the sneeze, a Licensed Summoning Liaison, Third Class, named Zennit was entered into the Index as the default recipient of every Ritual of Summoning completed within range of his name. This includes rituals meant for other people. It includes rituals meant for nobody. It includes at least one ritual intended for a goat.',
     frame: function (k) {
       var op = [0.65, 1, 0.8][k];
       var xs = [30, 250, 470], cy = 170, w = 190;
       var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
       xs.forEach(function (x) { out += ritualCircle(x, cy, w, op); });
-      out += '<circle cx="125" cy="268" r="15" fill="#C9B2FF" opacity="0.85"/><path d="M104 296 Q125 280 146 296 L150 340 L100 340 Z" fill="#C9B2FF" opacity="0.85"/>';
-      out += U('goat', 515, 236, 100, 83);
+      // the two figures inside the circles are bigger, and tagged so the line-drawing style can outline them brightly
+      out += '<g class="feature"><circle cx="125" cy="248" r="21" fill="#C9B2FF" opacity="0.9"/><path d="M95 298 Q125 274 155 298 L161 346 L89 346 Z" fill="#C9B2FF" opacity="0.9"/></g>';
+      out += '<g class="feature">' + U('goat', 505, 224, 120, 100) + '</g>';
       out += '<g stroke="#C9B2FF" stroke-width="3" stroke-dasharray="6 9" fill="none" opacity="0.7"><path d="M125 275 Q400 80 700 200"/><path d="M345 275 Q520 150 700 215"/><path d="M565 275 Q640 240 700 230"/></g>';
       out += T(125, 440, 'meant for someone else', 18, '#EDE6D6', 'middle', 'Special Elite, monospace');
       out += T(345, 440, 'meant for nobody', 18, '#EDE6D6', 'middle', 'Special Elite, monospace');
       out += T(565, 440, 'meant for a goat', 18, '#EDE6D6', 'middle', 'Special Elite, monospace');
       out += zen(700, 70 + [0, -10, -4][k], 0.5, [-2, 2, 0][k]);
       if (k === 1) out += T(676, 90, '?', 70, '#FFE98A', 'middle', 'Patua One, serif');
-      if (k === 2) out += paper(380, 30, 120, 80, -8, 'ZENIT') + T(440, 126, 'default recipient', 13, '#E0674D', 'middle', 'Special Elite, monospace');
+      if (k === 2) out += paper(380, 30, 120, 80, -8, 'ZENNIT') + T(440, 126, 'default recipient', 13, '#E0674D', 'middle', 'Special Elite, monospace');
       return out;
     }
   });
 
   scenes.push({
     label: 'The missing form', dur: 22.951,
-    text: 'Zenit did what any reasonable person would do. He looked for the form. The form turned out to be Form 27B slash 6, which is referenced throughout the Index and has never been seen. Several scholars believe it does not exist. Zenit believes that is exactly what a form would say.',
+    text: 'Zennit did what any reasonable person would do. He looked for the form. The form turned out to be Form 27B slash 6, which is referenced throughout the Index and has never been seen. Several scholars believe it does not exist. Zennit believes that is exactly what a form would say.',
     frame: function (k) {
       var q = [[[430, 160], [530, 250], [610, 140]], [[450, 140], [510, 270], [630, 160]], [[420, 180], [550, 230], [600, 120]]][k];
       var out = U('hall', 0, 0, 960, 540) + '<rect width="960" height="540" fill="#000000" opacity="0.35"/>';
@@ -391,14 +392,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 
   scenes.push({
     label: 'The debt', dur: 12.198,
-    text: 'And so every completed summon is recorded as an installment on a debt Zenit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.',
+    text: 'And so every completed summon is recorded as an installment on a debt Zennit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.',
     frame: function (k) {
       var out = '<rect width="960" height="540" fill="url(#gPaper)"/>';
       out += '<g transform="rotate(-2 480 270)"><rect x="250" y="36" width="460" height="468" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>' + T(480, 120, 'INSTALLMENT', 56, '#23202B', 'middle') +
         '<path d="M290 148 H670 M290 170 H670" stroke="#23202B" stroke-width="3" opacity="0.6"/>' +
         T(480, 290, (46 + k) + ' of ???', 96, '#23202B', 'middle') +
         T(290, 360, 'Payee: The Ritual of Summoning', 20, '#23202B', 'start', 'Special Elite, monospace') +
-        T(290, 392, 'Payer: Zenit (did not agree)', 20, '#23202B', 'start', 'Special Elite, monospace') +
+        T(290, 392, 'Payer: Zennit (did not agree)', 20, '#23202B', 'start', 'Special Elite, monospace') +
         T(290, 424, 'Agreement on file: none', 20, '#23202B', 'start', 'Special Elite, monospace');
       if (k === 2) out += '<g transform="rotate(-14 560 450)"><rect x="440" y="420" width="240" height="64" fill="none" stroke="#B5432E" stroke-width="6"/>' + T(560, 470, 'PAID?', 48, '#B5432E', 'middle') + '</g>';
       out += '</g>';
@@ -410,7 +411,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 
   scenes.push({
     label: 'The party', dur: 13.055,
-    text: 'You, meanwhile, are a party of friends who have noticed that Zenit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.',
+    text: 'You, meanwhile, are a party of friends who have noticed that Zennit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.',
     frame: function (k) {
       var out = '<rect width="960" height="540" fill="url(#gSunset)"/><ellipse cx="480" cy="590" rx="640" ry="230" fill="#6F8B5E" stroke="#23202B" stroke-width="4"/>';
       var cols = ['#7A52C7', '#3E5B4E', '#B5432E', '#C99A3B'], hats = ['wizard', 'horns', 'hood', 'spiky'], xs = [110, 240, 370, 500];

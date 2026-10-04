@@ -1,9 +1,9 @@
 ---
 name: zenit-narrator-audio
-description: Recreate, re-voice or edit the Zenit and the Index narrator audio (eight scene takes plus a combined read) with local Kokoro text-to-speech, then bundle the clips in the Summon Core addon. Use when the narration wording, voice, speed or pacing changes, when a take must be re-rendered, or when the intro's scene timings need updating.
+description: Recreate, re-voice or edit the Zennit and the Index narrator audio (eight scene takes plus a combined read) with local Kokoro text-to-speech, then bundle the clips in the Summon Core addon. Use when the narration wording, voice, speed or pacing changes, when a take must be re-rendered, or when the intro's scene timings need updating.
 ---
 
-# Zenit narrator audio
+# Zennit narrator audio
 
 The intro narration is synthetic speech generated locally with the Kokoro English model (via
 `sherpa-onnx`), not a cloud service and not cloned from a real person or the BBC Hitchhiker's Guide
@@ -39,14 +39,16 @@ checked**; confirm the mapping against the model's README before relying on it. 
 - Render sentence by sentence and join with silence; this gave much better deadpan timing than whole takes.
 - Pauses: 0.55 s after a normal sentence, 0.85 s after a short one (nine words or fewer), so punchlines get a
   beat. 0.4 s of silence at the start and end of every take.
-- Speak "Form 27B slash 6" (not "27B/6") and "the letter Zed" (British).
+- Speak "Form 27B slash 6" (not "27B/6") and "the letter Zed" (British). The captions and the artwork write it as plain
+  "Z" (and "Vol. A to Z" on the book): only the speech text in `render_takes.py` spells it "Zed" so the voice says it
+  the British way.
 - ffmpeg chain: high-pass 70 Hz, +2.5 dB around 160 Hz, -2 dB around 5.5 kHz, compressor (threshold -20 dB,
   ratio 2.5, attack 15 ms, release 250 ms), loudnorm to -18 LUFS with -2 dB true peak, then Ogg Vorbis `-q:a 4`.
 
 ## Steps
 
 1. Edit the `TAKES` list in `scripts/render_takes.py` if the wording changed. The same wording lives in
-   `Intro.lua` (the captions) and in the Zenit Recording Script document, section 5, so keep all three in step.
+   `Intro.lua` (the captions) and in the Zennit Recording Script document, section 5, so keep all three in step.
 2. From the folder containing `kokoro-en-v0_19`, run `python scripts/render_takes.py`. It writes
    `narrator_backstory_01.wav` to `_08.wav` and prints each length.
 3. Run `bash scripts/process.sh`. It writes `narrator_backstory_NN.ogg` and `narrator_backstory_full.ogg`.

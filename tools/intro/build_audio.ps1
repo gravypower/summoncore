@@ -44,11 +44,11 @@ $sfx = [ordered]@{
     "sfx_chirp_1" = "aevalsrc='0.55*sin(2*PI*(900*t+5357*t*t))*exp(-t*13)':d=0.18:s=44100"
     "sfx_chirp_2" = "aevalsrc='0.55*sin(2*PI*(2200*t-4600*t*t))*exp(-t*12)':d=0.16:s=44100"
     "sfx_chirp_3" = "aevalsrc='0.5*sin(2*PI*if(lt(t,0.045),1500,2100)*t)*exp(-mod(t,0.045)*25)':d=0.12:s=44100"
-    "sfx_keys"    = "aevalsrc='0.9*random(0)*exp(-mod(t,0.052)*750)*lt(mod(t,0.052),0.012)':d=0.62:s=44100"
+    "sfx_keys_long" = "aevalsrc='0.55*random(0)*(exp(-mod(t,0.074)*700)*lt(mod(t,0.074),0.012)+0.7*exp(-mod(t,0.113)*650)*lt(mod(t,0.113),0.012))':d=16:s=44100"
     "sfx_pop"     = "aevalsrc='0.6*sin(2*PI*620*t)*exp(-t*26)':d=0.14:s=44100"
 }
 foreach ($name in $sfx.Keys) {
-    $filter = if ($name -eq "sfx_keys") { "highpass=f=1800,volume=0.7" } else { "volume=0.5" }
+    $filter = if ($name -like "sfx_keys*") { "highpass=f=1800,volume=0.7" } else { "volume=0.5" }
     Ffmpeg @("-f", "lavfi", "-i", $sfx[$name], "-af", $filter, "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "4", (Join-Path $sfxDir "$name.ogg"))
 }
 "sound effects: " + ($sfx.Keys -join ", ")
@@ -56,10 +56,11 @@ foreach ($name in $sfx.Keys) {
 # ---------------------------------------------------------------- 2. scene lengths
 $voices = 1..8 | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
 $pause = 0.6   # keep in step with PAUSE in Intro.lua
+$ending = 3.2   # extra seconds after the last scene: the music fades out while the picture fades to black
 $lengths = $voices | ForEach-Object { Duration $_ }
 $starts = @(); $acc = 0.0
 foreach ($l in $lengths) { $starts += $acc; $acc += $l + $pause }
-$totalSeconds = $acc + 2
+$totalSeconds = $acc + $ending + 3
 
 # ---------------------------------------------------------------- 3. music bed
 Add-Type -TypeDefinition @"
@@ -157,16 +158,23 @@ $musicWav = Join-Path $work "music.wav"
 for ($i = 0; $i -lt 8; $i++) {
     $n = $i + 1
     $len = $lengths[$i] + $pause
+    $ci = [Globalization.CultureInfo]::InvariantCulture
+    $musicFade = ""
+    if ($i -eq 7) {
+        $len += $ending
+        $musicFade = ",afade=t=out:st={0}:d={1}" -f ($len - $ending).ToString("0.###", $ci), $ending.ToString("0.###", $ci)
+    }
     $voiceOnly = Join-Path $media ("intro_{0}_voice.ogg" -f $n)
     Copy-Item -LiteralPath $voices[$i] -Destination $voiceOnly -Force
     $out = Join-Path $media ("intro_{0}.ogg" -f $n)
     $filter = ("[0:a]apad=whole_dur={0},asplit=2[v][sc];" +
-        "[1:a]atrim=start={1}:duration={0},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st={2}:d=0.02,volume=0.22[m];" +
+        "[1:a]atrim=start={1}:duration={0},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st={2}:d=0.02,volume=0.22{3}[m];" +
         "[m][sc]sidechaincompress=threshold=0.015:ratio=5:attack=30:release=500:makeup=1[md];" +
         "[v][md]amix=inputs=2:normalize=0:duration=first,alimiter=limit=0.95") -f
         $len.ToString("0.###", [Globalization.CultureInfo]::InvariantCulture),
         $starts[$i].ToString("0.###", [Globalization.CultureInfo]::InvariantCulture),
-        ($len - 0.02).ToString("0.###", [Globalization.CultureInfo]::InvariantCulture)
+        ($len - 0.02).ToString("0.###", [Globalization.CultureInfo]::InvariantCulture),
+        $musicFade
     Ffmpeg @("-i", $voices[$i], "-i", $musicWav, "-filter_complex", $filter, "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "3", $out)
     "intro_{0}.ogg  {1:N2} s  {2:N0} KB (voice only {3:N0} KB)" -f $n, (Duration $out), ((Get-Item $out).Length / 1KB), ((Get-Item $voiceOnly).Length / 1KB)
 }
@@ -227,8 +235,54 @@ function SpeechSegments([string]$file, [double]$length) {
     return , $segs
 }
 
+# Seconds into the take at which `phrase` is spoken: from where its sentence sits in the audio and where the
+# phrase sits in the sentence (by character position).
+function PhraseTime($text, $sentences, $segs, $byCount, $phrase, $scene) {
+    $idx = -1
+    for ($k = 0; $k -lt $sentences.Count; $k++) {
+        if ($sentences[$k].IndexOf($phrase, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $idx = $k; break }
+    }
+    if ($idx -lt 0) { throw "scene ${scene}: phrase '$phrase' not found in the narration text" }
+    $pos = $sentences[$idx].IndexOf($phrase, [StringComparison]::OrdinalIgnoreCase)
+    if ($byCount) {
+        $before = 0; for ($k = 0; $k -lt $idx; $k++) { $before += $sentences[$k].Length + 1 }
+        $first = $segs[0][0]; $last = $segs[$segs.Count - 1][1]
+        return $first + (($before + $pos) / [double]$text.Length) * ($last - $first)
+    }
+    $seg = $segs[$idx]
+    return $seg[0] + ($pos / [double]$sentences[$idx].Length) * ($seg[1] - $seg[0])
+}
+
+# Highlights: while the narrator mentions something, a glowing box is drawn round that part of the picture.
+# Each entry: scene, phrase, then x, y, width, height of the box in the 960x540 picture.
+$highlightSpec = @(
+    @(1, "cosmic index", 684, 244, 222, 297),
+    @(1, "single clerk", 322, 344, 120, 158),
+    @(1, "nine thousand years", 322, 344, 120, 158),
+    @(2, "letter Z", 612, 192, 216, 156),
+    @(2, "the clerk sneezed", 30, 10, 380, 520),
+    @(3, "other people", 26, 166, 198, 216),
+    @(3, "meant for nobody", 246, 166, 198, 216),
+    @(3, "intended for a goat", 466, 166, 198, 216),
+    @(3, "named Zennit", 696, 56, 208, 300),
+    @(4, "looked for the form", 108, 128, 272, 380),
+    @(4, "27B slash 6", 690, 140, 140, 185),
+    @(5, "Ritual of Summoning", 250, 20, 460, 500),
+    @(5, "attention and closure", 730, 50, 170, 140),
+    @(5, "fifty silver", 30, 324, 210, 226),
+    @(6, "installment on a debt", 244, 30, 472, 480),
+    @(6, "never agreed to", 26, 224, 176, 240),
+    @(7, "party of friends", 50, 224, 520, 236),
+    @(7, "Zennit is", 754, 124, 212, 290),
+    @(7, "no objection", 556, 226, 200, 260),
+    @(8, "story of his week", 344, 0, 376, 524),
+    @(8, "form is ever found", 640, 50, 150, 200),
+    @(8, "Index is unclear", 24, 374, 132, 172)
+)
+
 $cues = @{}
 $sentenceTimes = @{}
+$highlights = @{}
 for ($s = 1; $s -le 8; $s++) {
     $sentences = [regex]::Split($texts[$s - 1], '(?<=[.!?])\s+')
     $segs = SpeechSegments $voices[$s - 1] $lengths[$s - 1]
@@ -238,22 +292,17 @@ for ($s = 1; $s -le 8; $s++) {
     }
     $cues[$s] = @()
     foreach ($c in $cueSpec | Where-Object { $_[0] -eq $s }) {
-        $idx = -1
-        for ($k = 0; $k -lt $sentences.Count; $k++) { if ($sentences[$k].IndexOf($c[1], [StringComparison]::OrdinalIgnoreCase) -ge 0) { $idx = $k; break } }
-        if ($idx -lt 0) { throw "scene ${s}: phrase '$($c[1])' not found in the narration text" }
-        $pos = $sentences[$idx].IndexOf($c[1], [StringComparison]::OrdinalIgnoreCase)
-        if ($byCount) {
-            $total = ($texts[$s - 1]).Length
-            $before = 0; for ($k = 0; $k -lt $idx; $k++) { $before += $sentences[$k].Length + 1 }
-            $first = $segs[0][0]; $last = $segs[$segs.Count - 1][1]
-            $t = $first + (($before + $pos) / $total) * ($last - $first)
-        } else {
-            $seg = $segs[$idx]
-            $t = $seg[0] + ($pos / [double]$sentences[$idx].Length) * ($seg[1] - $seg[0])
-        }
-        $cues[$s] += , @([math]::Max(0.1, $t - $lead), $c[2])
+        $t = PhraseTime $texts[$s - 1] $sentences $segs $byCount $c[1] $s
+        $cues[$s] += , @([math]::Max(0.1, [double]$t - $lead), $c[2])
     }
     $cues[$s] = @($cues[$s] | Sort-Object { $_[0] })
+
+    $highlights[$s] = @()
+    foreach ($h in $highlightSpec | Where-Object { $_[0] -eq $s }) {
+        $t = PhraseTime $texts[$s - 1] $sentences $segs $byCount $h[1] $s
+        $highlights[$s] += , @([math]::Max(0.1, [double]$t - 0.15), $h[2], $h[3], $h[4], $h[5])
+    }
+    $highlights[$s] = @($highlights[$s] | Sort-Object { $_[0] })
 
     # When each sentence starts (for the subtitles): the start of its speech segment, a little early.
     $sentenceTimes[$s] = @()
@@ -275,6 +324,7 @@ $lines = New-Object System.Collections.Generic.List[string]
 $lines.Add("-- Generated by tools/intro/build_audio.ps1. Do not edit by hand.")
 $lines.Add("-- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.")
 $lines.Add("local ADDON, ST = ...")
+$lines.Add("ST.introEnding = " + $ending.ToString("0.00", $inv))
 $lines.Add("ST.introLength = { " + (($lengths | ForEach-Object { $_.ToString("0.00", $inv) }) -join ", ") + " }")
 $lines.Add("ST.introCues = {")
 for ($s = 1; $s -le 8; $s++) {
@@ -288,6 +338,15 @@ $lines.Add("ST.introSentences = {")
 for ($s = 1; $s -le 8; $s++) {
     $lines.Add("    [$s] = {")
     foreach ($c in $sentenceTimes[$s]) { $lines.Add(("        {{ t = {0}, text = [=[{1}]=] }}," -f $c[0].ToString("0.00", $inv), $c[1])) }
+    $lines.Add("    },")
+}
+$lines.Add("}")
+$lines.Add("-- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).")
+$lines.Add("ST.introHighlights = {")
+for ($s = 1; $s -le 8; $s++) {
+    if ($highlights[$s].Count -eq 0) { continue }
+    $lines.Add("    [$s] = {")
+    foreach ($h in $highlights[$s]) { $lines.Add(("        {{ t = {0}, x = {1}, y = {2}, w = {3}, h = {4} }}," -f $h[0].ToString("0.00", $inv), $h[1], $h[2], $h[3], $h[4])) }
     $lines.Add("    },")
 }
 $lines.Add("}")

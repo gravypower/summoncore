@@ -210,6 +210,7 @@ local function announceSoon()
         st.announcing = false
         if st.added > 0 then
             ST.print(string.format("Sync: received %d new summon%s.", st.added, st.added == 1 and "" or "s"))
+            if ST.Hub then ST.Hub.Refresh() end
             st.added = 0
         end
     end)
@@ -272,8 +273,8 @@ function Sync.OnMessage(text, channel, sender)
         if result == "added" then
             st.added = st.added + 1
             announceSoon()
-            -- Zenit hears a recorded complaint when a friend summons him (live events only, not history).
-            if typ == "E" and ev.target == Sync.myName() and ST.Gag.IsZenit() then ST.Clips.Play("zenit_land") end
+            -- Zennit hears a recorded complaint when a friend summons him (live events only, not history).
+            if typ == "E" and ev.target == Sync.myName() and ST.Gag.IsZennit() then ST.Clips.Play("zenit_land") end
         end
         return result
     end

@@ -1,4 +1,4 @@
--- Gag: Zenit detection and the "ah-ah-ah" access-denied clip. A joke gate for friends, not security.
+-- Gag: Zennit detection and the "ah-ah-ah" access-denied clip. A joke gate for friends, not security.
 local ADDON, ST = ...
 local Gag = {}
 ST.Gag = Gag
@@ -18,7 +18,7 @@ local DURATION = 2.5
 local SHOW_SIZE = 192
 local CAPTION = "Ah ah ah! You didn't say the magic word!"
 
-function Gag.IsZenit()
+function Gag.IsZennit()
     local s = ST.db and ST.db.settings
     if not s then return false end
     if s.zenitTest then return true end
@@ -79,9 +79,9 @@ function Gag.Play()
     end)
 end
 
--- Returns true (after playing the gag) when the player is Zenit and the content is hidden.
+-- Returns true (after playing the gag) when the player is Zennit and the content is hidden.
 function Gag.Blocked()
-    if Gag.IsZenit() then
+    if Gag.IsZennit() then
         Gag.Play()
         return true
     end

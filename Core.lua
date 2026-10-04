@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.11.1"
+ST.version = "0.15.0"
 
 local DB_VERSION = 1
 
@@ -48,7 +48,15 @@ local function initDB()
     db.version = db.version or DB_VERSION
     db.events = db.events or {}
     db.badges = db.badges or {}
-    db.settings = db.settings or { zenitNames = { "Zenit" }, soundOn = true }
+    db.settings = db.settings or { zenitNames = { "Zennit" }, soundOn = true }
+    -- The name is spelt Zennit; earlier versions defaulted to "Zenit", so fix saved settings too.
+    local names, seen = db.settings.zenitNames or {}, false
+    for i, name in ipairs(names) do
+        if name:lower() == "zenit" then names[i] = "Zennit" end
+        if names[i]:lower() == "zennit" then seen = true end
+    end
+    if not seen then names[#names + 1] = "Zennit" end
+    db.settings.zenitNames = names
     db.harness = db.harness or {}
     ST.db = db
 end
@@ -132,14 +140,19 @@ function commands.log(rest)
 end
 
 function commands.panel()
-    ST.UI.Toggle()
+    ST.Hub.Open("summary")
 end
 
--- Test switch: makes this character behave as Zenit's so the gag can be tried solo.
+function commands.hub()
+    ST.Hub.Toggle()
+end
+
+-- Test switch: makes this character behave as Zennit's so the gag can be tried solo.
 function commands.zenit()
     ST.db.settings.zenitTest = not ST.db.settings.zenitTest
-    print_("Zenit test mode " .. (ST.db.settings.zenitTest and "on" or "off"))
+    print_("Zennit test mode " .. (ST.db.settings.zenitTest and "on" or "off"))
 end
+commands.zennit = commands.zenit -- either spelling works
 
 function commands.tally()
     if ST.Gag.Blocked() then return end
@@ -223,16 +236,17 @@ function commands.debug()
 end
 
 local HELP = {
+    "/st - open the Summon Core window (everything below is also in it)    /st help - this list",
     "/st test - diagnostics panel (/st test ping <name>)",
     "/st log [n] - recent summons    /st tally - counts and points    /st badges",
-    "/st panel - tally and badge window    /st zenit - toggle Zenit test mode",
+    "/st panel - tally and badge window    /st zenit - toggle Zennit test mode",
     "/st where - current map, subzone and how it scores",
     "/st fake <target> [h1 h2] - add a test summon    /st fakeprompt <target> <members...>",
     "/st sync - say hello to party/guild and show sync status    /st synctest - run the merge self-test",
     "/st export / /st import - copy-paste strings of the summon log",
     "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
-    "/st gag - preview the Zenit gag",
+    "/st gag - preview the Zennit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
     "/st undo - remove the latest summon    /st debug - toggle detector messages",
 }
@@ -242,7 +256,9 @@ SLASH_SUMMONCORE2 = "/summoncore"
 SlashCmdList["SUMMONCORE"] = function(input)
     local cmd, rest = (input or ""):match("^(%S*)%s*(.-)$")
     cmd = cmd:lower()
-    if commands[cmd] then
+    if cmd == "" then
+        ST.Hub.Toggle() -- no arguments: the window with everything in it
+    elseif commands[cmd] then
         commands[cmd](rest)
     else
         if cmd ~= "" and cmd ~= "help" then print_("unknown command '" .. cmd .. "'") end

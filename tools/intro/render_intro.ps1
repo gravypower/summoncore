@@ -1,4 +1,4 @@
-# Renders the "Zenit and the Index" intro into addon textures.
+# Renders the "Zennit and the Index" intro into addon textures.
 #
 #   1. Patches tools\intro\source.html so ?#s=<scene>&f=<frame> draws one still, full-window.
 #   2. Screenshots all 8 scenes x 3 frames with headless Edge or Chrome (1024x512, stretched from 16:9;
@@ -8,7 +8,8 @@
 #
 #   powershell -ExecutionPolicy Bypass -File tools\intro\render_intro.ps1 [-Format tga]
 param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender,
-      [ValidateSet("storybook", "terminal")][string]$Style = "storybook")
+      [ValidateSet("storybook", "terminal", "lines")][string]$Style = "storybook",
+      [int[]]$SceneList = (1..8))
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
 $root = Split-Path -Parent (Split-Path -Parent $here)
@@ -21,18 +22,63 @@ $html = [IO.File]::ReadAllText((Join-Path $here "source.html"))
 $tail = [regex]'update\(0\);\s*requestAnimationFrame\(loop\);\s*\}\)\(\);'
 if (-not $tail.IsMatch($html)) { throw "source.html changed: could not find the start-up code to patch" }
 $patch = @'
+// Chrome does not pass document CSS into <use> copies, so unpack each one into real shapes first.
+function expandUses() {
+  Array.prototype.slice.call(document.querySelectorAll('#stage use')).forEach(function (u) {
+    var id = (u.getAttribute('href') || '').slice(1);
+    var sym = document.getElementById(id);
+    if (!sym) return;
+    var vb = (sym.getAttribute('viewBox') || '0 0 100 100').split(/[ ,]+/).map(Number);
+    var x = +u.getAttribute('x') || 0, y = +u.getAttribute('y') || 0;
+    var w = +u.getAttribute('width') || vb[2], h = +u.getAttribute('height') || vb[3];
+    var k = Math.min(w / vb[2], h / vb[3]);
+    var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'sym-' + id);
+    g.setAttribute('transform', 'translate(' + (x + (w - vb[2] * k) / 2 - vb[0] * k) + ' ' + (y + (h - vb[3] * k) / 2 - vb[1] * k) + ') scale(' + k + ')');
+    if (u.getAttribute('opacity')) g.setAttribute('opacity', u.getAttribute('opacity'));
+    Array.prototype.slice.call(sym.childNodes).forEach(function (c) { g.appendChild(c.cloneNode(true)); });
+    u.parentNode.replaceChild(g, u);
+  });
+}
 var q = new URLSearchParams(location.hash.slice(1));
   if (q.has('s')) {
     document.documentElement.classList.add('shot');
     stage.setAttribute('preserveAspectRatio', 'none');
     if (q.has('term')) document.documentElement.classList.add('term');
+    if (q.has('line')) {
+      document.documentElement.classList.add('line');
+      document.querySelector('svg defs').insertAdjacentHTML('beforeend', '<pattern id="spinesLine" width="30" height="70" patternUnits="userSpaceOnUse"><path d="M7 6V66M22 4V66" stroke="#2b230a" stroke-width="1" fill="none"/></pattern>');
+    }
     render(+q.get('s'), +q.get('f'), +q.get('f'));
+    if (q.has('line')) expandUses();
   } else { update(0); requestAnimationFrame(loop); }
 })();
 '@
 $termCss = 'html.shot.term .stage{background:#000}html.shot.term #stage{filter:grayscale(1) contrast(1.45) brightness(1.25) drop-shadow(0 0 3px #3dff88)}html.shot.term .stage::before{content:"";position:absolute;inset:0;background:#2bff78;mix-blend-mode:multiply;z-index:2;pointer-events:none}html.shot.term .stage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.26) 0,rgba(0,0,0,.26) 1px,transparent 1px,transparent 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);z-index:3;pointer-events:none}'
+$lineCss = 'html.shot.line .stage{background:#000}' +
+  'html.shot.line #stage{filter:drop-shadow(0 0 2px rgba(255,210,60,.35))}' +
+  # outlines only: every shape loses its fill and gets a thin neon stroke
+  'html.shot.line path,html.shot.line rect,html.shot.line circle,html.shot.line ellipse,html.shot.line polygon,html.shot.line polyline,html.shot.line line{fill:none!important;stroke:#ffd23f!important;stroke-width:2.2px!important;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}' +
+  # glows, shading and full-frame backdrops are dropped
+  'html.shot.line [fill="url(#amber)"],html.shot.line [fill="url(#zglow)"],html.shot.line [fill="url(#glowR)"],html.shot.line [fill="url(#lampGlow)"],html.shot.line [fill="url(#vig)"],html.shot.line [fill="url(#shadeL)"],html.shot.line [fill="url(#shadeR)"],html.shot.line [fill="url(#wall)"],html.shot.line rect[width="960"][height="540"],html.shot.line rect[width="1600"][height="900"]{display:none!important}' +
+  # bookshelves become fine vertical lines
+  'html.shot.line pattern path{stroke:#4a3c10!important;stroke-width:1.2px!important}' +
+  'html.shot.line [fill="url(#spines)"]{fill:url(#spinesLine)!important;stroke:#6f5a16!important}' +
+  # solid blue shapes, like the fish: dark clothes, the ritual circle, the wizard
+  'html.shot.line [fill="#2F2D38"][fill][fill],html.shot.line [fill="#4A4A5E"][fill][fill],html.shot.line [fill="#2B2140"][fill][fill],html.shot.line [fill="#5B3FA0"][fill][fill],html.shot.line [fill="#7A52C7"][fill][fill],html.shot.line [fill="#3E5B4E"][fill][fill]{fill:#1f45c8!important}' +
+  # a quiet background: the hall and shelves are thin and dim
+  'html.shot.line .sym-hall path,html.shot.line .sym-hall polygon,html.shot.line .sym-hall rect,html.shot.line .sym-hall circle,html.shot.line .sym-hall line{stroke:#6a5718!important;stroke-width:1.3px!important}' +
+  'html.shot.line .sym-hall [fill="url(#spines)"]{fill:url(#spinesLine)!important;stroke:#6a5718!important}' +
+  # solid characters: filled black so nothing behind shows through, with a bolder, brighter outline
+  'html.shot.line :is(.sym-zenit,.sym-clerkFront,.sym-clerkBack,.sym-book,.sym-form) :is(path,rect,circle,ellipse,polygon):not([fill="none"]){fill:#000!important}' +
+  'html.shot.line :is(.sym-zenit,.sym-clerkFront,.sym-clerkBack,.sym-book,.sym-form) :is(path,rect,circle,ellipse,polygon,line){stroke:#ffe270!important;stroke-width:2.6px!important}' +
+  # the figures inside the ritual circles (someone else, the goat): bright white outline over a dark fill so they stand out from the circle
+  'html.shot.line .feature path,html.shot.line .feature circle,html.shot.line .feature ellipse,html.shot.line .feature rect,html.shot.line .feature polygon{fill:#07102e!important;stroke:#fff3b0!important;stroke-width:3px!important}' +
+  'html.shot.line .feature path[fill="none"]{fill:none!important}' +
+  # green leader lines and labels
+  'html.shot.line text{fill:#6dff9a!important;stroke:none!important}'
 $baseCss = 'html.shot,html.shot body{margin:0;padding:0;overflow:hidden;background:#000}html.shot main>*:not(.stage){display:none}html.shot header,html.shot .bigplay{display:none}html.shot .stage{position:fixed;left:0;top:0;width:100vw;height:100vh;max-width:none;border:0;border-radius:0;aspect-ratio:auto}'
-$css = '<style>' + $baseCss + $termCss + '</style></head>'
+$css = '<style>' + $baseCss + $termCss + $lineCss + '</style></head>'
 $patched = $tail.Replace($html, { param($m) $patch }).Replace("</head>", $css)
 $page = Join-Path $work "render.html"
 [IO.File]::WriteAllText($page, $patched)
@@ -46,10 +92,12 @@ $browser = @(
     "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $browser) { throw "Edge or Chrome not found" }
-$termFlag = if ($Style -eq "terminal") { "&term=1" } else { "" }
-$namePrefix = if ($Style -eq "terminal") { "intro_t" } else { "intro_" }
+$termFlag = switch ($Style) { "terminal" { "&term=1" } "lines" { "&line=1" } default { "" } }
+$namePrefix = switch ($Style) { "terminal" { "intro_t" } "lines" { "intro_l" } default { "intro_" } }
 $scenes = 8
-for ($s = 0; $s -lt $scenes -and -not $SkipRender; $s++) {
+foreach ($n in $SceneList) {
+    if ($SkipRender) { break }
+    $s = $n - 1
     for ($f = 0; $f -lt 3; $f++) {
         $png = Join-Path $work ("{0}_s{1}_f{2}.png" -f $Style, $s, $f)
         Remove-Item -LiteralPath $png -ErrorAction SilentlyContinue
@@ -227,13 +275,14 @@ public static class SheetGen {
 }
 "@
 
-for ($s = 0; $s -lt $scenes; $s++) {
+foreach ($n in $SceneList) {
+    $s = $n - 1
     $frames = 0..2 | ForEach-Object { Join-Path $work ("{0}_s{1}_f{2}.png" -f $Style, $s, $_) }
     $sheet = [SheetGen]::Compose($frames)
     $name = "$namePrefix{0}" -f ($s + 1)
     if ($Format -eq "blp") { [SheetGen]::WriteBlp($sheet, (Join-Path $media "$name.blp")); $ext = "blp" }
     else { [SheetGen]::WriteTga($sheet, (Join-Path $media "$name.tga")); $ext = "tga" }
-    if ($s -eq 0) { $sheet.Save((Join-Path $work "sheet1_$Style.png")) }
+    if ($n -eq $SceneList[0]) { $sheet.Save((Join-Path $work "sheet1_$Style.png")) }
     $sheet.Dispose()
     "{0}.{1}  {2:N2} MB" -f $name, $ext, ((Get-Item (Join-Path $media "$name.$ext")).Length / 1MB)
 }

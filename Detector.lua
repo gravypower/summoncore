@@ -90,10 +90,11 @@ local function startPending(target)
 end
 
 local function report(ev, badges)
-    local zenit = ST.Gag.IsZenit()
+    if ST.Hub then ST.Hub.Refresh() end
+    local zenit = ST.Gag.IsZennit()
     ST.print(string.format("Summon logged: %s in %s%s%s", ev.target, ev.subzone ~= "" and ev.subzone or "?",
         zenit and "" or string.format(" (+%d, %s)", ev.points, ev.kind), ev.confirmed and "" or " [unconfirmed]"))
-    if zenit then return end -- points and badges are hidden on Zenit's client
+    if zenit then return end -- points and badges are hidden on Zennit's client
     for _, name in ipairs(badges) do ST.print("|cffffd100Badge earned:|r " .. name) end
 end
 

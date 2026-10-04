@@ -17,8 +17,9 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 
 | Command | What it does |
 |---|---|
-| `/st` | List commands |
-| `/st panel` | Tally and badge window |
+| `/st` | Open the Summon Core window: Summary, Log, Tally, Badges, Sync and Tools tabs (everything below is in it too) |
+| `/st help` | List the commands in chat |
+| `/st panel` | Open the window on the Summary tab |
 | `/st log [n]` | Recent summons |
 | `/st tally` | Cast, received and assisted counts and points per player |
 | `/st badges` | Badge list |
@@ -32,10 +33,10 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st debug` | Toggle detector messages |
 | `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/st intro [scene]` | Play the illustrated intro, "Zenit and the Index" |
+| `/st intro [scene]` | Play the illustrated intro, "Zennit and the Index" |
 | `/st clip [category|file]` | List or play voice clips from `Media/clips` |
-| `/st gag` | Preview the Zenit gag |
-| `/st zenit` | Toggle Zenit test mode on this character |
+| `/st gag` | Preview the Zennit gag |
+| `/st zenit` | Toggle Zennit test mode on this character |
 
 ## How it works
 
@@ -47,7 +48,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Store.lua` | Store | The only code that touches `SummonTrackerDB`; tallies are derived from the event log |
 | `Sync.lua` | Sync | The only code that touches the network |
 | `Scoring.lua` | Scoring | Zone value table, points, badge rules |
-| `UI.lua`, `Gag.lua` | UI | Panel, and the Zenit access-denied gag |
+| `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the summary, log, tally, badges, sync and tools), and the Zennit access-denied gag |
 | `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the sync self-test |
 
 Only the caster's client needs to see a summon; everyone else is credited from the caster's snapshot.
@@ -100,24 +101,26 @@ newer-version strings are refused. This is the manual fallback if addon messages
 
 ### Intro
 
-`/st intro` plays "Zenit and the Index": 8 scenes of 3-frame flipbook art (about six flips a second), narrated, with
+`/st intro` plays "Zennit and the Index": 8 scenes of 3-frame flipbook art (about six flips a second), narrated, with
 a quiet synth music bed, about 2:30 in all. The whole narration is typed out, a sentence at a time and in step with the
-voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. The **Text**
+voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. While the narrator mentions something (the three kinds of ritual, the book, the form, Zennit), a pulsing box lights up that part of the picture. The **Text**
 button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
-large), and toggles for Sound, Music, Text and Terminal art (a green-phosphor, scanline version of the pictures). `/st intro 3` starts at
+large), a Look button
+(`lines`: neon line drawing on black, the default; `storybook`: the original colours; `terminal`: green phosphor with
+scanlines), and toggles for Sound and Music. `/st intro 3` starts at
 scene 3. `/st intro check` tries every intro sound
 file and lists the ones the game cannot play (after adding or replacing media, restart WoW: `/reload` does not pick
-up new files). The art lives in `Media/intro_1.blp` to `intro_8.blp` (2048x1024 sheets, DXT1, about 1.3 MB each);
+up new files). The art lives in `Media/intro_l1.blp` to `intro_l8.blp` (lines), `intro_1` to `intro_8` (storybook) and `intro_t1` to `intro_t8` (terminal): 2048x1024 sheets, DXT1, about 1.3 MB each.
 `tools/intro/render_intro.ps1` rebuilds them from `tools/intro/source.html` using headless Edge or Chrome
 (`-Format tga` writes uncompressed TGAs instead if BLPs misbehave in your client).
 
 **Rebuilding the pieces** (needs ffmpeg for the audio, Edge or Chrome for the art):
 
-- `tools/intro/render_intro.ps1 [-Style terminal]`: the picture sheets (`intro_<n>.blp`, `intro_t<n>.blp`).
+- `tools/intro/render_intro.ps1 [-Style lines|storybook|terminal] [-SceneList 1,2]`: the picture sheets (`intro_l<n>.blp` for lines, `intro_<n>.blp` for storybook, `intro_t<n>.blp` for terminal).
 - `tools/intro/build_audio.ps1`: reads the narration takes in `tools/intro/narration/`, synthesises the music bed
   and the beeps, chirps and key clicks (`Media/sfx/`), mixes `Media/intro_<n>.ogg` (voice plus music, which ducks
   under the voice and swells in the pauses) and `Media/intro_<n>_voice.ogg` (voice only), and writes
-  `IntroCues.lua`. The key phrases and what they say are listed in that script; each is timed from where its
+  `IntroCues.lua` (scene lengths, key phrases, sentence times, and the highlight boxes: edit `$highlightSpec` in that script to change what lights up and when). The key phrases and what they say are listed in that script; each is timed from where its
   sentence sits in the audio (silence detection between sentences) and where the phrase sits in the sentence.
   Nothing is sampled from any existing recording.
 
@@ -134,17 +137,17 @@ Drop `.ogg` takes into `Media/clips/`, named `<category>_<NN>_<who>.ogg`: `wag_0
 badly named files), then `/reload`. `/st clip` lists the categories; `/st clip wag` or a file name plays one. The
 addon picks a random clip per category and avoids repeating the last one. Plays on the Dialog sound channel.
 
-- `wag`: used for the Zenit gag instead of the built-in sound.
-- `zenit_land`: played on Zenit's client when a friend's live summon of him arrives.
+- `wag`: used for the Zennit gag instead of the built-in sound.
+- `zenit_land`: played on Zennit's client when a friend's live summon of him arrives.
 - Other categories (refuse, win, ritual, narrator stings) are loaded and playable with `/st clip` now; they will be
   wired in with the challenge and weekly features.
 
-`Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zenit, and the repo is on GitHub. Add
+`Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zennit, and the repo is on GitHub. Add
 the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.
 
-### Zenit mode
+### Zennit mode
 
-If the logged-in character is in `settings.zenitNames` (default `Zenit`), the panel, tally and badges are
+If the logged-in character is in `settings.zenitNames` (default `Zennit`), the panel, tally and badges are
 hidden and the gag plays instead, and points and badge messages are hidden when he logs a summon. This is
 a joke gate for friends, not security: addon files are plain text.
 
@@ -165,7 +168,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 
 | Area | State |
 |---|---|
-| Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zenit gag | Verified in the live client (solo, with `/st fake`) |
+| Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zennit gag | Verified in the live client (solo, with `/st fake`) |
 | Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 23/23 in the live client on 2026-10-04, covering merge rules, export/import, voice clips, intro cues and name handling) |
 | Real Ritual of Summoning detection | **Untested.** Spell ID 698, the target field and whether `SUCCEEDED` fires at start or end are assumptions |
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
@@ -184,6 +187,6 @@ from `tools/` are git-ignored, so release zips do not include them and `/st comi
 
 ## Parked for later
 
-Challenge import strings, emote bonus challenges, Zenit's side (refusing, roll-off, token payment),
-Zenit's secret list and objective, weekly reset and scoreboard, and the story layer. The event log leaves
+Challenge import strings, emote bonus challenges, Zennit's side (refusing, roll-off, token payment),
+Zennit's secret list and objective, weekly reset and scoreboard, and the story layer. The event log leaves
 room to add these as new event types without changing stored summon records.

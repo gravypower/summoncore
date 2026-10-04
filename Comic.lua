@@ -74,6 +74,7 @@ end
 
 local function buildView()
     view = CreateFrame("Frame", "SummonCoreComicView", UIParent)
+    view:Hide()
     view:SetFrameStrata("DIALOG")
     view:SetPoint("CENTER")
     view:SetMovable(true)
@@ -105,6 +106,7 @@ end
 
 local function buildControls()
     controls = CreateFrame("Frame", "SummonCoreComicControls", UIParent, "BasicFrameTemplateWithInset")
+    controls:Hide()
     controls:SetSize(520, 230)
     controls:SetPoint("TOP", 0, -40)
     controls:SetFrameStrata("FULLSCREEN_DIALOG")

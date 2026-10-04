@@ -1,4 +1,4 @@
--- Intro: /st intro plays "Zenit and the Index", an illustrated intro. Each scene is a 3-frame flipbook
+-- Intro: /st intro plays "Zennit and the Index", an illustrated intro. Each scene is a 3-frame flipbook
 -- (Media\intro_<n>, a 2048x1024 sheet of 1024x512 cells) flipped about six times a second, narrated, with a
 -- quiet synth music bed. Key phrases are typed out over the picture, in sync with the narration, with
 -- beeps and clicks (the full text is available behind the Text button). Rebuild the art with
@@ -12,9 +12,20 @@ local SFX = MEDIA .. "sfx\\"
 local FPS = 6
 local FRAMES = 3
 local CPS, HOLD = 26, 2.6 -- key phrase typing speed (characters a second) and how long each stays up
+local HIGHLIGHT_HOLD = 3.2 -- how long a highlight box stays on something that was mentioned
+
+-- Three renderings of the same scenes: neon line drawing (default), the original storybook colours, and green phosphor.
+local LOOKS = { lines = "intro_l", storybook = "intro_", terminal = "intro_t" }
+local LOOK_ORDER = { "lines", "storybook", "terminal" }
+
+local function look()
+    local chosen = ST.db.settings.introLook
+    if not LOOKS[chosen] then chosen = "lines" end -- the default; an older "terminal art" switch is ignored
+    return chosen
+end
 
 local function artPath(si)
-    return MEDIA .. (ST.db.settings.introTerminal and "intro_t" or "intro_") .. si
+    return MEDIA .. LOOKS[look()] .. si
 end
 
 -- With the music bed the clip is intro_<n>; without it, intro_<n>_voice.
@@ -26,25 +37,27 @@ end
 local PAUSE = 0.6
 local scenes = {
     { label = "The Index", dur = 22.10 + PAUSE, text = [=[The Cosmic Index of Summonable Persons is, by general agreement, the most important document in Azeroth that nobody has ever read. It lists every being that may legally be summoned, in alphabetical order, and it was compiled by a single clerk who had, at the time, been on shift for nine thousand years.]=] },
-    { label = "The sneeze", dur = 9.80 + PAUSE, text = [=[Somewhere around the letter Zed, the clerk sneezed. This is generally accepted to be the origin of the entire problem.]=] },
-    { label = "The wrong ritual", dur = 26.40 + PAUSE, text = [=[As a result of the sneeze, a Licensed Summoning Liaison, Third Class, named Zenit was entered into the Index as the default recipient of every Ritual of Summoning completed within range of his name. This includes rituals meant for other people. It includes rituals meant for nobody. It includes at least one ritual intended for a goat.]=] },
-    { label = "The missing form", dur = 24.70 + PAUSE, text = [=[Zenit did what any reasonable person would do. He looked for the form. The form turned out to be Form 27B slash 6, which is referenced throughout the Index and has never been seen. Several scholars believe it does not exist. Zenit believes that is exactly what a form would say.]=] },
+    { label = "The sneeze", dur = 9.80 + PAUSE, text = [=[Somewhere around the letter Z, the clerk sneezed. This is generally accepted to be the origin of the entire problem.]=] },
+    { label = "The wrong ritual", dur = 26.40 + PAUSE, text = [=[As a result of the sneeze, a Licensed Summoning Liaison, Third Class, named Zennit was entered into the Index as the default recipient of every Ritual of Summoning completed within range of his name. This includes rituals meant for other people. It includes rituals meant for nobody. It includes at least one ritual intended for a goat.]=] },
+    { label = "The missing form", dur = 24.70 + PAUSE, text = [=[Zennit did what any reasonable person would do. He looked for the form. The form turned out to be Form 27B slash 6, which is referenced throughout the Index and has never been seen. Several scholars believe it does not exist. Zennit believes that is exactly what a form would say.]=] },
     { label = "The attachment", dur = 21.90 + PAUSE, text = [=[Meanwhile, the Ritual of Summoning, a spell with a great deal of free time and a fragile sense of self, had formed an attachment. It does not want gold. It wants, in its own words, attention and closure. It will, however, accept fifty silver as a gesture.]=] },
-    { label = "The debt", dur = 12.50 + PAUSE, text = [=[And so every completed summon is recorded as an installment on a debt Zenit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.]=] },
-    { label = "The party", dur = 14.00 + PAUSE, text = [=[You, meanwhile, are a party of friends who have noticed that Zenit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.]=] },
+    { label = "The debt", dur = 12.50 + PAUSE, text = [=[And so every completed summon is recorded as an installment on a debt Zennit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.]=] },
+    { label = "The party", dur = 14.00 + PAUSE, text = [=[You, meanwhile, are a party of friends who have noticed that Zennit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.]=] },
     { label = "The week", dur = 14.30 + PAUSE, text = [=[This is the story of his week, and the week after that. If the form is ever found, you will be the first to know. Or the last. The Index is unclear.]=] },
 }
 
 -- Scene lengths come from IntroCues.lua (measured from the narration); the table above is the fallback.
+local ENDING = ST.introEnding or 3.2 -- after the last line: the music fades out, the picture fades to black, "THE END"
 local starts, total = {}, 0
 for i, s in ipairs(scenes) do
     if ST.introLength and ST.introLength[i] then s.dur = ST.introLength[i] + PAUSE end
+    if i == #scenes then s.dur = s.dur + ENDING end
     starts[i] = total
     total = total + s.dur
 end
 
-local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText
-local pictureH, buttonsWidth = 300, 700
+local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
+local pictureH, pictureW, buttonsWidth = 300, 533, 700
 local t, playing, shownScene, shownFrame, lastCue = 0, false, 0, -1, nil
 
 local function fmt(sec)
@@ -84,6 +97,20 @@ function Intro.SentenceAt(sentences, rel, length)
     return s.text, index, rel - s.t, nextStart and (nextStart - s.t) or nil
 end
 
+-- The highlight box showing `rel` seconds into a scene, and how long it has been up; nil if none. Each entry is
+-- { t, x, y, w, h } with the box in the 960x540 picture, and it stays for HIGHLIGHT_HOLD seconds or until the next.
+function Intro.HighlightAt(list, rel)
+    if not list then return nil end
+    local index
+    for i, h in ipairs(list) do
+        if h.t <= rel then index = i else break end
+    end
+    if not index then return nil end
+    local elapsed = rel - list[index].t
+    if elapsed > HIGHLIGHT_HOLD then return nil end
+    return index, elapsed
+end
+
 -- How much of a phrase has been typed after `elapsed` seconds (at least one character), at `cps` characters
 -- a second (default: the key-phrase speed).
 function Intro.Typed(text, elapsed, cps)
@@ -100,7 +127,18 @@ end
 -- Narration: one clip per scene (PlaySoundFile cannot start mid-file), so pausing replays the scene.
 local clipHandle, clipScene, clipToken, audioMissing
 
+-- Key clicks run for as long as the text is typing. PlaySoundFile cannot loop or be cut short, so a long clip is
+-- started with the sentence and stopped when the typing is done (or the scene is stopped).
+local keysHandle
+local function stopKeys()
+    if keysHandle then
+        pcall(StopSound, keysHandle)
+        keysHandle = nil
+    end
+end
+
 local function stopClip()
+    stopKeys()
     clipToken = (clipToken or 0) + 1
     clipScene = nil
     if clipHandle then
@@ -127,9 +165,13 @@ end
 -- A chirp as a key phrase appears, followed a moment later by a burst of key clicks as it types out.
 local function cueSound(cueIndex)
     if ST.db.settings.introMute then return end
+    stopKeys()
     pcall(PlaySoundFile, SFX .. "sfx_chirp_" .. math.random(3) .. ".ogg", "SFX")
-    C_Timer.After(0.12, function()
-        if playing and lastCue == cueIndex then pcall(PlaySoundFile, SFX .. "sfx_keys.ogg", "SFX") end
+    C_Timer.After(0.1, function()
+        if playing and lastCue == cueIndex then
+            local ok, willPlay, handle = pcall(PlaySoundFile, SFX .. "sfx_keys_long.ogg", "SFX")
+            if ok and willPlay then keysHandle = handle end
+        end
     end)
 end
 
@@ -153,6 +195,32 @@ local function show(sec)
     end
 
     local rel = sec - starts[si]
+    -- the ending: after the last line the picture and text fade to black and "THE END" fades in
+    local fade = 1
+    if si == #scenes then
+        local left = starts[si] + scenes[si].dur - sec
+        if left < ENDING then fade = math.max(0, left / (ENDING * 0.75)) end
+    end
+    picture:SetAlpha(fade)
+    terminal:SetAlpha(fade)
+    tape:SetAlpha(fade)
+    endText:SetAlpha(1 - fade)
+
+    -- highlight: a pulsing box round whatever the narrator is talking about
+    local boxes = ST.introHighlights and ST.introHighlights[si]
+    local boxIndex, boxElapsed = Intro.HighlightAt(boxes, rel)
+    if boxIndex then
+        local r = boxes[boxIndex]
+        local sx, sy = pictureW / 960, pictureH / 540
+        glow:ClearAllPoints()
+        glow:SetPoint("TOPLEFT", picture, "TOPLEFT", r.x * sx, -r.y * sy)
+        glow:SetSize(r.w * sx, r.h * sy)
+        glow:SetAlpha(math.min(1, boxElapsed / 0.15) * (0.7 + 0.3 * math.sin(boxElapsed * 8)) * fade)
+        glow:Show()
+    else
+        glow:Hide()
+    end
+
     local mode = ST.db.settings.introTextMode or "full"
     local cursor = (sec * 4) % 1 < 0.5 and "_" or " "
 
@@ -166,9 +234,12 @@ local function show(sec)
                 lastCue = index
                 if playing then cueSound(index) end
             end
-            terminalText:SetText(Intro.Typed(text, elapsed, Intro.SentenceSpeed(#text, span)) .. cursor)
+            local cps = Intro.SentenceSpeed(#text, span)
+            terminalText:SetText(Intro.Typed(text, elapsed, cps) .. cursor)
+            if elapsed * cps >= #text then stopKeys() end -- finished typing: the clicks stop with it
         else
             terminalText:SetText("")
+            stopKeys()
         end
     elseif mode == "key" then
         -- just the punchlines, flashed over the picture
@@ -184,11 +255,14 @@ local function show(sec)
                 if playing then cueSound(index) end
             end
             tapeText:SetText(Intro.Typed(cues[index].text, elapsed) .. cursor)
+            if elapsed * CPS >= #cues[index].text then stopKeys() end
         else
             tape:Hide()
+            stopKeys()
         end
     else
         tape:Hide()
+        stopKeys()
     end
 
     status:SetText(string.format("Scene %d/%d: %s     %s / %s%s", si, #scenes, scenes[si].label, fmt(sec),
@@ -235,7 +309,7 @@ local function layout()
     local settings = ST.db.settings
     local h = math.min(UIParent:GetHeight() * (SIZES[settings.introSize] or SIZES.medium), 540)
     local w = h * 16 / 9
-    pictureH = h
+    pictureH, pictureW = h, w
     picture:SetSize(w, h)
     local mode = settings.introTextMode or "full"
     -- the terminal box under the picture holds four lines of the narration
@@ -272,6 +346,7 @@ end
 local function build()
     local h, w = 300, 533 -- placeholders: layout() sets the real sizes once everything exists
     frame = CreateFrame("Frame", "SummonCoreIntro", UIParent)
+    frame:Hide() -- a new frame is visible; start hidden so the toggle below shows it on the first command
     ST.db.settings.introMute = ST.db.settings.introSound == false
     frame:SetSize(w + 24, h + 24 + 44)
     frame:SetPoint("CENTER", 0, 20)
@@ -315,6 +390,28 @@ local function build()
         text:SetJustifyV("MIDDLE")
         return box, text
     end
+    endText = frame:CreateFontString(nil, "OVERLAY")
+    endText:SetFont(FONT, 30, "OUTLINE")
+    endText:SetTextColor(0.4, 1, 0.55)
+    endText:SetPoint("CENTER", picture, "CENTER")
+    endText:SetText("THE END")
+    endText:SetAlpha(0)
+
+    -- highlight box: a bright outline with a faint fill, moved over the picture by show()
+    glow = CreateFrame("Frame", nil, frame)
+    local glowFill = glow:CreateTexture(nil, "BACKGROUND")
+    glowFill:SetAllPoints()
+    glowFill:SetColorTexture(1, 0.92, 0.45, 0.12)
+    for _, edge in ipairs({ { "TOPLEFT", "TOPRIGHT", true }, { "BOTTOMLEFT", "BOTTOMRIGHT", true },
+        { "TOPLEFT", "BOTTOMLEFT", false }, { "TOPRIGHT", "BOTTOMRIGHT", false } }) do
+        local line = glow:CreateTexture(nil, "BORDER")
+        line:SetColorTexture(1, 0.95, 0.55, 1)
+        line:SetPoint(edge[1])
+        line:SetPoint(edge[2])
+        if edge[3] then line:SetHeight(2.5) else line:SetWidth(2.5) end
+    end
+    glow:Hide()
+
     tape, tapeText = terminalBox(0.82)
     tape:SetSize(w * 0.88, h * 0.14)
     tape:SetPoint("BOTTOM", picture, "BOTTOM", 0, h * 0.05)
@@ -360,7 +457,17 @@ local function build()
         show(t)
     end)
     textBtn:SetText("Text: " .. (ST.db.settings.introTextMode or "full"))
-    toggle(frame, 118, "Terminal art", "introTerminal", false, function() shownScene = 0 show(t) end)
+    local lookBtn
+    lookBtn = button(frame, "", 120, function()
+        local current = look()
+        for i, name in ipairs(LOOK_ORDER) do
+            if name == current then ST.db.settings.introLook = LOOK_ORDER[i % #LOOK_ORDER + 1] break end
+        end
+        lookBtn:SetText("Look: " .. look())
+        shownScene = 0 -- reload the picture in the new look
+        show(t)
+    end)
+    lookBtn:SetText("Look: " .. look())
     local sizeBtn
     sizeBtn = button(frame, "", 100, function()
         local current = ST.db.settings.introSize or "medium"
@@ -401,7 +508,7 @@ function Intro.Check()
         try(MEDIA .. "intro_" .. i .. ".ogg")
         try(MEDIA .. "intro_" .. i .. "_voice.ogg")
     end
-    for _, name in ipairs({ "sfx_chirp_1", "sfx_chirp_2", "sfx_chirp_3", "sfx_keys", "sfx_pop" }) do
+    for _, name in ipairs({ "sfx_chirp_1", "sfx_chirp_2", "sfx_chirp_3", "sfx_keys_long", "sfx_pop" }) do
         try(SFX .. name .. ".ogg")
     end
     if bad == 0 then

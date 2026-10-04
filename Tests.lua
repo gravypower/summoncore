@@ -429,6 +429,7 @@ end
 
 local function buildPanel()
     panel = CreateFrame("Frame", "SummonCoreTests", UIParent, "BasicFrameTemplateWithInset")
+    panel:Hide() -- a new frame is visible; start hidden so the toggle shows it on the first command
     panel:SetSize(640, 560)
     panel:SetPoint("CENTER")
     panel:SetMovable(true)

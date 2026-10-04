@@ -353,8 +353,8 @@ add("voice clips: names parse, categories count, picks do not repeat", function(
     return counted and not repeated and missing, string.format("counted=%s repeated=%s", tostring(counted), tostring(repeated))
 end)
 
-add("Zenit hears a recorded complaint when summoned live, not from history", function()
-    local z = newClient("Zenit")
+add("Zennit hears a recorded complaint when summoned live, not from history", function()
+    local z = newClient("Zennit")
     z.db.settings.zenitTest = true
     local calls = {}
     local realPlay = ST.Clips.Play
@@ -364,9 +364,9 @@ add("Zenit hears a recorded complaint when summoned live, not from history", fun
             local id, ev = sample({ caster = "Alpha", target = target, time = BASE + i })
             return "Alpha-" .. ev.time, ev
         end
-        local id, ev = record("Zenit", 300)
+        local id, ev = record("Zennit", 300)
         with(z, function() Sync.OnMessage("1~E~" .. Sync.Encode(id, ev), "PARTY", "Alpha") end)       -- live: yes
-        id, ev = record("Zenit", 301)
+        id, ev = record("Zennit", 301)
         z.state.requested["Alpha"] = clock
         with(z, function() Sync.OnMessage("1~B~" .. Sync.Encode(id, ev), "WHISPER", "Alpha") end)     -- history: no
         id, ev = record("Someone", 302)
@@ -449,6 +449,34 @@ add("intro subtitles: the sentence being spoken, and the generated times are ord
         end
     end
     return #bad == 0, #bad == 0 and "generated sentence times are ordered" or ("scenes " .. table.concat(bad, ","))
+end)
+
+add("hub window: builds and every tab refreshes without errors", function()
+    local ok, err = ST.Hub.SelfCheck()
+    return ok, ok and "all six tabs refreshed" or tostring(err)
+end)
+
+add("intro highlights: a box is up while its subject is mentioned, and the generated boxes fit the picture", function()
+    local I = ST.Intro
+    local list = { { t = 1, x = 0, y = 0, w = 10, h = 10 }, { t = 6, x = 5, y = 5, w = 10, h = 10 } }
+    local before = I.HighlightAt(list, 0.5)
+    local first = I.HighlightAt(list, 2)
+    local expired = I.HighlightAt(list, 5)
+    local second = I.HighlightAt(list, 6.5)
+    if before or first ~= 1 or expired or second ~= 2 or I.HighlightAt(nil, 1) then
+        return false, "highlight lookup is wrong"
+    end
+    local bad = {}
+    for si, boxes in pairs(ST.introHighlights or {}) do
+        local prev = -1
+        for _, b in ipairs(boxes) do
+            if b.t <= prev or b.w <= 0 or b.h <= 0 or b.x < 0 or b.y < 0 or b.x + b.w > 960 or b.y + b.h > 540 then
+                bad[#bad + 1] = si
+            end
+            prev = b.t
+        end
+    end
+    return #bad == 0, #bad == 0 and "all generated boxes are ordered and inside the picture" or ("scenes " .. table.concat(bad, ","))
 end)
 
 function T.Run()
