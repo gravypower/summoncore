@@ -562,6 +562,12 @@ function Intro.Toggle(arg)
     setPlaying(true)
 end
 
+-- Starts a chapter (or scene) from the beginning even if the viewer is already open.
+function Intro.Play(arg)
+    if frame and frame:IsShown() then frame:Hide() end
+    Intro.Toggle(arg)
+end
+
 -- Mention the intro once, the first time the addon loads.
 local hint = CreateFrame("Frame")
 hint:RegisterEvent("PLAYER_LOGIN")

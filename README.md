@@ -17,7 +17,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 
 | Command | What it does |
 |---|---|
-| `/st` | Open the Summon Core window: Summary, Log, Tally, Badges, Sync and Tools tabs (everything below is in it too) |
+| `/st` | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story lists every chapter with a Play button (everything below is in it too) |
 | `/st help` | List the commands in chat |
 | `/st panel` | Open the window on the Summary tab |
 | `/st log [n]` | Recent summons |
@@ -51,7 +51,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Store.lua` | Store | The only code that touches `SummonTrackerDB`; tallies are derived from the event log |
 | `Sync.lua` | Sync | The only code that touches the network |
 | `Scoring.lua` | Scoring | Zone value table, points, badge rules |
-| `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the summary, log, tally, badges, sync and tools), and the Zennit access-denied gag |
+| `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the summary, log, answer, tally, badges, story, sync and tools), and the Zennit access-denied gag |
 | `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the sync self-test |
 
 Only the caster's client needs to see a summon; everyone else is credited from the caster's snapshot.

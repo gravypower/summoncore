@@ -1,4 +1,4 @@
--- Hub: one window for everything the slash commands do. Tabs: Summary, Log, Tally, Badges, Sync, Tools.
+-- Hub: one window for everything the slash commands do. Tabs: Summary, Log, Answer, Tally, Badges, Story, Sync, Tools.
 -- The slash commands still work; /st with no arguments opens this window. Zennit's client gets the gag
 -- instead of the Summary, Tally and Badges tabs, the same as before.
 local ADDON, ST = ...
@@ -6,8 +6,8 @@ local Hub = {}
 ST.Hub = Hub
 
 local ROW_H = 18
-local ORDER = { "summary", "log", "answer", "tally", "badges", "sync", "tools" }
-local LABELS = { summary = "Summary", log = "Log", answer = "Answer", tally = "Tally", badges = "Badges", sync = "Sync", tools = "Tools" }
+local ORDER = { "summary", "log", "answer", "tally", "badges", "story", "sync", "tools" }
+local LABELS = { summary = "Summary", log = "Log", answer = "Answer", tally = "Tally", badges = "Badges", story = "Story", sync = "Sync", tools = "Tools" }
 local GATED = { summary = true, tally = true, badges = true } -- hidden on Zennit's client
 
 local window
@@ -285,6 +285,50 @@ local function buildBadges(f)
     end
 end
 
+-- Every chapter of the story: the intro, then one for each win of the season race (z = Zennit's, g = the group's).
+local STORY = {
+    { "1", "The intro: Zennit and the Index" },
+    { "z1", "Zennit's 1st win: the week off" },
+    { "g1", "The group's 1st win: the cake" },
+    { "z2", "Zennit's 2nd win: the key to the side door" },
+    { "g2", "The group's 2nd win: the carbon copy of the Form" },
+    { "z3", "Zennit's 3rd win: the list is training modules" },
+    { "g3", "The group's 3rd win: the Ritual holds the Form" },
+    { "z4", "Zennit's 4th win: the clerk shows him the desk" },
+    { "g4", "The group's 4th win: the Ritual names its price" },
+    { "z5", "FINALE, Zennit: he becomes the clerk" },
+    { "g5", "FINALE, the group: the receipt, and Zennit is freed" },
+}
+
+local function buildStory(f)
+    local head = label(f, "Every chapter of the story. Each win in the weekly race plays its own; replay any that is written.", 16, -10, "GameFontDisableSmall")
+    local rows = {}
+    for i, c in ipairs(STORY) do
+        local y = -34 - (i - 1) * 32
+        local row = {
+            title = label(f, c[2], 16, y - 4, "GameFontHighlight"),
+            status = label(f, "", 470, y - 4, "GameFontNormalSmall"),
+        }
+        row.play = button(f, "Play", 640, y + 2, 80, function()
+            window:Hide() -- the viewer sits under this window
+            ST.Intro.Play(c[1])
+        end)
+        rows[i] = row
+    end
+    head:SetWidth(700)
+    return function()
+        local reached = {}
+        for _, c in ipairs(ST.Week.Season().chapters) do reached[c.key] = true end
+        for i, c in ipairs(STORY) do
+            local written = ST.Intro.HasChapter(c[1]) or c[1] == "1"
+            local row = rows[i]
+            row.status:SetText(not written and "|cff888888not written yet|r" or
+                ((reached[c[1]] or c[1] == "1") and "|cff33ff66reached|r" or "ready"))
+            row.play:SetEnabled(written)
+        end
+    end
+end
+
 local function buildSync(f)
     local info = bodyText(f, 16, -14, 720, 120)
     local out = bodyText(f, 16, -250, 720, 140)
@@ -384,7 +428,7 @@ local function buildTools(f)
     return function() end
 end
 
-local BUILDERS = { summary = buildSummary, log = buildLog, answer = buildAnswer, tally = buildTally, badges = buildBadges,
+local BUILDERS = { summary = buildSummary, log = buildLog, answer = buildAnswer, tally = buildTally, badges = buildBadges, story = buildStory,
     sync = buildSync, tools = buildTools }
 
 ----------------------------------------------------------------------
@@ -421,7 +465,7 @@ local function build()
         content:SetPoint("TOPLEFT", 12, -62)
         content:SetPoint("BOTTOMRIGHT", -12, 12)
         content:Hide()
-        local tabButton = button(window, LABELS[name], 14 + (i - 1) * 96, -32, 92, function() selectTab(name) end)
+        local tabButton = button(window, LABELS[name], 14 + (i - 1) * 90, -32, 86, function() selectTab(name) end)
         tabs[name] = { button = tabButton, frame = content, refresh = BUILDERS[name](content) }
     end
     window:SetScript("OnShow", function() if current then tabs[current].refresh() end end)
