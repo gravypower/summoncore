@@ -24,7 +24,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
-| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
+| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -310,6 +310,64 @@ Unlike the other lenses, this one is about real people, so the code can only sho
 **A lesson about this lens:** I expected the answer to be "reward helpers". Asking showed the group doesn't care
 about rewards; it cares about banter and not doing chores. Assumptions about players are exactly what this lens
 exists to test.
+
+### 2026-10-04 · Lens of the Interest Curve: a season
+
+**The questions (paraphrased):** is there a hook to start? Does interest rise and fall with rests between the peaks,
+rather than staying flat or peaking early? Is there a climax, and does it come last? Is the ending worth reaching? The
+lens applies at every scale, so: a summon, a week, a season, and the story across seasons.
+
+**The curve as built** (`Week.lua`, `Intro.lua`, `Hub.lua`; the season numbers are from 100,000 simulated seasons
+using the Fairness entry's chance of the group winning a week: 15% quiet, 28% normal, 64% trying; he wins the rest)
+
+| Scale | What the curve does | Verdict |
+|---|---|---|
+| A summon | Briefing, the ritual, his popup, his roll, the group's roll back, "Week: …" | A real peak at the dice; good |
+| A week | Flat from Monday to Sunday (counters tick), then the result about a minute after the next login | **No climax inside the week** |
+| A season | The race to five wins: 5 to 10 weeks, one chapter per win | Depends on how hard the group tries (below) |
+| The story | The intro (3.6 minutes), then about a minute per chapter, 10 chapters in all | **Runs out after the first finale** |
+
+**Findings**
+
+1. **The hook is the intro; the first reward is a week away.** A new player gets 3.6 minutes of narration, then nothing
+   from the story until the first week closes. In between the only feedback is numbers.
+2. **The climax depends on the group's effort, not on the design.** A season ends 5 to 0 or 5 to 1 (a blowout) in
+   **77%** of seasons when the group is quiet (15% a week), **47%** at normal effort (28%), and still **23%** at 45%.
+   A close finish (the loser has 3 or more wins) is at best **53%**. Almost nothing makes a late lead change: 0.5 a
+   season at normal effort.
+3. **Zennit's side gets the rising action; the group's barely gets seen.** At normal effort the group wins 1.9 weeks a
+   season and sees chapter g3 or later in **31%** of seasons; Zennit's trunk runs the full five in nearly all of them
+   (4.9 chapters). So the best group chapters (the Ritual naming its price, the receipt, the freeing) are rarely played.
+4. **The week off is a story beat with no mechanics.** The ending of chapter 2 says no ritual can find him, but
+   `Week.Immune` only drives a warning: summons during it still count, and he still answers. A win for Zennit changes
+   nothing in the next week, so his victories do not feel like one. (A season is 6.7 weeks for an active group; with a
+   quarter of the weeks quiet, 9.)
+5. **The story ends once.** All 10 chapters are written and the tree shows every reached chapter lit, so season 2
+   replays season 1. "The Index today" now follows the season, but it is one scene, not new rising action.
+6. **A result can be announced and then flip.** The Monday announcement uses the week's score, which is frozen only
+   two days after the week ends, and Zennit can still answer into the week until then. A late answer can reverse a win
+   after the chat line and the chapter have been given out.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Catch-up**: the side two wins behind gets a small edge for the weeks it trails (for example, the group's helpers add more when Zennit leads by 2 or more; his head start or his dice shrink when the group leads by 2 or more). In the simulation, a 10 point shift in the weekly chance cuts blowouts from 47% to 35% and raises close seasons from 29% to 39% at normal effort; 20 points gives 25% and 49% | 2 | Rules, a README paragraph, a few numbers to playtest |
+| B | **A beat inside the week**: a line of story at the moments that already exist: the first summon of him, the fifth filed (he may close), the lead changing hands, him closing, the last hour | 1, 4 | Wording only (no art, no voice) |
+| C | **The week off is a week off**: while Zennit is on leave, summons of him are filed under "enthusiasm" and do not count, so winning is a pause and the story beat is real | 4 | A rule change; the group then wins nothing that week |
+| D | **A match-point week**: when either side is one win from its finale, the week is announced as the deciding one (the Ledger already says it) and plays under one extra rule, such as a fourth die for him | 2 | A rule; needs the dice simulation |
+| E | **Season 2 is new**: new chapters, or the old ones return changed (the Ledger's idea, per chapter) | 5 | Writing, art, voice: the largest |
+| F | **Hold the announcement until the week is frozen**, or word it as provisional | 6 | Pacing: the payoff arrives two days later |
+
+**To decide before building**
+- Is a close finish the goal, or is a lopsided season fine when the group simply tries harder (or less hard)?
+- Does a win for Zennit have to *cost* the group something, or is the story enough?
+- How long should a season last? About 7 to 10 weeks today: one chapter a week for a couple of months.
+
+**To watch in playtests**
+- How many weeks does a first season really take, and how many are quiet?
+- Does anyone replay a chapter, or ask what comes next?
+- Do the "Week:" lines build any excitement during the week, or is it only the Monday result?
 
 ## Decisions
 
