@@ -73,6 +73,40 @@ local function tippedBy(ev, resp)
     return string.format(" %s's +%d tipped it.", table.concat(names, " and "), bonus)
 end
 
+-- Where a summon landed, as a key to tell places apart: the subzone text, else the map.
+local function placeKey(ev)
+    local zone = (ev.subzone or ""):lower()
+    if zone ~= "" then return zone end
+    return ev.mapID and ("map " .. ev.mapID) or nil
+end
+
+local ORDINAL = { [3] = "third", [4] = "fourth", [5] = "fifth", [6] = "sixth" }
+
+-- How many summons of Zennit to this place, this one included, have landed on his list (his answers say so: `listed`).
+function Respond.ListHits(ev, resp)
+    local key = placeKey(ev)
+    if not key or not (resp and resp.listed) then return 0 end
+    local n = 1
+    for _, other in pairs(ST.db.events) do
+        if other ~= ev and not other.fake and other.time < ev.time and other.response and other.response.listed
+            and ST.Week.IsZennit(other.target) and placeKey(other) == key then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+-- When a place on his list comes up again, the Index notices: "Darnassus again." Never for the first time, so the list
+-- keeps its secret until it hits. Empty when there is nothing to add.
+local function listNote(ev, resp)
+    local n = Respond.ListHits(ev, resp)
+    if n < 2 then return "" end
+    local place = (ev.subzone or "") ~= "" and ev.subzone or "That place"
+    if n == 2 then return string.format(" %s again. The Index is beginning to see a pattern.", place) end
+    return string.format(" %s for the %s time. The Index has stopped pretending it is a coincidence.", place,
+        ORDINAL[n] or (n .. "th"))
+end
+
 -- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
 local DID = { accepted = "accepted", refused = "refused", excused = "refused", owed = "demanded 50 silver for",
     paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
@@ -89,15 +123,55 @@ function Respond.Announce(ev, resp)
     local sroll = summonerRoll(ev, resp.sroll or 0)
     local bonus = ""
     if resp.listed and ST.Store.Lands({ response = resp }) then
-        bonus = string.format(" It is on his list: +%d point%s toward his week off.", pts, plural(pts))
+        bonus = string.format(" It is on his list: +%d point%s toward his week off.", pts, plural(pts)) .. listNote(ev, resp)
     end
-    if r == "accepted" then return string.format("%s accepted the summon from %s. +%d point%s.%s", who, ev.caster, pts, plural(pts), bonus) end
-    if r == "refused" then return string.format("%s refused the summon from %s. No points for them, and %s loses %d point%s toward his goal.", who, ev.caster, who, pts, plural(pts)) end
-    if r == "excused" then return string.format("%s refused the summon from %s. No points, but the destination is on his list, so it costs him nothing.", who, ev.caster) end
-    if r == "owed" then return string.format("%s demands %d silver, in cash, with no receipt. The points land when he says it was paid.", who, SILVER) end
-    if r == "paid" then return string.format("%s says the %d silver was paid. +%d point%s.%s", who, SILVER, pts, plural(pts), bonus) end
-    if r == "won" then return string.format("%s won the dice (%d to %s): the summon does not count, and he gains %d point%s toward his week off.", who, resp.zroll, sroll, pts, plural(pts)) end
-    if r == "lost" then return string.format("%s lost the dice (%d to %s): the summon counts. +%d point%s.%s%s", who, resp.zroll, sroll, pts, plural(pts), bonus, tippedBy(ev, resp)) end
+    local say = ST.Voice.Say
+    if r == "accepted" then
+        return say("answer.accepted", {
+            "%s accepted the summon from %s. +%d point%s.%s",
+            "%s accepted the summon from %s, without comment. +%d point%s.%s",
+            "The Index records that %s accepted the summon from %s. +%d point%s.%s" }, who, ev.caster, pts, plural(pts), bonus)
+    end
+    if r == "refused" then
+        return say("answer.refused", {
+            "%s refused the summon from %s. No points for them, and %s loses %d point%s toward his goal.",
+            "%s refused the summon from %s, with some dignity. No points for them, and %s loses %d point%s toward his goal.",
+            "The Index records that %s refused the summon from %s. No points, and %s loses %d point%s toward his goal." },
+            who, ev.caster, who, pts, plural(pts))
+    end
+    if r == "excused" then
+        return say("answer.excused", {
+            "%s refused the summon from %s. No points, but the destination is on his list, so it costs him nothing.%s",
+            "%s declined the summon from %s. No points, but the place is on his list, so it costs him nothing.%s",
+            "%s refused the summon from %s at no cost to himself: the destination is on his list. No points.%s" },
+            who, ev.caster, listNote(ev, resp))
+    end
+    if r == "owed" then
+        return say("answer.owed", {
+            "%s demands %d silver, in cash, with no receipt. The points land when he says it was paid.",
+            "%s asks for %d silver, in cash, and would prefer no receipt. The points land when he says it was paid.",
+            "%s has named his price: %d silver, in cash, no receipt. The points land when he says it was paid." }, who, SILVER)
+    end
+    if r == "paid" then
+        return say("answer.paid", {
+            "%s says the %d silver was paid. +%d point%s.%s",
+            "%s confirms the %d silver arrived. +%d point%s.%s",
+            "%s has been paid the %d silver, and says so. +%d point%s.%s" }, who, SILVER, pts, plural(pts), bonus)
+    end
+    if r == "won" then
+        return say("answer.won", {
+            "%s won the dice (%d to %s): the summon does not count, and he gains %d point%s toward his week off.",
+            "%s won the dice (%d to %s). The summon does not count, and he gains %d point%s toward his week off.",
+            "The dice favoured %s (%d to %s): the summon does not count, and he gains %d point%s toward his week off. The Index checked the dice." },
+            who, resp.zroll, sroll, pts, plural(pts))
+    end
+    if r == "lost" then
+        return say("answer.lost", {
+            "%s lost the dice (%d to %s): the summon counts. +%d point%s.%s%s",
+            "%s lost the dice (%d to %s), and the summon counts. +%d point%s.%s%s",
+            "The dice went against %s (%d to %s): the summon counts. +%d point%s.%s%s" },
+            who, resp.zroll, sroll, pts, plural(pts), bonus, tippedBy(ev, resp))
+    end
 end
 
 -- Zennit's secret list for the week: destination words kept on his client only (never synced or exported).

@@ -319,6 +319,8 @@ function commands.week(rest)
     local this, last = W.Score(W.Start()), W.Score(W.Start() - 7 * 86400)
     print_("This week: " .. W.Describe(this))
     print_("Last week: " .. W.Describe(last))
+    local whim = W.WhimLine(W.Start())
+    if whim and not W.IsOff(W.Start()) then print_("This week's whim: " .. whim) end
     local season = W.Season()
     print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
         season.group, W.WINS, #season.finales))

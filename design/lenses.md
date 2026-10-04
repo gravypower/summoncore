@@ -27,7 +27,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
 | Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
 | Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
-| Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; the change waits for a decision (below) |
+| Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; A, B, C and D built; playtest |
 
 ## Entries
 
@@ -585,9 +585,37 @@ be earned. Ten far-flung maps have been marked for a while (from memory, to be c
 | C | **A recording sheet**: the lines to record for each clip category, so the group can fill `Media/clips` in one evening | 2 | A page of wording; no code |
 | D | **The list remembers**: when a place on his list hits a second time, the Index says so ("Darnassus again. The Index is beginning to see a pattern.") | 5 | Wording and a counter on the log |
 
+**Our answer:** build all four.
+
+**Built**
+- **A, pools of lines** (`Voice.lua`). His seven answers, "Summon logged", the "Week:" line, the last die and the week's result
+  each come in three variants with the same facts; one is picked at random and never the one before. The self-test checks that a
+  variant is never repeated, that all three get used, and that every answer variant still names its numbers.
+- **B, the whim of the week.** About half the weeks the Index draws one of four twists from the week number (the same on every
+  client, nothing synced): *distracted* (his edge 5 lower), *attentive* (5 higher), *a helpers' feast* (+8 a helper) or *the
+  helpers are tired* (+2). I measured each in the week model before choosing the size (group's chance, quiet / normal / trying):
+
+  | Whim | Quiet | Normal | Trying |
+  |---|---|---|---|
+  | A plain week | 15% | 27% | 63% |
+  | Distracted (edge 5) | 19% | 32% | 69% |
+  | Attentive (edge 15) | 12% | 23% | 58% |
+  | A helpers' feast (+8) | 15% | 31% | 70% |
+  | The helpers are tired (+2) | 15% | 24% | 56% |
+
+  Each moves a normal week 3 to 5 points either way, so the deck is about neutral and no week is much easier than another. I
+  left out whims that change the dice (a fourth die moves a trying week from 63% to 45%, a second from 63% to 83%): too large for
+  a week to survive, and he can already close the Index. Weeks off have none. `Week.RULES.whims = false` turns the layer off.
+  It is said at login, in the briefing, in "The Index today" and in `/sc week`.
+- **C, the recording sheet** (`design/private/recording-sheet.md`, git-ignored so it cannot spoil the surprises in a public
+  repo): the six clip categories, what triggers each and who hears it, and six or so lines to start from, with how to convert,
+  name and install the takes. It makes the dormant random picks real.
+- **D, the list remembers.** When a place on his list comes up a second time, the answer line adds "Darnassus again. The Index is
+  beginning to see a pattern." (then "for the third time"). Never the first time, so the list keeps its secret until it hits. It
+  reads only what his answers already say (`listed`), so every client agrees.
+
 **To decide before building**
-- Do we want rules to change week to week (B), or is the same game each week the point?
-- How much extra flavour in chat before it becomes the reading the group dislikes?
+- How much extra flavour in chat before it becomes the reading the group dislikes? (Asked at the playtest.)
 
 **To watch in playtests**
 - Which lines does the group stop reading? Which do they repeat to each other?
@@ -609,3 +637,4 @@ be earned. Ten far-flung maps have been marked for a while (from memory, to be c
 | 2026-10-04 | Keep five weekly wins to a finale (a season of about 11 weeks at normal effort) until a real season shows how long it takes | Interest Curve | Simulated length is long, but the group's real pace is unknown; shortening later is one constant (`Week.WINS`) |
 | 2026-10-04 | No rule change for Skill and Chance; say so when his last die is spent | Skill and Chance | A week is mostly chance and a season mostly skill, and the group's best order depends on how he rolls; the moment their ordering pays off was invisible |
 | 2026-10-04 | The Index remembers named moments, the silver he is paid, and a keepsake of each finished season; players named by character | Story and Emotion | The personal material was in the log and scrolled away; naming players is what a friend group repeats |
+| 2026-10-04 | Pools of lines, a whim of the week (four small twists, about half the weeks), a recording sheet and a list that remembers | Surprise | The surprises were in the people and the story only; the repeating lines were wallpaper by week 9 and every week played under the same rules |

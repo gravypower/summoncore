@@ -62,6 +62,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Reset.lua` | Reset | `/sc reset`: wipe this client, and the admin's request to everyone else |
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
+| `Voice.lua` | Voice | Pools of lines: the Index says a fact that repeats a few different ways, never the same one twice running |
 | `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays; and the log's memory of a season (named moments, the silver, the keepsake) |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
 | `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the party, Zennit, the log, the story, sync and tools), and the Zennit access-denied gag |
@@ -189,6 +190,8 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 - `zenit_refuse`: when Zennit refuses a summon (his client and the summoner's). `zenit_win`: when he wins the dice. `ritual`: as a ritual begins on your client. `narrator_weekopen`: when a finished week is announced.
   Clips are silent until recorded; none are so far.
 
+`design/private/recording-sheet.md` (also git-ignored, for the same reason) lists lines to record for each category and how to convert and name the takes.
+
 `Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zennit, and the repo is on GitHub. Add
 the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.
 
@@ -278,6 +281,12 @@ numbers behind it, is in `design/lenses.md`):
   he is ahead (to +5), and grows when the group is ahead (to +15). At three or more it moves by **10** (to +0, or +20);
   a lead of one changes nothing. The briefing, the "Week:" line, his popup, the dice prompts and "The Index today" say
   so ("The Index, which takes no sides, has cut his edge on the dice to +5 this week"). Tune it in `Week.RULES.catchup`.
+- **A whim of the week.** About half the weeks, the Index draws one small twist, the same on every client (it follows from the week
+  number, so nothing is synced or kept): **The Index is distracted** (his dice edge is 5 lower), **attentive** (5 higher), **a
+  helpers' feast** (each helper adds +8 instead of +5) or **the helpers are tired** (+2). Each moves a normal week's chance by
+  about 5 or 6 points, so no week is much easier than another, and the group can plan around it. It is said at login, in the
+  briefing as a ritual on Zennit begins, in "The Index today" and in `/sc week`; never in a week off. `Week.RULES.whims = false`
+  turns it off, and `Week.WHIMS` and the deck in `Week.lua` are where to add more.
 - **His week off is real.** After a week Zennit wins, the next week is his: summons of him are still logged, answered and
   gagged as usual (the warnings, his popup, the dice), but they are filed as **filler**: the race ignores them, nobody
   wins the week, and no chapter is unlocked. So a win for Zennit is a pause for the group, not a head start; the week
@@ -295,6 +304,8 @@ numbers behind it, is in `design/lenses.md`):
   - his answer popup says the same, worded for him ("you lead by 2"), and reminds him that ignoring a summon
     counts as accepting it;
   - when the helpers' bonus is what beat him on the dice, the line names them ("Al and Cy's +10 tipped it.");
+  - lines that repeat (his answers, "Summon logged", "Week:", the last die, the week's result) come in three variants with the same facts;
+  - a place on his list that comes up again is noticed ("Darnassus again. The Index is beginning to see a pattern."), never the first time, so the list keeps its secret until it hits;
   - when his third die is spent, everyone is told that every summon from there is certain ("That was Zennit's last die this week…");
   - the hub's season band shows the lead (`WEEK: GROUP +1 · FILED 4/10 · DICE 1`, or `CLOSED`).
 

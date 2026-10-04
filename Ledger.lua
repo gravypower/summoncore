@@ -194,7 +194,7 @@ function Ledger.Seasons()
 end
 
 -- state: { season = Week.Season(), score = Week.Score(this week), immune = bool, wins = Week.WINS, cap = summons a week,
---          edgeMoved, facts = Ledger.Collect result for the season }
+--          edgeMoved, whim (the week's whim as a sentence, or nil), facts = Ledger.Collect result for the season }
 -- Returns a list of { text, cue }, where cue is the punchline for the Text: key mode (or nil).
 function Ledger.Build(s)
     local out = {}
@@ -256,6 +256,7 @@ function Ledger.Build(s)
 
     local text, cue = weekLine(s)
     say(text, cue)
+    if s.whim and not s.immune then say("This week's whim: " .. s.whim, "THE WHIM OF THE WEEK") end
     say("The Index is accepting further evidence.")
     return out
 end
@@ -286,5 +287,5 @@ function Ledger.State()
     local start = W.Start(now)
     local season = W.Season(now)
     return { season = season, facts = Ledger.Facts(season), score = W.Score(start), immune = (W.Immune(now)), wins = W.WINS,
-        cap = W.RULES.cap, edgeMoved = select(2, W.Edge(start)) }
+        cap = W.RULES.cap, edgeMoved = select(2, W.Edge(start)), whim = W.WhimLine(start) }
 end

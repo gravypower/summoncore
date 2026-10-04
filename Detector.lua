@@ -125,7 +125,8 @@ end
 local function report(ev, badges)
     if ST.Hub then ST.Hub.Refresh() end
     local zenit = ST.Gag.IsZennit()
-    ST.print(string.format("Summon logged: %s in %s%s%s", ev.target, ev.subzone ~= "" and ev.subzone or "?",
+    ST.print(ST.Voice.Say("logged", { "Summon logged: %s in %s%s%s", "The Index has noted a summons of %s to %s%s%s.",
+        "Filed: %s, in %s%s%s." }, ev.target, ev.subzone ~= "" and ev.subzone or "?",
         zenit and "" or string.format(" (+%d, %s)", ev.points, ev.kind), ev.confirmed and "" or " [unconfirmed]"))
     -- a summon of Zennit moves the week: say where it stands now
     local week = not ev.fake and ST.Week.IsZennit(ev.target) and ST.Week.StatusLine(ST.Week.Start(ev.time))
