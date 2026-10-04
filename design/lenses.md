@@ -23,7 +23,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
-| The Player | One friend group, and one of them (Zennit) is the target | |
+| The Player | One friend group, and one of them (Zennit) is the target | Findings in; waiting on answers about the group |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
 
 ## Entries
@@ -246,6 +246,39 @@ After acting, what do they need to know, and does the game tell them clearly and
 - Do people read the chat lines, or do they scroll past? If they scroll past, that is the case for the tracker (5).
 - Two lines per answer, for everyone in the guild: welcome, or noise?
 - Does the briefing change behaviour: do people wait for a second helper when he still has dice?
+
+### 2026-10-04 · Lens of the Player
+
+**The questions (paraphrased):** what do these players like, dislike and expect? In their place, what would I want?
+Unlike the other lenses, this one is about real people, so the code can only show what each kind of player gets.
+
+**What the game offers each kind of player, as built** (`Store.Tallies`, `Store.Stats`, `Scoring.badges`):
+
+| Player | What they do | What they get back |
+|---|---|---|
+| Summoner (warlocks only: Ritual of Summoning is a warlock spell) | Casts, rolls back against his dice | Points, all six badges, the Tally, the briefing, the dice prompt, their name in every line |
+| Helper (anyone who clicks the portal) | Makes the ritual possible; now +5 each to the summoner's roll | An "assisted" count in the Tally; no points, no badges, no mention when their +5 wins the roll |
+| Zennit | Answers every summon, guards his list, spends dice, can close the Index | His week off, the story, his own wording; Summary, Tally and Badges are hidden from him (the gag) |
+| Friends who are offline | Nothing in the moment | Chat lines at login, the hub, the story |
+| The designer (also a player, and the admin) | All of the above, plus the admin tools | See finding 4 |
+
+**Findings**
+1. **The role the new rules made most important gets the least back.** Helpers decide the dice now; the game never
+   names them when they do.
+2. **The main action is warlock-only.** Everyone else can only be a helper: the role with no rewards.
+3. **Zennit answers every summon himself.** Up to 10 popups a week: the best part of his week, or a chore?
+4. **The designer is one of the players.** Watch for features that exist because *we* find them fun.
+
+**Questions about the group** (answers go here)
+1. Who plays, and how many are warlocks?
+2. Who usually helps, and do they enjoy it or is it a favour?
+3. What does each of them like in WoW: achievements, banter, competing, the social side?
+4. What would annoy them: chat spam, popups, being the butt of the joke?
+5. What is Zennit like as a player: would he hoard dice, refuse everything for the bit, demand silver every time?
+
+**Possible directions, once we know the group** (none chosen)
+- Helper recognition: name the helpers when their bonus decides a roll; badges for helping.
+- Points for helpers in the Tally (not the race), if the group is mostly non-warlocks.
 
 ## Decisions
 
