@@ -8,7 +8,7 @@
 #
 #   powershell -ExecutionPolicy Bypass -File tools\intro\render_intro.ps1 [-Format tga]
 param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender,
-      [ValidateSet("storybook", "terminal", "lines")][string]$Style = "storybook",
+      [ValidateSet("storybook", "lines")][string]$Style = "storybook",
       [int[]]$SceneList = (1..8))
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
@@ -44,7 +44,6 @@ var q = new URLSearchParams(location.hash.slice(1));
   if (q.has('s')) {
     document.documentElement.classList.add('shot');
     stage.setAttribute('preserveAspectRatio', 'none');
-    if (q.has('term')) document.documentElement.classList.add('term');
     if (q.has('line')) {
       document.documentElement.classList.add('line');
       document.querySelector('svg defs').insertAdjacentHTML('beforeend', '<pattern id="spinesLine" width="30" height="70" patternUnits="userSpaceOnUse"><path d="M7 6V66M22 4V66" stroke="#2b230a" stroke-width="1" fill="none"/></pattern>');
@@ -54,7 +53,6 @@ var q = new URLSearchParams(location.hash.slice(1));
   } else { update(0); requestAnimationFrame(loop); }
 })();
 '@
-$termCss = 'html.shot.term .stage{background:#000}html.shot.term #stage{filter:grayscale(1) contrast(1.45) brightness(1.25) drop-shadow(0 0 3px #3dff88)}html.shot.term .stage::before{content:"";position:absolute;inset:0;background:#2bff78;mix-blend-mode:multiply;z-index:2;pointer-events:none}html.shot.term .stage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.26) 0,rgba(0,0,0,.26) 1px,transparent 1px,transparent 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);z-index:3;pointer-events:none}'
 $lineCss = 'html.shot.line .stage{background:#000}' +
   'html.shot.line #stage{filter:drop-shadow(0 0 2px rgba(255,210,60,.35))}' +
   # outlines only: every shape loses its fill and gets a thin neon stroke
@@ -78,7 +76,7 @@ $lineCss = 'html.shot.line .stage{background:#000}' +
   # green leader lines and labels
   'html.shot.line text{fill:#6dff9a!important;stroke:none!important}'
 $baseCss = 'html.shot,html.shot body{margin:0;padding:0;overflow:hidden;background:#000}html.shot main>*:not(.stage){display:none}html.shot header,html.shot .bigplay{display:none}html.shot .stage{position:fixed;left:0;top:0;width:100vw;height:100vh;max-width:none;border:0;border-radius:0;aspect-ratio:auto}'
-$css = '<style>' + $baseCss + $termCss + $lineCss + '</style></head>'
+$css = '<style>' + $baseCss + $lineCss + '</style></head>'
 $patched = $tail.Replace($html, { param($m) $patch }).Replace("</head>", $css)
 $page = Join-Path $work "render.html"
 [IO.File]::WriteAllText($page, $patched)
@@ -92,8 +90,8 @@ $browser = @(
     "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $browser) { throw "Edge or Chrome not found" }
-$termFlag = switch ($Style) { "terminal" { "&term=1" } "lines" { "&line=1" } default { "" } }
-$namePrefix = switch ($Style) { "terminal" { "intro_t" } "lines" { "intro_l" } default { "intro_" } }
+$styleFlag = switch ($Style) { "lines" { "&line=1" } default { "" } }
+$namePrefix = switch ($Style) { "lines" { "intro_l" } default { "intro_" } }
 $scenes = 8
 foreach ($n in $SceneList) {
     if ($SkipRender) { break }
@@ -103,7 +101,7 @@ foreach ($n in $SceneList) {
         Remove-Item -LiteralPath $png -ErrorAction SilentlyContinue
         $p = Start-Process -FilePath $browser -PassThru -Wait -WindowStyle Hidden -ArgumentList @(
             "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
-            "--window-size=1024,512", "--virtual-time-budget=8000", "--screenshot=`"$png`"", "`"$url#s=$s&f=$f$termFlag`"")
+            "--window-size=1024,512", "--virtual-time-budget=8000", "--screenshot=`"$png`"", "`"$url#s=$s&f=$f$styleFlag`"")
         if (-not (Test-Path -LiteralPath $png)) { throw "no screenshot for scene $s frame $f" }
     }
     "rendered scene {0}/{1}" -f ($s + 1), $scenes

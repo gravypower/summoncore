@@ -106,17 +106,16 @@ a quiet synth music bed, about 2:30 in all. The whole narration is typed out, a 
 voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. While the narrator mentions something (the three kinds of ritual, the book, the form, Zennit), a pulsing box lights up that part of the picture. The **Text**
 button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
 large), a Look button
-(`lines`: neon line drawing on black, the default; `storybook`: the original colours; `terminal`: green phosphor with
-scanlines), and toggles for Sound and Music. `/st intro 3` starts at
+(`lines`: neon line drawing on black, the default; `storybook`: the original colours), and toggles for Sound and Music. `/st intro 3` starts at
 scene 3. `/st intro check` tries every intro sound
 file and lists the ones the game cannot play (after adding or replacing media, restart WoW: `/reload` does not pick
-up new files). The art lives in `Media/intro_l1.blp` to `intro_l8.blp` (lines), `intro_1` to `intro_8` (storybook) and `intro_t1` to `intro_t8` (terminal): 2048x1024 sheets, DXT1, about 1.3 MB each.
+up new files). The art lives in `Media/intro_l1.blp` to `intro_l8.blp` (lines) and `intro_1` to `intro_8` (storybook): 2048x1024 sheets, DXT1, about 1.3 MB each.
 `tools/intro/render_intro.ps1` rebuilds them from `tools/intro/source.html` using headless Edge or Chrome
 (`-Format tga` writes uncompressed TGAs instead if BLPs misbehave in your client).
 
 **Rebuilding the pieces** (needs ffmpeg for the audio, Edge or Chrome for the art):
 
-- `tools/intro/render_intro.ps1 [-Style lines|storybook|terminal] [-SceneList 1,2]`: the picture sheets (`intro_l<n>.blp` for lines, `intro_<n>.blp` for storybook, `intro_t<n>.blp` for terminal).
+- `tools/intro/render_intro.ps1 [-Style lines|storybook] [-SceneList 1,2]`: the picture sheets (`intro_l<n>.blp` for lines, `intro_<n>.blp` for storybook).
 - `tools/intro/build_audio.ps1`: reads the narration takes in `tools/intro/narration/`, synthesises the music bed
   and the beeps, chirps and key clicks (`Media/sfx/`), mixes `Media/intro_<n>.ogg` (voice plus music, which ducks
   under the voice and swells in the pauses) and `Media/intro_<n>_voice.ogg` (voice only), and writes

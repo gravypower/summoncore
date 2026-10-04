@@ -14,13 +14,13 @@ local FRAMES = 3
 local CPS, HOLD = 26, 2.6 -- key phrase typing speed (characters a second) and how long each stays up
 local HIGHLIGHT_HOLD = 3.2 -- how long a highlight box stays on something that was mentioned
 
--- Three renderings of the same scenes: neon line drawing (default), the original storybook colours, and green phosphor.
-local LOOKS = { lines = "intro_l", storybook = "intro_", terminal = "intro_t" }
-local LOOK_ORDER = { "lines", "storybook", "terminal" }
+-- Two renderings of the same scenes: neon line drawing (default) and the original storybook colours.
+local LOOKS = { lines = "intro_l", storybook = "intro_" }
+local LOOK_ORDER = { "lines", "storybook" }
 
 local function look()
     local chosen = ST.db.settings.introLook
-    if not LOOKS[chosen] then chosen = "lines" end -- the default; an older "terminal art" switch is ignored
+    if not LOOKS[chosen] then chosen = "lines" end -- the default; also covers a look that no longer exists
     return chosen
 end
 
