@@ -18,15 +18,19 @@ function Week.Start(t)
     return t - ((t - MONDAY) % LENGTH)
 end
 
+-- Zennit's characters: the listed names, plus the alts his own client has announced over sync (settings.zenitAlts).
 local function isZennit(name)
     local base = ST.baseName(name)
     if not base then return false end
-    local names = ST.db.settings and ST.db.settings.zenitNames or { "Zennit" }
-    for _, n in ipairs(names) do
-        if ST.baseName(n) and ST.baseName(n):lower() == base:lower() then return true end
+    local s = ST.db.settings
+    for _, list in ipairs({ s and s.zenitNames or { "Zennit" }, s and s.zenitAlts or {} }) do
+        for _, n in ipairs(list) do
+            if ST.baseName(n) and ST.baseName(n):lower() == base:lower() then return true end
+        end
     end
     return false
 end
+Week.IsZennit = isZennit
 
 -- A week closes GRACE after it ends, leaving time for late answers and late syncs. Once closed, its winner is
 -- frozen on this client (Week.Check), so a stray old answer or late-synced summon cannot flip a decided week.

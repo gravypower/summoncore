@@ -708,6 +708,26 @@ add("a reset a client missed is asked again from the next HELLO", function()
     return asked == stamp, tostring(asked)
 end)
 
+add("Zennit's alts are learned from his own client, and only a few", function()
+    local a, z = newClient("Alpha"), newClient("Zennit")
+    local savedGet = ST.bnGetInfo
+    ST.bnGetInfo = function() return 1, ST.ZENNIT_TAG end
+    with(z, function() Sync.Hello() end)
+    ST.bnGetInfo = savedGet
+    local sentA
+    for _, m in ipairs(z.out) do if m.payload:match("^%d+~A~") then sentA = m.payload end end
+    if not sentA then return false, "Zennit's client did not announce itself" end
+    local before = with(a, function() return ST.Week.IsZennit("Bankalt") end)
+    local r1 = with(a, function() return Sync.OnMessage(sentA, "PARTY", "Bankalt") end)
+    local r2 = with(a, function() return Sync.OnMessage(sentA, "PARTY", "Bankalt") end)
+    local after = with(a, function() return ST.Week.IsZennit("Bankalt-SomeRealm") end)
+    local other = with(a, function() return ST.Week.IsZennit("Gamma") end)
+    local capped
+    with(a, function() for i = 1, 12 do capped = Sync.OnMessage(sentA, "PARTY", "Alt" .. i) end end)
+    return not before and r1 == "learned" and r2 == "kept" and after and not other and capped == "rejected:full",
+        string.format("before=%s %s %s after=%s other=%s capped=%s", tostring(before), r1, r2, tostring(after), tostring(other), tostring(capped))
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge

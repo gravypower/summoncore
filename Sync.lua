@@ -18,6 +18,7 @@ local MAX_MSG = 250        -- addon message limit is 255 bytes
 local MAX_NAME = 24
 local MAX_SUBZONE = 40
 local MAX_ASSISTANTS = 2
+local MAX_ALTS = 10        -- most alts of Zennit that we will learn
 local MAX_BATCH = 500      -- most events sent in reply to one REQUEST
 local SEND_INTERVAL = 0.34 -- about 3 messages per second
 local REQUEST_COOLDOWN = 10
@@ -228,6 +229,7 @@ function Sync.Hello(channel, target)
         enqueue(channel, target, "H", helloBody())
     else
         for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "H", helloBody()) end
+        if ST.IsZennitAccount() then Sync.SendAlt() end
     end
 end
 
@@ -241,6 +243,12 @@ function Sync.SendResponse(id, resp)
     local body = string.format("%s|%s|%d|%d|%d%s", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time,
         resp.listed and "|1" or "")
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
+end
+
+-- Zennit's own client says "the character I am playing is his": everyone else cannot see his Battle.net account,
+-- so this is how they learn his alts. The sender is the character; nothing else is claimed.
+function Sync.SendAlt()
+    for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "A", "1") end
 end
 
 -- A deleted summon: only its caster can say so. `T` carries the id.
@@ -389,6 +397,16 @@ function Sync.OnMessage(text, channel, sender)
         ST.Store.SetResponse(rid, resp)
         if Sync.onResponse then Sync.onResponse(rid, ev, resp) end
         return "applied"
+
+    elseif typ == "A" then
+        if not validName(sender) then return "bad" end
+        local s = ST.db.settings
+        if not s then return "bad" end
+        s.zenitAlts = s.zenitAlts or {}
+        if ST.Week.IsZennit(sender) then return "kept" end
+        if #s.zenitAlts >= MAX_ALTS then return "rejected:full" end
+        s.zenitAlts[#s.zenitAlts + 1] = sender
+        return "learned"
 
     elseif typ == "T" then
         -- the caster deleted this summon: nobody else can, so the sender must be the one named in the id
