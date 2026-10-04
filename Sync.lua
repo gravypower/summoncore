@@ -163,6 +163,7 @@ function Sync.Merge(id, ev, sender, live, opts)
     if live and ev.caster ~= sender then return "rejected:sender" end
     -- anything from before the last reset stays gone, even if another client still holds it
     if ST.db.resetAt and ev.time <= ST.db.resetAt then return "rejected:reset" end
+    if store.IsDeleted(id) then return "rejected:deleted" end
     local cur = store.Get(id)
     if ev.caster == Sync.myName() then
         -- Nobody can write entries against the receiver. Our own copy is authoritative.
@@ -218,7 +219,8 @@ function Sync.Pump(max)
 end
 
 local function helloBody()
-    return string.format("%d|%d|%s|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse())
+    return string.format("%d|%d|%s|%d|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse(),
+        ST.db.resetAt or 0)
 end
 
 function Sync.Hello(channel, target)
@@ -239,6 +241,27 @@ function Sync.SendResponse(id, resp)
     local body = string.format("%s|%s|%d|%d|%d%s", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time,
         resp.listed and "|1" or "")
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
+end
+
+-- A deleted summon: only its caster can say so. `T` carries the id.
+function Sync.SendTombstone(id)
+    for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "T", esc(id)) end
+end
+
+-- Whispers our own tombstones to someone who may still hold what we deleted. Returns whether any were sent.
+local MAX_TOMBSTONES = 50
+local TOMBSTONE_COOLDOWN = 60
+function Sync.SendTombstones(target)
+    local st = Sync.state
+    local now = Sync.now()
+    st.lastTomb = st.lastTomb or {}
+    if st.lastTomb[target] and now - st.lastTomb[target] < TOMBSTONE_COOLDOWN then return false end
+    local sent = false
+    for _, t in ipairs(ST.Store.OwnTombstones(MAX_TOMBSTONES)) do
+        if enqueue("WHISPER", target, "T", esc(t.id)) then sent = true end
+    end
+    if sent then st.lastTomb[target] = now end
+    return sent
 end
 
 -- Asks everyone to wipe their summons and the story as of `stamp` (each user is asked before it happens).
@@ -287,15 +310,15 @@ function Sync.OnMessage(text, channel, sender)
     local now = Sync.now()
 
     if typ == "H" then
-        local count, latest, respT = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)")
-        count, latest, respT = tonumber(count), tonumber(latest), tonumber(respT) or 0
+        local count, latest, respT, theirReset = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)|?(%d*)")
+        count, latest, respT, theirReset = tonumber(count), tonumber(latest), tonumber(respT) or 0, tonumber(theirReset) or 0
         if not count then return "bad" end
         local myCount, myLatest, myResp = ST.Store.Count(), ST.Store.Latest(), ST.Store.LatestResponse()
         local actions = {}
         -- They may hold something we lack: ask for everything (set union makes repeats harmless).
         if count > myCount or latest > myLatest or (count == myCount and latest ~= myLatest) or respT > myResp then
             st.requested[sender] = now
-            enqueue("WHISPER", sender, "R", "0")
+            enqueue("WHISPER", sender, "R", tostring(ST.db.resetAt or 0)) -- never ask for what a reset removed
             actions[#actions + 1] = "request"
         end
         -- We hold more than they do: tell them so they can ask us.
@@ -305,6 +328,15 @@ function Sync.OnMessage(text, channel, sender)
                 enqueue("WHISPER", sender, "H", helloBody())
                 actions[#actions + 1] = "hello-back"
             end
+        end
+        -- They reset after us (we were offline, or said no): ask our user again.
+        if theirReset > (ST.db.resetAt or 0) and theirReset <= time() + 86400 and Sync.onReset then
+            Sync.onReset(sender, theirReset)
+            actions[#actions + 1] = "reset-asked"
+        end
+        -- They hold more than we do: some of it may be summons we deleted, so tell them (rate limited).
+        if count > myCount or latest > myLatest then
+            if Sync.SendTombstones(sender) then actions[#actions + 1] = "tombstones" end
         end
         return #actions > 0 and table.concat(actions, "+") or "in-sync"
 
@@ -318,6 +350,7 @@ function Sync.OnMessage(text, channel, sender)
             if sent >= MAX_BATCH then break end
             if enqueue("WHISPER", sender, "B", Sync.Encode(r.id, r.ev)) then sent = sent + 1 end
         end
+        Sync.SendTombstones(sender)
         return "batch:" .. sent
 
     elseif typ == "E" or typ == "B" then
@@ -356,6 +389,16 @@ function Sync.OnMessage(text, channel, sender)
         ST.Store.SetResponse(rid, resp)
         if Sync.onResponse then Sync.onResponse(rid, ev, resp) end
         return "applied"
+
+    elseif typ == "T" then
+        -- the caster deleted this summon: nobody else can, so the sender must be the one named in the id
+        local id = unesc(body)
+        if #id > 48 or id:sub(1, #sender + 1) ~= sender .. "-" then return "rejected:sender" end
+        ST.db.deleted = ST.db.deleted or {}
+        if ST.db.deleted[id] then return "kept" end
+        ST.db.deleted[id] = now
+        ST.db.events[id] = nil
+        return "deleted"
 
     elseif typ == "X" then
         -- a request to reset: nothing happens until this user agrees
@@ -411,6 +454,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
     if event == "PLAYER_LOGIN" then
         pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX)
         ST.Store.onAdd = function(id, ev) Sync.BroadcastEvent(id, ev) end
+        ST.Store.onRemove = function(id) Sync.SendTombstone(id) end
         C_Timer.NewTicker(SEND_INTERVAL, function() Sync.Pump(1) end)
         C_Timer.After(5, function() Sync.Hello() end)
         grouped = IsInGroup()

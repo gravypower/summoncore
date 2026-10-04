@@ -20,7 +20,7 @@ end
 local function with(c, fn)
     local saved = {
         db = ST.db, state = Sync.state, name = Sync.nameOverride, transport = Sync.transport,
-        channels = Sync.channels, quiet = Sync.quiet, now = Sync.now, onAdd = Store.onAdd,
+        channels = Sync.channels, quiet = Sync.quiet, now = Sync.now, onAdd = Store.onAdd, onRemove = Store.onRemove,
     }
     ST.db, Sync.state, Sync.nameOverride, Sync.quiet = c.db, c.state, c.name, true
     Sync.transport = function(channel, target, payload)
@@ -29,9 +29,11 @@ local function with(c, fn)
     Sync.channels = function() return { "PARTY" } end
     Sync.now = function() return clock end
     Store.onAdd = function(id, ev) Sync.BroadcastEvent(id, ev) end
+    Store.onRemove = function(id) Sync.SendTombstone(id) end
     local ok, a, b = pcall(fn)
     ST.db, Sync.state, Sync.nameOverride, Sync.transport = saved.db, saved.state, saved.name, saved.transport
     Sync.channels, Sync.quiet, Sync.now, Store.onAdd = saved.channels, saved.quiet, saved.now, saved.onAdd
+    Store.onRemove = saved.onRemove
     if not ok then error(a, 0) end
     return a, b
 end
@@ -666,6 +668,44 @@ add("a closed week is frozen: Zennit can no longer answer into it and a late sum
     if not ok then return false, tostring(res) end
     return res.answered == nil and res.closed and res.frozen == "zennit" and res.winner == "zennit" and res.pending == 0,
         string.format("answered=%s winner=%s frozen=%s pending=%d", tostring(res.answered), tostring(res.winner), tostring(res.frozen), res.pending)
+end)
+
+add("undo only removes your own summon, and the deletion sticks across sync, even for a friend who was offline", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
+    local mine = cast(a, 920, false)
+    local theirs = cast(b, 921, false)
+    settle({ a, b })
+    local removed = with(a, function() return Store.RemoveLast() end)
+    if not removed or removed.id ~= mine then return false, "undo removed " .. tostring(removed and removed.id) end
+    settle({ a }) -- Beta is offline when the deletion is broadcast
+    if not b.db.events[mine] then return false, "Beta should still hold it" end
+    with(b, function() Sync.Hello() end)
+    settle({ a, b })
+    local gone = b.db.events[mine] == nil and a.db.events[theirs] ~= nil
+    -- it must not come back by sync from a client that still holds it
+    local c = newClient("Gamma")
+    local back = with(c, function()
+        local _, ev = Sync.Decode(Sync.Encode(mine, { caster = "Alpha", target = "Target920", assistants = {}, time = BASE + 920, confirmed = true }))
+        c.db.deleted = { [mine] = 1 }
+        return Sync.Merge(mine, ev, "Beta", false)
+    end)
+    local forged = with(b, function() return Sync.OnMessage("1~T~" .. theirs, "PARTY", "Gamma") end)
+    return gone and back == "rejected:deleted" and forged == "rejected:sender" and b.db.events[theirs] ~= nil,
+        string.format("gone=%s back=%s forged=%s", tostring(gone), back, forged)
+end)
+
+add("a reset a client missed is asked again from the next HELLO", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
+    cast(a, 930, false)
+    settle({ a, b })
+    local stamp = BASE + 5000
+    with(a, function() ST.Reset.Apply(stamp) end) -- Beta never hears the request
+    local asked
+    local realAsk = Sync.onReset
+    Sync.onReset = function(_, s) asked = s end
+    with(b, function() Sync.OnMessage("1~H~0|0|x|0|" .. stamp, "WHISPER", "Alpha") end)
+    Sync.onReset = realAsk
+    return asked == stamp, tostring(asked)
 end)
 
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()

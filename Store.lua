@@ -121,10 +121,36 @@ function Store.Recent(limit)
     return list
 end
 
+-- Removes the newest summon this character cast (nobody can delete someone else's) and leaves a tombstone so
+-- sync cannot bring it back; test summons are simply dropped.
 function Store.RemoveLast()
-    local last = Store.Recent(1)[1]
-    if last then ST.db.events[last.id] = nil end
-    return last
+    local me = ST.Sync.myName()
+    for _, r in ipairs(Store.Recent()) do
+        if r.ev.caster == me then
+            ST.db.events[r.id] = nil
+            if not r.ev.fake then
+                ST.db.deleted = ST.db.deleted or {}
+                ST.db.deleted[r.id] = time()
+                if Store.onRemove then Store.onRemove(r.id) end
+            end
+            return r
+        end
+    end
+end
+
+function Store.IsDeleted(id)
+    return ST.db.deleted ~= nil and ST.db.deleted[id] ~= nil
+end
+
+-- Our own tombstones, newest first, at most `limit`.
+function Store.OwnTombstones(limit)
+    local prefix, list = ST.Sync.myName() .. "-", {}
+    for id, t in pairs(ST.db.deleted or {}) do
+        if id:sub(1, #prefix) == prefix then list[#list + 1] = { id = id, t = t } end
+    end
+    table.sort(list, function(a, b) return a.t > b.t end)
+    for i = #list, (limit or #list) + 1, -1 do list[i] = nil end
+    return list
 end
 
 -- Per-name tallies derived from the log. points count for the caster only.
