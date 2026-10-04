@@ -855,9 +855,166 @@ add("pending summons: the unanswered and the ones owing silver, newest first", f
     return ok, ok and "2 waiting: the one owing silver, then the unanswered one" or ("found " .. #pending)
 end)
 
+-- Runs fn with the new race rules (Week.RULES) in force for every week; T.Run keeps the old rules for the rest.
+-- (Defined here, before the tests below that use it.)
+local function newRules(fn)
+    local saved = ST.Week.RULES.from
+    ST.Week.RULES.from = 0
+    local ok, good, detail = pcall(fn)
+    ST.Week.RULES.from = saved
+    if not ok then return false, "ERROR " .. tostring(good) end
+    return good, detail
+end
+
+add("the new race: only summons of Zennit count, ten a week, and a summon to his list pays him too", function()
+    return newRules(function()
+        local a = newClient("Alpha")
+        local W = ST.Week
+        local out = {}
+        with(a, function()
+            local last = W.Start() - 7 * 86400
+            local function put(key, n, target, pts)
+                a.db.events[key] = { caster = "Alpha", target = target, assistants = {}, time = last + 3600 * n,
+                    points = pts, kind = "zone" }
+            end
+            for n = 1, 3 do put("f" .. n, n, "Target1", 10) end -- summons of each other are not in the race
+            out.friends = W.Score(last)
+            for n = 1, 11 do put("z" .. n, 20 + n, "Zennit", 3) end -- eleven of him: the first ten count
+            out.six = W.Score(last)
+            out.first, out.sixth = W.Counts(a.db.events.z1), W.Counts(a.db.events.z11)
+            local resp = { result = "accepted", zroll = 0, sroll = 0, time = last + 99999 }
+            out.enthusiasm = ST.Respond.Announce(a.db.events.z11, resp):find("enthusiasm") ~= nil
+                and not ST.Respond.Announce(a.db.events.z1, resp):find("enthusiasm")
+            a.db.events.z1.response = { result = "accepted", zroll = 0, sroll = 0, time = last + 99999, listed = true }
+            out.listed = W.Score(last)
+        end)
+        local f, s, l = out.friends, out.six, out.listed
+        local ok = f.group == 0 and f.zennit == W.RULES.headstart and f.winner == "zennit"
+            and s.counted == 10 and s.extra == 1 and s.group == 30 and s.winner == "group"
+            and out.first and not out.sixth and out.enthusiasm and l.zennit == W.RULES.headstart + 3 and l.group == 30
+        return ok, string.format("friends %d-%d, eleven: %d counted, %d extra, %d-%d, listed: Zennit %d, enthusiasm %s",
+            f.group, f.zennit, s.counted, s.extra, s.group, s.zennit, l.zennit, tostring(out.enthusiasm))
+    end)
+end)
+
+add("the new dice: three a week, and each helper (up to two) adds 5 to the summoner's roll", function()
+    return newRules(function()
+        local W, R = ST.Week, ST.Respond
+        -- his 55+10 = 65 against the summoner's 60: he wins alone, loses to two helpers, and a tie is still his
+        local resolve = R.Resolve(55, 60, 0) == "won" and R.Resolve(55, 60, 10) == "lost" and R.Resolve(50, 50, 10) == "won"
+        local a = newClient("Alpha")
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local ev = { caster = "Alpha", target = "Zennit", time = this + 60, points = 3, assistants = { "H1" } }
+            out.one = W.HelperBonus(ev)
+            ev.assistants = { "H1", "H2", "H3" }
+            out.three = W.HelperBonus(ev)
+            out.fresh = W.DiceLeft(this)
+            for n = 1, 3 do
+                a.db.events["d" .. n] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + n * 60, points = 3,
+                    response = { result = n == 2 and "lost" or "won", zroll = 50, sroll = 40, time = this + n * 60 + 1 } }
+            end
+            a.db.events.d4 = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + 300, points = 3,
+                response = { result = "accepted", zroll = 0, sroll = 0, time = this + 301 } }
+            out.used = W.DiceLeft(this)
+            W.RULES.from = math.huge -- and under the old rules: no limit, no bonus
+            out.old = W.DiceLeft(this) == nil and W.HelperBonus(ev) == 0
+            W.RULES.from = 0
+        end)
+        local ok = resolve and out.one == 5 and out.three == 10 and out.fresh == 3 and out.used == 0 and out.old
+        return ok, string.format("bonus %s/%s, dice %s then %s, old rules unlimited: %s", tostring(out.one),
+            tostring(out.three), tostring(out.fresh), tostring(out.used), tostring(out.old))
+    end)
+end)
+
+add("closing the Index: allowed after five answered, it travels to everyone, and later summons stop counting", function()
+    return newRules(function()
+        local W, z, a = ST.Week, newClient("Zennit"), newClient("Alpha")
+        local ids = {}
+        for n = 1, 7 do ids[n] = cast(a, 960 + n, false, { target = "Zennit", assistants = {}, points = 3 }) end
+        settle({ a, z })
+        local start = W.Start(BASE + 961)
+        local out = {}
+        with(z, function()
+            -- a closes flag before the fifth is ignored, and he can't close until the fifth is answered
+            z.db.events[ids[3]].response = { result = "accepted", zroll = 0, sroll = 0, time = BASE + 2000, closes = true }
+            out.early = W.IsClosed(start)
+            for n = 1, 4 do ST.Respond.Decide(ids[n], "accepted") end
+            out.before = W.CloseTarget(start)
+            ST.Respond.Decide(ids[5], "refused")
+            out.target = W.CloseTarget(start)
+            out.closed = ST.Respond.CloseIndex(start)
+            out.again = W.CloseTarget(start) -- once closed, it can't be closed again
+            ST.Respond.Decide(ids[5], "accepted") -- a changed answer keeps the Index closed
+        end)
+        settle({ a, z })
+        local rz = with(z, function() return W.Score(start) end)
+        local ra = with(a, function() return W.Score(start) end)
+        local later = with(a, function() return W.Counts(a.db.events[ids[6]]) end)
+        local back = select(2, Sync.Decode(Sync.Encode(ids[5], a.db.events[ids[5]])))
+        local ok = out.early == false and out.before == nil and out.target == ids[5] and out.closed and out.again == nil
+            and rz.closed and ra.closed and ra.counted == 5 and ra.extra == 2 and rz.group == ra.group
+            and later == false and back and back.response and back.response.closes == true
+        return ok, string.format("early %s, target %s, closed %s/%s, counted %d, extra %d, group %d/%d, codec %s",
+            tostring(out.early), tostring(out.target == ids[5]), tostring(rz.closed), tostring(ra.closed), ra.counted,
+            ra.extra, rz.group, ra.group, tostring(back and back.response and back.response.closes))
+    end)
+end)
+
+add("where the week stands: the lead, a tie, Zennit's wording, and the briefing as a ritual on him begins", function()
+    return newRules(function()
+        local W, a = ST.Week, newClient("Alpha")
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local function put(key, n, pts) -- a summon of Zennit this week
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + 60 * n, points = pts, kind = "zone" }
+            end
+            out.empty, out.emptyYou = W.StatusLine(this), W.StatusLine(this, true) -- only his head start of 2
+            put("a", 1, 2)
+            out.tie = W.StatusLine(this)
+            put("b", 2, 3)
+            out.ahead = W.StatusLine(this)
+            out.brief = W.Briefing("Zennit")
+            out.notHim = W.Briefing("Bob")
+            W.RULES.from = math.huge
+            out.old, out.oldBrief = W.StatusLine(this), W.Briefing("Zennit")
+            W.RULES.from = 0
+        end)
+        local ok = out.empty == "Week: Zennit leads by 2, 0 of 10 filed, 3 dice left."
+            and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left."
+            and out.tie == "Week: it is level, and a tie goes to Zennit, 1 of 10 filed, 3 dice left."
+            and out.ahead == "Week: the group leads by 3, 2 of 10 filed, 3 dice left."
+            and out.brief ~= nil and out.brief:find("summon 3 of 10", 1, true) ~= nil and out.brief:find("+5", 1, true) ~= nil
+            and out.notHim == nil and out.old == nil and out.oldBrief == nil
+        return ok, string.format("%s | %s | %s | %s", tostring(out.empty), tostring(out.tie), tostring(out.ahead), tostring(out.brief))
+    end)
+end)
+
+add("helpers are named when their bonus wins the roll, and only then", function()
+    return newRules(function()
+        local W, R, a = ST.Week, ST.Respond, newClient("Alpha")
+        local out = {}
+        with(a, function()
+            local ev = { caster = "Alpha", target = "Zennit", assistants = { "Al", "Cy", "Ed" }, time = W.Start() + 60,
+                points = 5, kind = "dungeon" }
+            local function line(z, sr, result) return R.Announce(ev, { result = result, zroll = z, sroll = sr, time = W.Start() + 61 }) end
+            out.tipped = line(55, 58, "lost") -- 65 against 58+10: without the helpers he'd have won
+            out.anyway = line(20, 58, "lost") -- 30 against 68: the summoner won without them
+            out.won = line(70, 58, "won")
+        end)
+        local ok = out.tipped:find("Al and Cy's +10 tipped it.", 1, true) ~= nil and not out.anyway:find("tipped", 1, true)
+            and not out.won:find("tipped", 1, true)
+        return ok, out.tipped
+    end)
+end)
+
 function T.Run()
     realEventClosed = ST.Week.EventClosed
     ST.Week.EventClosed = function() return false end -- the other tests use old summons
+    local rulesFrom = ST.Week.RULES.from
+    ST.Week.RULES.from = math.huge -- and the old race rules (the new-rules tests switch them on themselves)
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -871,5 +1028,6 @@ function T.Run()
             r.detail ~= "" and ("  (" .. r.detail .. ")") or ""))
     end
     ST.Week.EventClosed = realEventClosed
+    ST.Week.RULES.from = rulesFrom
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end

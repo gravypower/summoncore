@@ -202,7 +202,12 @@ end
 
 local function buildAnswer(f)
     local info = label(f, "", 16, -8, "green")
-    info:SetWidth(740)
+    info:SetWidth(570)
+    -- once enough summons of him are filed this week, Zennit may close the Index for the rest of it
+    local closeIndex = button(f, "CLOSE THE INDEX", 600, -6, 156, function()
+        ST.Respond.CloseIndex()
+        Hub.Refresh()
+    end, "danger")
     local surface
     surface = ST.Respond.NewSurface(f, 16, -36, 740, function()
         ST.Respond.Clear(surface)
@@ -252,6 +257,7 @@ local function buildAnswer(f)
 
     return function()
         secret:SetShown(ST.Gag.IsZennit() or ST.IsAdmin())
+        closeIndex:SetShown(ST.Gag.IsZennit() and ST.Week.CloseTarget(ST.Week.Start()) ~= nil)
         local list = ST.Respond.List()
         listText:SetText(#list == 0 and T.Paint("dim", "empty: refusing always costs points") or table.concat(list, ", "))
         local pending = ST.Respond.Pending()
@@ -618,8 +624,18 @@ local function refreshChrome()
         chrome.week:SetText(T.Paint("amber", "ZENNIT IS ON HIS WEEK OFF UNTIL " .. date("%a %d %b", untilT):upper()))
     else
         local week = W.Score(W.Start())
-        chrome.week:SetText(string.format("THIS WEEK  %s / %s", T.Paint("cyan", "GROUP " .. week.group),
-            T.Paint("pink", "ZENNIT " .. week.zennit)))
+        if week.new then
+            -- the new race: who leads the week and by how much (a tie is his), how many summons of him have been filed,
+            -- and his dice left (or the Index closed)
+            local side, by = W.Lead(week)
+            local lead = side == "group" and T.Paint("cyan", "GROUP +" .. by) or
+                T.Paint("pink", by == 0 and "ZENNIT (TIE)" or ("ZENNIT +" .. by))
+            chrome.week:SetText(string.format("WEEK: %s · FILED %d/%d · %s", lead, week.counted, W.RULES.cap,
+                week.closed and T.Paint("amber", "CLOSED") or ("DICE " .. W.DiceLeft(W.Start()))))
+        else
+            chrome.week:SetText(string.format("THIS WEEK  %s / %s", T.Paint("cyan", "GROUP " .. week.group),
+                T.Paint("pink", "ZENNIT " .. week.zennit)))
+        end
     end
     local channels = ST.Sync.channels()
     chrome.status:SetText(string.format("%d RECORDS · %d QUEUED · LINK: %s", ST.Store.Count(), #ST.Sync.state.queue,

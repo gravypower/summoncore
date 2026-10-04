@@ -79,8 +79,9 @@ License, `Media/fonts/VT323-OFL.txt`); if the game cannot load it, the standard 
 ### Assistants
 
 Exactly two group members seen channeling the ritual are credited automatically, in a party or anywhere in a
-raid. With any other count, the prompt opens and you tick up to two names (detected helpers first; in a raid
-the list stops at 12). Solo or in a two-person party it saves without asking.
+raid. With any other count, the prompt opens with the detected helpers ticked (listed first; in a raid the list
+stops at 12). It saves itself as ticked after 20 seconds, so you only need to touch it to correct the names;
+changing a tick stops the countdown. Solo or in a two-person party it saves without asking.
 
 ### Scoring
 
@@ -157,7 +158,7 @@ up new files). The art lives in `Media/intro_l<n>.blp` (lines) and `intro_<n>.bl
   sentence sits in the audio (silence detection between sentences) and where the phrase sits in the sentence.
   Nothing is sampled from any existing recording.
 
-Scenes 9 and 10 explain the weekly challenge: the group earns points by place, Zennit holds a secret list, and he may refuse, ask for fifty silver, or suggest dice. They were rendered here from the draft rules and may need rewording once the rules are final.
+Scenes 9 and 10 explain the weekly challenge: the group earns points by place, ten summons a week count, Zennit holds a secret list that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), or close the Index once five are filed. Their wording follows the race rules from October 2026.
 
 The narration is `Media/intro_1.ogg` to `intro_32.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
@@ -189,7 +190,7 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 | Accept it | Counts. |
 | Refuse | Does not count. |
 | Demand 50 silver, in cash, no receipt | Does not count until he says it was paid ("They paid"); until then the log shows "owes 50 silver". |
-| Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, higher wins and a tie goes to him. If Zennit wins, the summon does not count. |
+| Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, each of the summoner's helpers (up to two) adds 5 to theirs, higher wins and a tie goes to him. If Zennit wins, the summon does not count. He has 3 dice a week. |
 
 His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
 own client can answer for him, a newer answer replaces an older one (owes, then paid), and the dice use two more
@@ -250,15 +251,36 @@ from `tools/` are git-ignored, so release zips do not include them and `/st comi
 Challenge import strings, emote bonus challenges, Zennit's objective, a notice when a summon is declined in game, and
 catching summons by warlocks who do not run the addon (the target's client could use `CONFIRM_SUMMON`).
 
-## The weekly contest (draft rules)
+## The weekly contest
 
-Weeks run Monday to Monday (UTC) and are worked out from the event log, so every client agrees. The group's score is
-the points of the summons that landed. Zennit's score starts at **10** (a head start) and gains the summon's points when he
-wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal; his dice roll also gets
-**+10**. A tie goes to him. If his score is at least the group's at the end of the week, **Zennit wins the week** and the
-next seven days are his: summoning him gets a warning, and `/st week victory` (also offered at login) plays chapter 2 of the
-story. The rules are tilted his way on purpose, so he wins more weeks than he loses and the story keeps moving. Change
-`Week.HEADSTART` and `Respond.EDGE` to tune it.
+Weeks run Monday to Monday (UTC) and are worked out from the event log, so every client agrees. If Zennit's score is at
+least the group's at the end of the week, **Zennit wins the week** and the next seven days are his: summoning him gets a
+warning, and `/st week victory` (also offered at login) plays chapter 2 of the story.
+
+From the week of **Monday 5 October 2026** the group has to beat Zennit at his own answers (the reasoning, with the
+numbers behind it, is in `design/lenses.md`):
+
+- **Only summons of Zennit count**, up to **10** of them each week. Any after that are logged as usual but "filed under
+  'enthusiasm'": the race ignores them. Summons of each other still count for the tally and badges.
+- **Zennit can close the Index** for the rest of the week once **5** have been filed and the latest of them answered:
+  a "Close the Index" button after his answer, and in the hub's Answer tab. It is free, and it travels with his answer,
+  so every client agrees. Summons after that are filed under 'enthusiasm', and their casters are told.
+- The group's score is the points of those summons that landed. Zennit's starts at **2** (a head start), gains the
+  summon's points when he wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal.
+- **Zennit has 3 dice a week.** When they are gone he has to accept, refuse or ask for the silver. His roll gets **+10**;
+  each helper on the summon (up to two) adds **+5** to the summoner's roll; a tie goes to him.
+- **Where the week stands is shown when it changes**, not only in the hub:
+  - as a ritual on Zennit begins, the caster is told whether it will count, who leads, his dice left and what helpers add;
+  - after each summon of him and each of his answers, a chat line: "Week: the group leads by 1, 4 of 10 filed, 1 die left.";
+  - his answer popup says the same, worded for him ("you lead by 2"), and reminds him that ignoring a summon
+    counts as accepting it;
+  - when the helpers' bonus is what beat him on the dice, the line names them ("Al and Cy's +10 tipped it.");
+  - the hub's season band shows the lead (`WEEK: GROUP +1 · FILED 4/10 · DICE 1`, or `CLOSED`).
+
+Earlier weeks keep the rules they were played under (his head start of 10, every landed summon counting for the group,
+unlimited dice), so the season and the chapters already reached do not change. Tune the race in `Week.RULES`
+(head start, the minimum before he can close and the limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro
+narrate these rules; if they change, re-voice those two scenes (`.claude/skills/zenit-narrator-audio`).
 
 ### The season
 

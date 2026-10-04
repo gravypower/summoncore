@@ -115,6 +115,9 @@ local function startPending(target)
         if ticks * TICK > PENDING_TTL then clearPending() end
     end)
     ST.Clips.Play("ritual") -- a recorded line as the ritual begins
+    -- a ritual on Zennit: tell the caster whether it will count, where the week stands, and what helpers add
+    local brief = pending.target and ST.Week.Briefing(pending.target)
+    if brief then ST.print(brief) end
     dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))
 end
@@ -124,6 +127,9 @@ local function report(ev, badges)
     local zenit = ST.Gag.IsZennit()
     ST.print(string.format("Summon logged: %s in %s%s%s", ev.target, ev.subzone ~= "" and ev.subzone or "?",
         zenit and "" or string.format(" (+%d, %s)", ev.points, ev.kind), ev.confirmed and "" or " [unconfirmed]"))
+    -- a summon of Zennit moves the week: say where it stands now
+    local week = not ev.fake and ST.Week.IsZennit(ev.target) and ST.Week.StatusLine(ST.Week.Start(ev.time))
+    if week then ST.print(week) end
     if zenit then return end -- points and badges are hidden on Zennit's client
     for _, name in ipairs(badges) do ST.print("|cffffd100Badge earned:|r " .. name) end
 end
