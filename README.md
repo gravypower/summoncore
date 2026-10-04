@@ -80,7 +80,7 @@ Placeholder values, meant to be argued about. Edit the tables at the top of `Sco
 | city | 1 | `mapKinds` (map ID) |
 | zone | 3 | default for unlisted maps |
 | dungeon | 5 | `subzoneKinds` (lowercase subzone text) |
-| remote | 10 | `mapKinds` or `subzoneKinds` |
+| remote | 10 | `mapKinds` (ten far-flung zones, such as Silithus and Winterspring) or `subzoneKinds` |
 
 A dungeon entrance sits inside an ordinary outdoor map, so it is matched by subzone. Stand at the spot and
 run `/st where` to read the exact string. Points go to the caster only.

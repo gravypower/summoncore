@@ -754,6 +754,18 @@ add("assistants prompt in a raid: helpers from any subgroup come first, the list
         and not seen.Gone and not dupes, table.concat(list, ",")
 end)
 
+add("scoring: cities, far-flung maps and dungeon entrances score by kind, and a dungeon subzone beats its map", function()
+    local S = ST.Scoring
+    local city, cityPts = S.Score(1453, "Trade District")
+    local zone = S.Score(1436, "Sentinel Hill")
+    local remote, remotePts = S.Score(1451, "Cenarion Hold")
+    local dungeon, dungeonPts = S.Score(1451, "The Deadmines")
+    local wc = S.Kind(1413, "Wailing Caverns")
+    local ok = city == "city" and cityPts == 1 and zone == 3 and remote == "remote" and remotePts == 10
+        and dungeon == "dungeon" and dungeonPts == 5 and wc == "dungeon"
+    return ok, string.format("%s %s %s %s", tostring(city), tostring(remote), tostring(dungeon), tostring(wc))
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge
