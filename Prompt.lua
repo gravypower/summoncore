@@ -17,6 +17,9 @@ local function build()
     frame.question:SetPoint("TOPLEFT", 16, -36)
     frame.question:SetWidth(288)
     frame.checks = {}
+    frame.hint = T.Text(frame, 16, "amber")
+    frame.hint:SetPoint("BOTTOMLEFT", 16, 42)
+    frame.hint:SetWidth(288)
 
     local ok = T.Button(frame, "CONFIRM", 110, 24, function() Prompt.Finish(true) end, "primary")
     ok:SetPoint("BOTTOMLEFT", 16, 12)
@@ -51,14 +54,21 @@ function Prompt.Ask(target, candidates, preselected, onDone)
     open = { onDone = onDone }
     local pre = {}
     for _, n in ipairs(preselected or {}) do pre[n] = true end
-    frame.question:SetText(string.format("Credit these two as ritual assistants for the summon of %s?", target))
+    frame.question:SetText(string.format("Who helped with the summon of %s? Tick up to two ritual assistants.",
+        T.Paint("cyan", target)))
+    frame.hint:SetText("")
     for i, name in ipairs(candidates) do
         local cb = frame.checks[i]
         if not cb then
             cb = T.Check(frame, 280)
-            cb:SetPoint("TOPLEFT", 20, -66 - (i - 1) * ROW_H)
+            cb:SetPoint("TOPLEFT", 20, -82 - (i - 1) * ROW_H)
             cb:SetScript("OnClick", function(self)
-                if self:GetChecked() and #checkedNames() > MAX_ASSISTANTS then self:SetChecked(false) end
+                if self:GetChecked() and #checkedNames() > MAX_ASSISTANTS then
+                    self:SetChecked(false)
+                    frame.hint:SetText("Only two can be credited. Untick one first.")
+                else
+                    frame.hint:SetText("")
+                end
             end)
             frame.checks[i] = cb
         end
@@ -68,6 +78,6 @@ function Prompt.Ask(target, candidates, preselected, onDone)
         cb:Show()
     end
     for i = #candidates + 1, #frame.checks do frame.checks[i]:Hide() end
-    frame:SetHeight(116 + #candidates * ROW_H)
+    frame:SetHeight(148 + #candidates * ROW_H)
     frame:Show()
 end

@@ -184,14 +184,20 @@ local function buildLog(f)
         ST.print(last and ("removed " .. last.ev.caster .. " -> " .. last.ev.target) or "nothing to undo")
         Hub.Refresh()
     end)
-    bottomButton(f, "ADD TEST SUMMON", 130, 160, function()
+    local addTest = bottomButton(f, "ADD TEST SUMMON", 130, 160, function()
         local names = { "Bob", "Al", "Cy", "Di", "Ed" }
         local n = ST.Store.Count() % #names + 1
         ST.AddFake(names[n], { names[n % #names + 1], names[(n + 1) % #names + 1] })
         Hub.Refresh()
     end)
-    bottomButton(f, "ANSWER A SUMMON", 296, 160, function() Hub.Open("answer") end, "primary")
-    return refresh
+    local answer = bottomButton(f, "ANSWER A SUMMON", 296, 160, function() Hub.Open("answer") end, "primary")
+    return function()
+        local admin = ST.IsAdmin()
+        addTest:SetShown(admin) -- an admin tool
+        answer:ClearAllPoints()
+        answer:SetPoint("BOTTOMLEFT", admin and 296 or 130, 4)
+        refresh()
+    end
 end
 
 local function buildAnswer(f)
@@ -225,9 +231,12 @@ local function buildAnswer(f)
     button(f, "< PREV", 16, -228, 110, function() go(-1) end)
     button(f, "NEXT >", 132, -228, 110, function() go(1) end)
 
-    -- his secret list: refusing a summon to one of these costs him nothing (kept on this client only)
-    label(f, "SECRET LIST", 360, -231, "dim")
-    local entry = T.EditBox(f, 150, 22)
+    -- his secret list: refusing a summon to one of these costs him nothing (kept on this client only, so it is
+    -- only shown on Zennit's client, and the admin's to try it)
+    local secret = CreateFrame("Frame", nil, f)
+    secret:SetAllPoints()
+    label(secret, "SECRET LIST", 360, -231, "dim")
+    local entry = T.EditBox(secret, 150, 22)
     entry:SetPoint("TOPLEFT", 460, -229)
     local function addEntry()
         if ST.Respond.ListAdd(entry:GetText()) then entry:SetText("") end
@@ -235,13 +244,14 @@ local function buildAnswer(f)
         Hub.Refresh()
     end
     entry:SetScript("OnEnterPressed", addEntry)
-    button(f, "ADD", 616, -228, 60, addEntry)
-    button(f, "CLEAR", 682, -228, 74, function() ST.Respond.ListClear() Hub.Refresh() end, "danger")
-    local listText = label(f, "", 360, -256, "violet")
+    button(secret, "ADD", 616, -228, 60, addEntry)
+    button(secret, "CLEAR", 682, -228, 74, function() ST.Respond.ListClear() Hub.Refresh() end, "danger")
+    local listText = label(secret, "", 360, -256, "violet")
     listText:SetWidth(396)
     listText:SetWordWrap(false)
 
     return function()
+        secret:SetShown(ST.Gag.IsZennit() or ST.IsAdmin())
         local list = ST.Respond.List()
         listText:SetText(#list == 0 and T.Paint("dim", "empty: refusing always costs points") or table.concat(list, ", "))
         local pending = ST.Respond.Pending()
@@ -256,7 +266,8 @@ local function buildAnswer(f)
         end
         local n = #pending
         if n == 0 and not ST.Gag.IsZennit() then
-            info:SetText("This tab is for Zennit's character: summons of him wait here for his answer. Try it with Tools > Test a summoning.")
+            info:SetText("This tab is for Zennit's character: summons of him wait here for his answer." ..
+                (ST.IsAdmin() and " Try it with Tools > Test a summoning." or ""))
         else
             info:SetText(n == 0 and "Nothing is waiting for your answer." or
                 string.format("%s summon%s waiting for your answer", T.Paint("amber", n), n == 1 and "" or "s"))
@@ -333,8 +344,8 @@ local function buildStory(f)
             status = label(f, "", 470, y - 4),
         }
         row.play = button(f, "> PLAY", 656, y, 90, function()
-            window:Hide() -- the viewer sits under this window
-            ST.Intro.Play(c[1])
+            window:Hide() -- the viewer sits under this window; it comes back when the viewer is closed
+            ST.Intro.Play(c[1], function() Hub.Open("story") end)
         end)
         rows[i] = row
     end
@@ -346,6 +357,10 @@ local function buildStory(f)
             local written = ST.Intro.HasChapter(c[1]) or c[1] == "1"
             local isReached = reached[c[1]] or c[1] == "1"
             local row = rows[i]
+            -- the part after the colon gives the chapter away, so it stays hidden until the race gets there
+            local title = c[2]
+            if not (isReached or admin) then title = title:match("^(.-:)") .. " ???" end
+            row.title:SetText(title)
             row.status:SetText(not written and "not written yet" or
                 (isReached and T.Paint("green", "REACHED") or (admin and T.Paint("amber", "not reached (admin)") or "not reached yet")))
             row.play:SetEnabled(written and (isReached or admin))
@@ -360,15 +375,18 @@ local function buildSync(f)
         ST.Sync.Hello()
         Hub.Refresh()
     end, "primary")
-    button(f, "RUN SELF-TEST", 182, -140, 160, function()
-        if not ST.IsAdmin() then return out:SetText("The self-test is an admin tool.") end
+    local selfTest = button(f, "RUN SELF-TEST", 182, -140, 160, function()
         ST.SyncTest.Run()
         out:SetText("Self-test results are in the chat window.")
     end)
-    button(f, "IMPORT / EXPORT", 348, -140, 160, function() ST.Export.Open("import") end)
+    local importExport = button(f, "IMPORT / EXPORT", 348, -140, 160, function() ST.Export.Open("import") end)
     label(f, "Sync shares your summons with other Summon Core users in your party, raid and guild.\n" ..
         "'Say hello now' announces your log size so anyone with newer or older entries swaps them with you.", 16, -184):SetWidth(740)
     return function()
+        local admin = ST.IsAdmin()
+        selfTest:SetShown(admin) -- an admin tool
+        importExport:ClearAllPoints()
+        importExport:SetPoint("TOPLEFT", admin and 348 or 182, -140)
         local st = ST.Sync.state
         local channels = ST.Sync.channels()
         info:SetText(string.format(
@@ -402,7 +420,10 @@ local function buildTools(f)
 
     local windows = column(16, "WINDOWS")
     tool(windows, "IMPORT / EXPORT", function() ST.Export.Open("import") end)
-    tool(windows, "PLAY THE INTRO", function() window:Hide() ST.Intro.Toggle("") end)
+    tool(windows, "PLAY THE INTRO", function()
+        window:Hide()
+        ST.Intro.Play("1", function() Hub.Open("tools") end)
+    end)
     tool(windows, "DIAGNOSTICS", function() ST.ToggleTests("") end, true)
     tool(windows, "LARGE-IMAGE TEST", function() ST.Comic.Toggle("") end, true)
 

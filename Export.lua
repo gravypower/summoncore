@@ -314,6 +314,7 @@ local function build()
     window.TitleText:SetText("IMPORT / EXPORT")
 
     local box = CreateFrame("Frame", nil, window)
+    window.box = box
     box:SetPoint("TOPLEFT", 12, -34)
     box:SetPoint("BOTTOMRIGHT", -12, 104)
     T.Panel(box)
@@ -360,9 +361,13 @@ local function build()
         setStatus("Paste a Summon Core string, then press Preview.")
     end)
 
-    -- Test tools: build a log to export, empty it again, and run the self-test, all without leaving the window.
+    -- Test tools (the admin's): build a log to export, empty it again, and run the self-test, all without leaving
+    -- the window.
+    local tools = CreateFrame("Frame", nil, window)
+    tools:SetAllPoints()
+    window.testTools = tools
     local names, added = { "Bob", "Al", "Cy", "Di", "Ed" }, 0
-    button(window, "Add fake summon", 130, 14, function()
+    button(tools, "Add fake summon", 130, 14, function()
         added = added + 1
         local i = (added - 1) % #names + 1
         local ev, badges = ST.AddFake(names[i], { names[i % #names + 1], names[(i + 1) % #names + 1] })
@@ -370,7 +375,7 @@ local function build()
         setStatus(string.format("Added test summon: %s (%s, +%d). The log now holds %d.", ev.target, ev.kind,
             ev.points, ST.Store.Count()), true)
     end, 44)
-    button(window, "Undo last", 90, 150, function()
+    button(tools, "Undo last", 90, 150, function()
         local last = ST.Store.RemoveLast()
         if last then
             setStatus(string.format("Removed the latest summon (%s). The log now holds %d.", last.ev.target,
@@ -379,11 +384,11 @@ local function build()
             setStatus("Nothing to undo.", false)
         end
     end, 44)
-    button(window, "Run self-test", 110, 246, function()
+    button(tools, "Run self-test", 110, 246, function()
         ST.SyncTest.Run()
         setStatus("Self-test results are in the chat window.")
     end, 44)
-    local label = T.Text(window, 16, "dim")
+    local label = T.Text(tools, 16, "dim")
     label:SetPoint("BOTTOMLEFT", 370, 50)
     label:SetPoint("RIGHT", -14, 0)
     label:SetText("Test tools (fake summons are never shared)")
@@ -393,6 +398,11 @@ end
 function Export.Open(mode)
     if ST.Gag.Blocked() then return end
     if not window then build() end
+    -- the test tools row is the admin's; everyone else gets the text box down to the status line
+    local admin = ST.IsAdmin()
+    window.testTools:SetShown(admin)
+    window.box:SetPoint("BOTTOMRIGHT", -12, admin and 104 or 72)
+    window.status:SetPoint("BOTTOMLEFT", 16, admin and 76 or 44)
     window:Show()
     if mode == "export" then
         doExport("all")

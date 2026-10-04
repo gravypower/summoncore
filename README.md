@@ -17,7 +17,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 
 | Command | What it does |
 |---|---|
-| `/st` | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story lists every chapter with a Play button (everything below is in it too) |
+| `/st` | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story lists every chapter with a Play button, and keeps the end of a chapter's title hidden until the weekly race reaches it (everything below is in it too) |
 | `/st help` | List the commands in chat |
 | `/st panel` | Open the window on the Summary tab |
 | `/st log [n]` | Recent summons |
