@@ -62,17 +62,59 @@ function Week.Describe(r)
     return (r.winner == "zennit" and "Zennit won the week: " or "the group won the week: ") .. lines(r)
 end
 
--- Says once when a finished week was won by Zennit, and points to the story.
+-- The season is a race: the first side to WINS weekly wins takes the finale, then the count starts again.
+-- Worked out from the log, one completed week at a time, so every client reaches the same story.
+-- Returns { zennit, group (wins so far this season), finales = { { start, side } }, chapters = { { start, side, n, key } } }
+-- where key is the story chapter that win plays: z<n> or g<n> (n = 5 is the finale).
+Week.WINS = 5
+
+function Week.Season(now)
+    now = now or time()
+    local s = { zennit = 0, group = 0, finales = {}, chapters = {} }
+    local first
+    for _, ev in pairs(ST.db.events) do
+        if not ev.fake and (not first or ev.time < first) then first = ev.time end
+    end
+    if not first then return s end
+    local start, current = Week.Start(first), Week.Start(now)
+    while start < current do
+        local r = Week.Score(start)
+        local side = r.winner
+        if side then
+            s[side] = s[side] + 1
+            s.chapters[#s.chapters + 1] = { start = start, side = side, n = s[side], key = (side == "zennit" and "z" or "g") .. s[side] }
+            if s[side] >= Week.WINS then
+                s.finales[#s.finales + 1] = { start = start, side = side }
+                s.zennit, s.group = 0, 0
+            end
+        end
+        start = start + LENGTH
+    end
+    return s
+end
+
+-- Says once when a finished week has been won, and points to that win's chapter of the story.
 function Week.Check()
     if not ST.db or not ST.db.settings then return end
     local last = Week.Score(Week.Start() - LENGTH)
     if not last.winner or ST.db.settings.weekSeen == last.start then return end
     ST.db.settings.weekSeen = last.start
-    if last.winner == "zennit" then
-        ST.print("|cffffd100Zennit won the week|r (" .. lines(last) .. "). He is on leave until next Monday. The story: |cffffd100/st intro victory|r")
-    else
-        ST.print("The group won the week (" .. lines(last) .. "). Zennit is back on the list. The story: |cffffd100/st intro group|r")
+    local season = Week.Season()
+    local chapter = season.chapters[#season.chapters]
+    local key = chapter and chapter.start == last.start and chapter.key
+    local story = ""
+    if key then
+        story = ST.Intro.HasChapter(key) and (" The story: |cffffd100/st intro " .. key .. "|r") or " (That chapter of the story is not written yet.)"
+        if chapter.n >= Week.WINS then
+            story = story .. " That was the finale. The season starts again."
+        end
     end
+    if last.winner == "zennit" then
+        ST.print("|cffffd100Zennit won the week|r (" .. lines(last) .. "). He is on leave until next Monday." .. story)
+    else
+        ST.print("The group won the week (" .. lines(last) .. "). Zennit is back on the list." .. story)
+    end
+    ST.print(string.format("Season: Zennit %d of %d, the group %d of %d.", season.zennit, Week.WINS, season.group, Week.WINS))
 end
 
 -- The caster is told when they summon Zennit during his week off.

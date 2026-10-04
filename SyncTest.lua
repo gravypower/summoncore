@@ -563,6 +563,26 @@ add("the week: Zennit's head start wins small weeks, the group needs more, and a
         and W.Start(W.Start() + 1) == W.Start(), string.format("small=%s big=%s/%d-%d rolled=%s", s.winner, b.winner, b.group, b.zennit, r.winner)
 end)
 
+add("the season: first to five weekly wins takes the finale, then the count starts again", function()
+    local a = newClient("Alpha")
+    local season
+    with(a, function()
+        local this = ST.Week.Start()
+        -- seven finished weeks, oldest first: five Zennit wins (3 points loses to his 10 head start), a group win
+        -- (20 points), then another Zennit win
+        local points = { 3, 3, 3, 3, 3, 20, 3 }
+        for i, pts in ipairs(points) do
+            a.db.events["s-" .. i] = { caster = "Alpha", target = "Target1", assistants = {}, points = pts, kind = "zone",
+                time = this - (8 - i) * 7 * 86400 + 3600 }
+        end
+        season = ST.Week.Season()
+    end)
+    local c = season.chapters
+    return #c == 7 and c[5].key == "z5" and c[6].key == "g1" and c[7].key == "z1" and #season.finales == 1
+        and season.finales[1].side == "zennit" and season.zennit == 1 and season.group == 1,
+        string.format("%d chapters, %d finale(s), season z%d g%d", #c, #season.finales, season.zennit, season.group)
+end)
+
 add("only Zennit can answer for himself, and a newer answer wins", function()
     local a, z = newClient("Alpha"), newClient("Zennit")
     local id = cast(a, 900, false, { target = "Zennit" })

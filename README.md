@@ -224,3 +224,12 @@ wins the dice or accepts a summon to a place on his list, and loses them on a pl
 next seven days are his: summoning him gets a warning, and `/st week victory` (also offered at login) plays chapter 2 of the
 story. The rules are tilted his way on purpose, so he wins more weeks than he loses and the story keeps moving. Change
 `Week.HEADSTART` and `Respond.EDGE` to tune it.
+
+### The season
+
+The weekly wins add up to a race: the first side (Zennit or the group) to **5 weekly wins** takes the finale, then the
+count starts again. It is worked out from the log, so every client agrees. Each win plays its own chapter of the story:
+`z1` to `z5` for Zennit's wins and `g1` to `g5` for the group's, so `/st intro z2` or `/st week g3` replays one. `z1` and
+`g1` are written (scenes 11 to 14); the rest are planned: Zennit's track ends with him becoming the clerk of the Index,
+the group's with Form 27B/6 turning out to be the receipt for the fifty silver, the Ritual getting its closure and Zennit
+being freed. `/st week` shows the standing.

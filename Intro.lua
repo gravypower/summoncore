@@ -73,6 +73,11 @@ for i, s in ipairs(scenes) do
 end
 local lo, hi = 1, lastOf[1] -- the scenes of the chapter being played
 
+-- The story after the intro is a race: z<n> is the chapter for Zennit's nth win of the season, g<n> for the group's.
+-- The fifth win of either side is that side's finale. victory and group are the first win of each.
+local CHAPTER_KEYS = { victory = 2, group = 3, z1 = 2, g1 = 3, z2 = 4, g2 = 5, z3 = 6, g3 = 7, z4 = 8, g4 = 9, z5 = 10, g5 = 11 }
+function Intro.HasChapter(key) return firstOf[CHAPTER_KEYS[key] or 0] ~= nil end
+
 local function endTime() return starts[hi] + scenes[hi].dur end
 
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
@@ -542,7 +547,14 @@ function Intro.Toggle(arg)
     if not frame then build() end
     if frame:IsShown() then frame:Hide() return end
     frame:Show()
-    local si = (arg == "victory" and firstOf[2]) or (arg == "group" and firstOf[3]) or tonumber(arg) or 1
+    local si
+    local key = CHAPTER_KEYS[arg or ""]
+    if key then
+        if not firstOf[key] then return ST.print("that chapter of the story has not been written yet") end
+        si = firstOf[key]
+    else
+        si = tonumber(arg) or 1
+    end
     si = math.max(1, math.min(#scenes, si))
     lo, hi = firstOf[scenes[si].chapter], lastOf[scenes[si].chapter]
     shownScene = 0

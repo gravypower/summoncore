@@ -235,10 +235,13 @@ end
 -- The weekly contest: how this week is going and how the last one ended.
 function commands.week(rest)
     local W = ST.Week
-    if rest == "victory" or rest == "group" then return ST.Intro.Toggle(rest) end
+    if rest == "victory" or rest == "group" or rest:match("^[zg]%d$") then return ST.Intro.Toggle(rest) end
     local this, last = W.Score(W.Start()), W.Score(W.Start() - 7 * 86400)
     print_("This week: " .. W.Describe(this))
     print_("Last week: " .. W.Describe(last))
+    local season = W.Season()
+    print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
+        season.group, W.WINS, #season.finales))
     local immune, untilT = W.Immune(time())
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /st week victory plays the story.") end
 end
@@ -276,7 +279,7 @@ local HELP = {
     "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
     "/st zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
-    "/st week [victory|group] - the weekly contest (Zennit starts 10 ahead); plays the story of the week he wins, or the group wins",
+    "/st week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
     "/st respond [test] -Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/st gag - preview the Zennit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
