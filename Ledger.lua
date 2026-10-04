@@ -53,7 +53,148 @@ local function weekLine(s)
     return string.format("This week, the group has %d points to Zennit's %d.", w.group, w.zennit), "THIS WEEK: " .. lead:upper()
 end
 
--- state: { season = Week.Season(), score = Week.Score(this week), immune = bool, wins = Week.WINS, cap = summons a week }
+----------------------------------------------------------------------
+-- What the log remembers (the players, named): the roll a pair of helpers tipped, who has summoned him most, a run of
+-- dice he won, and the silver he has been paid. Worked out from the summons of Zennit in a window, so every client
+-- tells the same story, and used for the scene, the keepsake of a finished season, and `/sc seasons`.
+----------------------------------------------------------------------
+
+-- ctx: { isZennit(name), name(name), bonus(ev), edge(ev), resolve(zroll, sroll, bonus, edge), silver, helpersMax }
+-- Returns { summons, casters = { name = n }, present = { name = true }, silverPaid, silverOwed (in silver), tipped,
+-- streak (his longest run of dice wins), heaviest = { name, n } or nil }.
+function Ledger.Collect(events, from, to, ctx)
+    local d = { summons = 0, casters = {}, present = {}, silverPaid = 0, silverOwed = 0, streak = 0 }
+    local list = {}
+    for id, ev in pairs(events) do
+        if not ev.fake and ev.time >= from and ev.time < to and ctx.isZennit(ev.target) then list[#list + 1] = { id = id, ev = ev } end
+    end
+    table.sort(list, function(a, b)
+        if a.ev.time ~= b.ev.time then return a.ev.time < b.ev.time end
+        return tostring(a.id) < tostring(b.id)
+    end)
+    local run = 0
+    for _, item in ipairs(list) do
+        local ev = item.ev
+        local caster = ctx.name(ev.caster)
+        d.summons = d.summons + 1
+        d.casters[caster] = (d.casters[caster] or 0) + 1
+        d.present[caster] = true
+        for _, helper in ipairs(ev.assistants or {}) do d.present[ctx.name(helper)] = true end
+        local r = ev.response
+        local result = r and r.result
+        if result == "paid" then d.silverPaid = d.silverPaid + ctx.silver end
+        if result == "owed" then d.silverOwed = d.silverOwed + ctx.silver end
+        if result == "won" or result == "lost" then
+            run = result == "won" and run + 1 or 0
+            d.streak = math.max(d.streak, run)
+            local bonus = ctx.bonus(ev)
+            -- his roll would have won without the helpers: they tipped it
+            if result == "lost" and bonus > 0 and ctx.resolve(r.zroll, r.sroll, 0, ctx.edge(ev)) == "won" then
+                local names = {}
+                for i = 1, math.min(#(ev.assistants or {}), ctx.helpersMax) do names[i] = ctx.name(ev.assistants[i]) end
+                d.tipped = { caster = caster, helpers = names, bonus = bonus, sroll = r.sroll, zroll = r.zroll, edge = ctx.edge(ev) }
+            end
+        end
+    end
+    local top, tie
+    for name, n in pairs(d.casters) do
+        if not top or n > top.n then top, tie = { name = name, n = n }, false
+        elseif n == top.n then tie = true end
+    end
+    if top and not tie then d.heaviest = top end
+    return d
+end
+
+local function joined(names)
+    if #names <= 1 then return names[1] or "" end
+    return table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
+end
+
+-- The silver line, or nil: what the group has paid Zennit, in cash, with no receipt.
+function Ledger.SilverLine(d)
+    if d.silverPaid > 0 then
+        return string.format("The group has paid Zennit %d silver, in cash, with no receipt. The Ritual has asked to be kept informed.%s",
+            d.silverPaid, d.silverOwed > 0 and string.format(" A further %d is owed.", d.silverOwed) or "")
+    elseif d.silverOwed > 0 then
+        return string.format("Zennit is owed %d silver, and has been very good about not mentioning it.", d.silverOwed)
+    end
+end
+
+-- Up to two moments worth remembering, as { text, cue }: a tipped roll first, then the heaviest hand, then a run of
+-- dice. Each names the players.
+function Ledger.Moments(d)
+    local found = {}
+    local t = d.tipped
+    if t then
+        local who = #t.helpers > 0 and (joined(t.helpers) .. "'s") or "The helpers'"
+        found[#found + 1] = { text = string.format("%s +%d tipped one of %s's rolls: %d+%d against his %d+%d. The Index has framed it.",
+            who, t.bonus, t.caster, t.sroll, t.bonus, t.zroll, t.edge), cue = "THE HELPERS TIPPED IT" }
+    end
+    if d.heaviest and d.heaviest.n >= 3 then
+        found[#found + 1] = { text = string.format("%s has summoned Zennit %d times, and the Index has begun to recognise the handwriting.",
+            d.heaviest.name, d.heaviest.n), cue = d.heaviest.name:upper() .. " KEEPS COMING BACK" }
+    end
+    if d.streak >= 3 then
+        found[#found + 1] = { text = string.format("He once won the dice %d times in a row. The Index checked the dice. They were dice.",
+            d.streak), cue = "THE DICE WERE DICE" }
+    end
+    while #found > 2 do found[#found] = nil end
+    return found
+end
+
+-- The Index's keepsake of a finished season: how it ended, how long it took, who was there, the silver and the moments.
+-- finale = { start, side, from } from Week.Season; `number` is which season it was. Returns a list of sentences.
+function Ledger.Keepsake(number, finale, d)
+    local weeks = math.floor((finale.start - finale.from) / (7 * 86400)) + 1
+    local out = { string.format("Season %d, %s. %s", number, weeks == 1 and "1 week" or (weeks .. " weeks"),
+        finale.side == "group" and "The group took the finale, and Zennit was freed." or
+            "Zennit took the finale, and became the clerk of the Index.") }
+    local names = {}
+    for name in pairs(d.present) do names[#names + 1] = name end
+    table.sort(names)
+    if #names > 0 then
+        local more = #names > 12 and string.format(", and %d more", #names - 12) or ""
+        while #names > 12 do names[#names] = nil end
+        out[#out + 1] = "In the room: " .. joined(names) .. more .. "."
+    end
+    local silver = Ledger.SilverLine(d)
+    if silver then out[#out + 1] = silver end
+    for _, m in ipairs(Ledger.Moments(d)) do out[#out + 1] = m.text end
+    return out
+end
+
+local function context()
+    local W, R = ST.Week, ST.Respond
+    local edges = {}
+    return { isZennit = W.IsZennit, name = function(n) return ST.baseName(n) or n end, bonus = W.HelperBonus,
+        edge = function(ev)
+            local start = W.Start(ev.time)
+            if not edges[start] then edges[start] = (W.Edge(start)) end
+            return edges[start]
+        end,
+        resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax }
+end
+
+-- The facts for the season in progress.
+function Ledger.Facts(season)
+    season = season or ST.Week.Season()
+    return Ledger.Collect(ST.db.events, season.since or 0, math.huge, context())
+end
+
+-- Past seasons, newest first: { { number, side, lines } }.
+function Ledger.Seasons()
+    local out, finales = {}, ST.Week.Season().finales
+    local ctx = context()
+    for i = #finales, 1, -1 do
+        local f = finales[i]
+        local d = Ledger.Collect(ST.db.events, f.from, f.start + 7 * 86400, ctx)
+        out[#out + 1] = { number = i, side = f.side, lines = Ledger.Keepsake(i, f, d) }
+    end
+    return out
+end
+
+-- state: { season = Week.Season(), score = Week.Score(this week), immune = bool, wins = Week.WINS, cap = summons a week,
+--          edgeMoved, facts = Ledger.Collect result for the season }
 -- Returns a list of { text, cue }, where cue is the punchline for the Text: key mode (or nil).
 function Ledger.Build(s)
     local out = {}
@@ -85,6 +226,16 @@ function Ledger.Build(s)
     -- how far down each trunk
     if z > 0 and RECAP["z" .. z] then say(RECAP["z" .. z]) end
     if g > 0 and RECAP["g" .. g] then say(RECAP["g" .. g]) end
+
+    -- what the Index remembers of this season, by name, and the silver
+    if s.facts then
+        local silver = Ledger.SilverLine(s.facts)
+        local moments = Ledger.Moments(s.facts)
+        for i, m in ipairs(moments) do
+            if i <= (silver and 1 or 2) then say(m.text, m.cue) end -- two lines of memory at most, the silver among them
+        end
+        if silver then say(silver, "THE SILVER") end
+    end
 
     -- the pressure
     if z == wins - 1 and g == wins - 1 then
@@ -133,6 +284,7 @@ function Ledger.State()
     local W = ST.Week
     local now = time()
     local start = W.Start(now)
-    return { season = W.Season(now), score = W.Score(start), immune = (W.Immune(now)), wins = W.WINS,
+    local season = W.Season(now)
+    return { season = season, facts = Ledger.Facts(season), score = W.Score(start), immune = (W.Immune(now)), wins = W.WINS,
         cap = W.RULES.cap, edgeMoved = select(2, W.Edge(start)) }
 end

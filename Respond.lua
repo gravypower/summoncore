@@ -15,6 +15,7 @@ ST.Respond = Respond
 local T = ST.Theme
 
 local SILVER = 50
+Respond.SILVER = SILVER
 local WAIT = 90         -- seconds to wait for the summoner to roll back
 local ROLL_WINDOW = 15  -- seconds after pressing Roll in which a /roll result is accepted
 
@@ -161,6 +162,8 @@ end
 local function printWeek(ev, you)
     local line = not ev.fake and ST.Week.StatusLine(ST.Week.Start(ev.time), you)
     if line then ST.print(line) end
+    local last = ST.Week.LastDie(ev, you)
+    if last then ST.print(last) end
 end
 
 -- Records Zennit's decision on this client and tells everyone (test summons stay local).

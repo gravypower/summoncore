@@ -279,7 +279,7 @@ end
 
 -- The season is a race: the first side to WINS weekly wins takes the finale, then the count starts again.
 -- Worked out from the log, one completed week at a time, so every client reaches the same story.
--- Returns { zennit, group (wins so far this season), finales = { { start, side } }, chapters = { { start, side, n, key } } }
+-- Returns { zennit, group (wins so far this season), since (the season's first week), finales = { { start, side, from } }, chapters = { { start, side, n, key } } }
 -- where key is the story chapter that win plays: z<n> or g<n> (n = 5 is the finale).
 Week.WINS = 5
 
@@ -292,6 +292,7 @@ function Week.Season(now)
     end
     if not first then return s end
     local start, current = Week.Start(first), Week.Start(now)
+    s.since = start -- the first week of the season in progress (each finale lists its own as `from`)
     while start < current do
         local r = Week.Score(start)
         local side = r.winner
@@ -299,8 +300,9 @@ function Week.Season(now)
             s[side] = s[side] + 1
             s.chapters[#s.chapters + 1] = { start = start, side = side, n = s[side], key = (side == "zennit" and "z" or "g") .. s[side] }
             if s[side] >= Week.WINS then
-                s.finales[#s.finales + 1] = { start = start, side = side }
+                s.finales[#s.finales + 1] = { start = start, side = side, from = s.since }
                 s.zennit, s.group = 0, 0
+                s.since = start + LENGTH
             end
         end
         start = start + LENGTH
@@ -328,7 +330,7 @@ function Week.Check()
     if key then
         story = ST.Intro.HasChapter(key) and (" The story: |cffffd100/sc intro " .. key .. "|r") or " (That chapter of the story is not written yet.)"
         if chapter.n >= Week.WINS then
-            story = story .. " That was the finale. The season starts again."
+            story = story .. " That was the finale. The season starts again. |cffffd100/sc seasons|r keeps the Index's record of it."
         end
     end
     if last.winner == "zennit" then
@@ -337,6 +339,13 @@ function Week.Check()
         ST.print("The group won the week (" .. lines(last) .. "). Zennit is back on the list." .. story)
     end
     ST.print(string.format("Season: Zennit %d of %d, the group %d of %d.", season.zennit, Week.WINS, season.group, Week.WINS))
+    -- a finale just landed: the Index's keepsake of the season, with who was there
+    if chapter and chapter.start == last.start and chapter.n >= Week.WINS then
+        local seasons = ST.Ledger.Seasons()
+        if seasons[1] then
+            for _, line in ipairs(seasons[1].lines) do ST.print(line) end
+        end
+    end
 end
 
 -- Who is ahead in a week's score, and by how much: "group" or "zennit" (a tie is his, so "zennit" with 0).
@@ -355,6 +364,17 @@ end
 
 local function diceText(n)
     return string.format("%d %s left", n, n == 1 and "die" or "dice")
+end
+
+-- The line for the moment Zennit's last die of the week is spent, or nil: from then on every summon is certain, which is
+-- when the group's ordering of its summons pays off (design/lenses.md, Skill and Chance). `you` words it for Zennit.
+function Week.LastDie(ev, you)
+    local res = ev.response and ev.response.result
+    local start = Week.Start(ev.time)
+    if ev.fake or (res ~= "won" and res ~= "lost") or Week.DiceLeft(start) ~= 0 then return nil end
+    if Week.IsOff(start) or Week.IsClosed(start) then return nil end
+    if you then return "That was your last die this week. From here you can only accept, refuse or ask for the silver." end
+    return "That was Zennit's last die this week. Every summon from here is certain: he can only accept, refuse or ask for the silver."
 end
 
 -- One line on where the week starting at `start` stands (default: this week), for the chat after a summon of Zennit

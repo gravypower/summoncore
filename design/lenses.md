@@ -25,6 +25,8 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
+| Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
+| Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
 
 ## Entries
 
@@ -401,12 +403,138 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 - Is a close finish the goal, or is a lopsided season fine when the group simply tries harder (or less hard)?
 - Does a win for Zennit have to *cost* the group something, or is the story enough?
 - How long should a season last? With C, about 11 weeks (nearly three months) at normal effort. Options: fewer wins to a
-  finale (4), or letting the group win during his week off (no).
+  finale (4), or letting the group win during his week off (no). **Decided: keep five wins for now**; revisit after the
+  first real season shows how many weeks are quiet.
 
 **To watch in playtests**
 - How many weeks does a first season really take, and how many are quiet?
 - Does anyone replay a chapter, or ask what comes next?
 - Do the "Week:" lines build any excitement during the week, or is it only the Monday result?
+
+### 2026-10-04 · Lens of Skill, with the Lens of Chance: what the group controls
+
+**The questions (paraphrased):** what skills does the game ask of its players, and are they the ones we want? Is there room
+for a better player to do better? Where does chance enter, and does it make skill matter or swamp it? (Chance averages out
+over a long game, so the answer can differ by scale.)
+
+**Who decides what, as built**
+
+| | Decided by people (skill) | Decided by dice or luck (chance) |
+|---|---|---|
+| The group | How many summons (2 to 10), to which places (1, 3, 5 or 10 points), how many helpers (0 to 2), and the **order** of the summons against his dice left; getting 2 or 3 friends to the same spot in WoW | The summoner's roll back |
+| Zennit | Accept, refuse, silver or dice; **when** to spend 3 dice; his secret list; when to close the Index | His roll; whether a place is on his list (the group cannot see this) |
+
+**Numbers** (a weekly model that reproduces the Fairness table; 40,000 weeks per cell)
+
+| Question | Answer |
+|---|---|
+| How much does a helper matter? | +5 each is worth about **6 points** of a week's win chance (five dungeons: 52%, 58%, 64%; three zone summons: 22%, 27%, 33%) |
+| How much of a week is the group's plan, and how much dice? | Across 300 plausible plans, the plan explains **25%** of the variance in the result if he rolls the first three summons, **16%** if he saves dice for dungeons, **9%** if he rolls at random. The rest is dice and his choices |
+| Does skill show up over a season? | Yes: a group that moves from a 39% to a 63% weekly chance goes from **25% to 79%** to take the finale (race to 5) |
+| Is there a best order for the group? | **No: it depends on what he does.** One mixed week (three cheap summons, then three dungeons, 2 helpers): *cheap first* wins **97%** if he rolls the first three, **39%** if he saves for dungeons; *big first* wins **39%** and **97%** (the second against someone who rolls only on the last ones). Neither order beats every policy |
+
+**Findings**
+1. **A week is mostly chance; a season is mostly skill.** The best plan we sampled still loses 37% of weeks, and the group's
+   plan explains at most a quarter of one week. But the same plan decides about three in four seasons. For a group that
+   plays weekly, the drama sits in the week and the fairness in the season, which suits it.
+2. **The deep skill is a guessing game, and it is the one we wanted.** Limiting the dice to three made *when to roll* his
+   decision (the Meaningful Choices entry) and *what order to summon in* theirs. Each side's best move depends on the other's,
+   so neither has a dominant play: the aim of that change.
+3. **The moment skill pays is invisible.** When his last die is spent, every later summon is certain, which is exactly
+   when a group that sent its cheap summons first collects. Nothing said so; only the "Week:" line's "0 dice left".
+4. **The Fairness table assumed he rolls whatever comes first.** That is the best policy against a group that sends zone
+   summons, and a poor one against a group that baits. The playtest should record how he really spends dice.
+5. **Helpers are the dependable skill.** They are the one lever that needs no guess about the other side, and they ask for
+   togetherness, not bookkeeping: what this group likes (the Player entry).
+
+**Decision: no rule change.** Chance in a week is what makes the dice banter, and skill compounds across the season.
+**Built: the last-die line.** When his third die is spent, everyone gets "That was Zennit's last die this week. Every summon
+from here is certain: he can only accept, refuse or ask for the silver." (Zennit's own client: "That was your last die this
+week. From here you can only accept, refuse or ask for the silver.") It also begins to answer the Interest Curve's flat week,
+by giving the week one beat that comes from play.
+
+**To watch in playtests**
+- Does Zennit save dice, spend them at once, or forget he has them? Does his policy change after the first season?
+- Does the group learn to send cheap summons first? Does anyone say so out loud?
+- When the last-die line comes up, does the order of the summons change?
+- Do the helpers' +5 get noticed, or does the group still treat them as optional?
+
+### 2026-10-04 · Lens of Story, with the Lens of Emotion: does the group feel it?
+
+**The questions (paraphrased):** does the game tell a story, and does the story give the players' actions meaning (and the
+actions move the story)? What do I want players to feel, what do they feel, and at which moments? From the Player entry the
+target is **banter and doing things together, with no bookkeeping**, and Zennit has to enjoy being the target.
+
+**The feelings we want, and what the build gives at each moment** (`Detector.lua`, `Respond.lua`, `Week.lua`, `Intro.lua`)
+
+| Moment | Feeling we want | What the build gives |
+|---|---|---|
+| The ritual begins | Mischief, anticipation | A briefing in facts ("summon 3 of 10 this week, the group leads by 3") |
+| His popup | Dread, played for laughs; agency for him | Four buttons, his own wording, the gag: **works** |
+| The dice | Tension, shared | A real `/roll` the party sees in chat: **the best moment in play** |
+| The result | Triumph or a groan | "+5 points", the lead, the dice left |
+| End of a week | Suspense, then release | One chat line a minute after the next login |
+| A chapter | Warmth, curiosity | Narrated, drawn, typed out: **the strongest moment, and it is outside play** |
+| A finale | Catharsis, affection | Chapters 10 and 11 (75 and 72 seconds); both end with Zennit welcome at a very small cake |
+| His week off | Relief, a little missing him | A line at login |
+
+**Findings**
+1. **The story lives in a viewer; the play lives in chat, and the two do not talk.** A normal summon of Zennit prints five
+   lines (the briefing, "Summon logged", "Week:", his answer, "Week:") and none is in the Index's voice. The voice shows up
+   only in the warnings, the closure and the catch-up line. The group dislikes bookkeeping, and that is the tone of most of
+   what they read while playing.
+2. **Both endings are kind to Zennit.** If he wins he becomes the clerk, and if the group wins he is freed; each finale ends with
+   him invited and the party at his table. The group gets a story for losing a week (his chapters) and he gets one for
+   winning it (theirs). That meets the Griefing / Friendship entry; it is worth keeping.
+3. **The players are not in it.** The 32 scenes name only Zennit; the group is "the party". The personal material exists in
+   the log (who tipped a roll, who summoned him most, how many dice he won in a row) and surfaces only as a chat line that
+   scrolls away. That is the part a friend group would repeat to each other.
+4. **The story and the rules echo in places, not in others.** His list is the syllabus (z3), the fifty silver is the Ritual's
+   price (g4), the week off is real now (z1). But the cake, the carbon copy and the cellar have no counterpart in play, and
+   the silver Zennit asks for and marks paid ("They paid") never reaches chapter g5, where the group pays the Ritual.
+5. **It runs out.** A normal season shows about 6.7 of the 10 chapters (about 6 minutes of story over 11 weeks, 33 seconds a
+   week), and season 2 replays them; "The Index today" varies, but it is one scene.
+6. **We do not know what Zennit wants.** The z chapters give him agency, but which ending he would pick, and whether being the
+   clerk is the better one, is for the playtest.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **The Index remembers**: "The Index today" tells a moment or two from this season, named: the roll a helper pair tipped, who has summoned him most, a run of dice he won. Worked out from the log, so every client agrees | 3, 5 | Wording and one function; no art or voice |
+| B | **The Index's voice in the five lines**: the same facts, said as the Index would ("The Index has noted a summons to Deadmines; he has been told") | 1 | Wording; risk of more reading in chat |
+| C | **Silver reaches the story**: the silver paid to Zennit in a season is counted, and chapter g5 (or the Ledger) uses the number | 4 | A tally, and re-voicing scene 30 if the number is spoken |
+| D | **A season keepsake**: when a finale lands, record it with who was there (a list of past seasons in the Tools tab, and a line in chat) | 3, 5 | Small; stored in the log or settings |
+| E | **New chapters for season 2** | 5 | The largest: writing, art, voice |
+
+**Our answer:** build **A, C and D**, and **name the players** by character name.
+
+**Built** (`Ledger.lua`; every line is worked out from the log, so all clients tell the same story)
+- **A, the Index remembers.** "The Index today" now tells up to two moments of the season: the roll a pair of helpers tipped
+  ("Al and Cy's +10 tipped one of Bo's rolls: 52+10 against his 45+10. The Index has framed it."), who has summoned him most
+  (three or more, and no tie), and a run of three or more dice he won. A tipped roll is the same test the chat line uses:
+  he would have won without the bonus.
+- **C, the silver reaches the story.** The silver Zennit marks as paid is counted for the season ("The group has paid Zennit
+  100 silver, in cash, with no receipt. The Ritual has asked to be kept informed."), with what is still owed. It shows in the
+  scene, in the keepsake, and on the tooltips of the group's last two chapters, where the Ritual names its price (g4) and
+  receives it (g5). The recorded narration is unchanged: the number is not spoken.
+- **D, the keepsake.** When a finale lands, the chat gets the Index's record of that season, and `/sc seasons` (or the Tools
+  tab's **Past seasons**) lists them all: how it ended, how many weeks it took, who was in the room, the silver, the moments.
+  Nothing is stored: each season is recomputed from the log, so a client that syncs later still gets it.
+
+The scene grew, so it is capped at two lines of memory (the silver counts as one). `Week.Season` now gives each finale a
+`from` (the first week of that season) and the season in progress a `since`.
+
+**Not built.** B (the Index's voice in the five lines of a normal summon) and E (new chapters for season 2) wait for the
+playtest: B adds reading to chat the group may not want, and E is the largest piece of work.
+
+**To decide before building**
+- Which feeling matters most at the end of a season: the group's pride, affection for Zennit, or the joke? (Asked at the playtest.)
+
+**To watch in playtests**
+- Which lines does the group quote back to each other: the chapters, the chat, or the gags?
+- Does Zennit say which ending he wanted? Does the clerk ending feel like a prize to him?
+- Do people replay chapters, or skip them once heard?
 
 ## Decisions
 
@@ -420,3 +548,6 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 | 2026-10-04 | Helpers named when their bonus wins a roll; the assistants prompt saves itself; Zennit told he can ignore a summon; no helper badges | The Player | The group likes banter and doing things together, and hates bookkeeping; rewards don't motivate them |
 | 2026-10-04 | His week off is real: summons of him are filler, the race skips the week, and the gags carry on | Interest Curve | His wins were a story beat with no effect; a pause makes them count without silencing the joke |
 | 2026-10-04 | Catch-up: Zennit's dice edge moves 5 (a lead of 2 wins) or 10 (3 or more) toward the side that is behind | Interest Curve | Blowouts were 49% of seasons at normal effort; the Index now leans on the scale, gently |
+| 2026-10-04 | Keep five weekly wins to a finale (a season of about 11 weeks at normal effort) until a real season shows how long it takes | Interest Curve | Simulated length is long, but the group's real pace is unknown; shortening later is one constant (`Week.WINS`) |
+| 2026-10-04 | No rule change for Skill and Chance; say so when his last die is spent | Skill and Chance | A week is mostly chance and a season mostly skill, and the group's best order depends on how he rolls; the moment their ordering pays off was invisible |
+| 2026-10-04 | The Index remembers named moments, the silver he is paid, and a keepsake of each finished season; players named by character | Story and Emotion | The personal material was in the log and scrolled away; naming players is what a friend group repeats |
