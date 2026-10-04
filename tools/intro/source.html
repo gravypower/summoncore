@@ -710,6 +710,236 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
     }
   });
 
+  // ---- Chapters 6 to 11: the rest of the season (z3 g3 z4 g4, then the two finales) ----
+  function bubble(x, y, w, h, str, size) {
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="12" fill="#FFFFFF" stroke="#23202B" stroke-width="3"/>' +
+      T(x + w / 2, y + h / 2 + 7, str, size || 20, '#23202B', 'middle', 'Special Elite, monospace');
+  }
+  function bg() { return '<rect width="960" height="540" fill="url(#gViolet)"/>'; }
+
+  // Chapter 6 (z3): the list is a syllabus.
+  scenes.push({
+    label: 'The syllabus', dur: 25.0,
+    text: 'Zennit\'s third week off began with the second item on his list, which was not an errand. It was a pamphlet, titled Module One: Alphabetical Order. The third item was Module Two: The Care and Feeding of Ink. He understood, slowly, that the list had never been a list of errands. It was a syllabus.',
+    frame: function (k) {
+      var out = bg();
+      out += '<g transform="rotate(' + [-1, 1, -1][k] + ' 240 250)"><rect x="50" y="40" width="380" height="420" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>' + T(240, 86, 'SECRET LIST', 28, '#23202B') +
+        '<rect x="72" y="116" width="22" height="22" fill="none" stroke="#23202B" stroke-width="3"/><path d="M74 128 l7 8 l12 -16" stroke="#3E5B4E" stroke-width="5" fill="none"/>' + T(112, 134, 'SIDE DOOR', 20, '#23202B', 'start', 'Special Elite, monospace') +
+        '<rect x="72" y="196" width="22" height="22" fill="none" stroke="#23202B" stroke-width="3"/>' + T(112, 206, 'MODULE ONE:', 18, '#23202B', 'start', 'Special Elite, monospace') + T(112, 230, 'ALPHABETICAL ORDER', 18, '#23202B', 'start', 'Special Elite, monospace') +
+        '<rect x="72" y="296" width="22" height="22" fill="none" stroke="#23202B" stroke-width="3"/>' + T(112, 306, 'MODULE TWO:', 18, '#23202B', 'start', 'Special Elite, monospace') + T(112, 330, 'THE CARE AND FEEDING OF INK', 17, '#23202B', 'start', 'Special Elite, monospace') + '</g>';
+      out += '<g transform="rotate(' + [-3, 2, -2][k] + ' 530 260)"><rect x="470" y="170" width="120" height="180" fill="#F1E6CF" stroke="#23202B" stroke-width="4"/>' + T(530, 214, 'MODULE', 20, '#23202B') + T(530, 262, '1', 56, '#B5432E') + T(530, 320, 'A to Z', 20, '#23202B', 'middle', 'Special Elite, monospace') + '</g>';
+      out += '<g transform="rotate(' + [2, -3, 3][k] + ' 670 260)"><rect x="610" y="170" width="120" height="180" fill="#F1E6CF" stroke="#23202B" stroke-width="4"/>' + T(670, 214, 'MODULE', 20, '#23202B') + T(670, 262, '2', 56, '#B5432E') + '<path d="M650 300 Q670 280 690 300 Q700 330 670 336 Q640 332 650 300 Z" fill="#23202B"/></g>';
+      out += zen(750, 190, 0.5, [-2, 2, 0][k]) + burst(470, 40, 0.9, 'SYLLABUS', 18);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The nameplate', dur: 24.0,
+    text: 'He studied in the corridor behind the side door, with the kettle for company. By Friday he could recite the alphabet forwards, which the Index considered a promising start, and backwards, which it considered a gift. On the desk, a nameplate was being engraved. It had not yet been decided whose.',
+    frame: function (k) {
+      var out = bg() + '<rect x="0" y="470" width="960" height="70" fill="#1E1A24"/>';
+      out += '<rect x="80" y="30" width="380" height="56" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' + T(270, 70, 'A B C D E F G', 32, '#23202B');
+      out += '<rect x="500" y="30" width="380" height="56" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' + T(690, 70, 'Z Y X W V U T', 32, '#B5432E');
+      out += '<ellipse cx="130" cy="440" rx="40" ry="32" fill="#C99A3B" stroke="#23202B" stroke-width="4"/><path d="M168 434 Q196 418 194 398" fill="none" stroke="#23202B" stroke-width="6"/><path d="M96 436 Q130 392 164 436" fill="none" stroke="#23202B" stroke-width="5"/>' + T(150 + k * 4, 380 - k * 6, '~', 26, '#EDE6D6');
+      out += zen(320, 150, 0.5, [-2, 2, 0][k]) + U('book', 540, 340, 80, 110);
+      out += '<rect x="660" y="410" width="260" height="18" fill="#6B4A2E" stroke="#23202B" stroke-width="4"/><rect x="676" y="428" width="14" height="44" fill="#6B4A2E"/><rect x="890" y="428" width="14" height="44" fill="#6B4A2E"/>';
+      out += '<rect x="700" y="352" width="170" height="52" fill="#C99A3B" stroke="#23202B" stroke-width="4"/>' + T(785, 392, '????', 34, '#23202B');
+      out += '<path d="M690 330 L720 350" stroke="#EDE6D6" stroke-width="5"/>' + (k !== 1 ? burst(660, 296, 0.5, '', 8) : '');
+      return out;
+    }
+  });
+
+  // Chapter 7 (g3): the Ritual is holding the Form.
+  scenes.push({
+    label: 'The glow', dur: 26.0,
+    text: 'The group\'s third win was celebrated without cake, because the Ritual of Summoning had begun to answer back. It did this in the only way a spell can, by glowing in a meaningful manner whenever the carbon copy was in the room. The party found this unsettling. They also found it encouraging. It is possible to feel both.',
+    frame: function (k) {
+      var out = bg();
+      out += '<circle cx="480" cy="300" r="' + [200, 236, 214][k] + '" fill="url(#zglow)" opacity="0.7"/>';
+      out += ritualCircle(330, 130, 300, 0.95);
+      out += hero(150, 260, '#5B3FA0', 'wizard', true) + hero(260, 280, '#7A3A22', 'spiky', false);
+      out += '<g transform="rotate(' + [-8, 4, -4][k] + ' 120 200)"><rect x="96" y="150" width="56" height="76" fill="#3E5FA8" stroke="#23202B" stroke-width="3"/><path d="M104 172 H144 M104 188 H136" stroke="#9DB4E8" stroke-width="3"/></g>';
+      out += hero(730, 280, '#2D4339', 'hood', false) + hero(840, 260, '#B5432E', 'horns', k === 1);
+      out += T(480, 96, '!', 60, '#FFE98A', 'middle', 'Patua One, serif', 'opacity="' + [0.4, 1, 0.7][k] + '"');
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The cellar', dur: 30.0,
+    text: 'The glow led them to a cellar beneath a tavern, where a chalk circle had been drawn on the floor so long ago that the tavern had been built on top of it. In a crack at its centre, wedged tight, was a folded sheet of paper. It was Form 27B slash 6. The Ritual had been sitting on it for as long as anyone could remember, with the quiet pride of a spell that has finally been asked the right question.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="#17141F"/><circle cx="800" cy="70" r="150" fill="url(#lampGlow)" opacity="0.6"/>';
+      out += '<polygon points="0,540 0,400 960,400 960,540" fill="#1E1A24"/>';
+      [40, 150].forEach(function (x) { out += '<rect x="' + x + '" y="300" width="96" height="150" rx="10" fill="#7A5538" stroke="#23202B" stroke-width="4"/><path d="M' + x + ' 340 H' + (x + 96) + ' M' + x + ' 410 H' + (x + 96) + '" stroke="#23202B" stroke-width="5"/>'; });
+      out += '<ellipse cx="480" cy="446" rx="270" ry="58" fill="none" stroke="#EDE6D6" stroke-width="5" stroke-dasharray="14 10"/><ellipse cx="480" cy="446" rx="200" ry="40" fill="none" stroke="#EDE6D6" stroke-width="3" stroke-dasharray="8 8"/>';
+      out += '<path d="M470 470 L480 430 L494 462 L504 424" fill="none" stroke="#0A0910" stroke-width="7"/>';
+      out += '<g transform="rotate(' + [-8, 4, -3][k] + ' 484 410)"><rect x="446" y="360" width="76" height="64" fill="#F7F0DF" stroke="#23202B" stroke-width="3"/>' + T(484, 386, 'FORM', 13, '#23202B') + T(484, 408, '27B/6', 18, '#B5432E') + '</g>';
+      out += hero(790, 240, '#5B3FA0', 'wizard', false) + hero(890, 260, '#7A3A22', 'spiky', k === 2);
+      return out;
+    }
+  });
+
+  // Chapter 8 (z4): the clerk shows him the desk.
+  scenes.push({
+    label: 'The wrong book', dur: 24.0,
+    text: 'In the fourth week, the clerk found Zennit in the corridor, reciting. The clerk was very old and very tired, and had not left his desk since the invention of desks. He looked at Zennit for a long time. "You are in the wrong book," he said. Zennit replied that he had been told. The clerk said that this was not a criticism.',
+    frame: function (k) {
+      var out = bg() + '<rect x="0" y="480" width="960" height="60" fill="#1E1A24"/>';
+      out += clerk(60, 90, 0.8, k === 1 ? 'calm' : 'calm') + zen(620, 100, 0.8, [-1, 1, 0][k]);
+      out += bubble(260, 24, 340, 56, 'You are in the wrong book.', 18) + bubble(640, 24, 290, 56, 'So I have heard.', 18);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The pen', dur: 24.0,
+    text: 'The clerk showed him the desk. It was enormous, and covered in nine thousand years of unfinished business, most of which turned out, on inspection, to be about Zennit. "I am not asking you to take it," said the clerk. "I am only asking you to hold the pen, while I find my hat."',
+    frame: function (k) {
+      var out = bg();
+      out += '<rect x="40" y="400" width="880" height="26" fill="#6B4A2E" stroke="#23202B" stroke-width="5"/><rect x="70" y="426" width="20" height="90" fill="#6B4A2E"/><rect x="870" y="426" width="20" height="90" fill="#6B4A2E"/>';
+      for (var i = 0; i < 9; i++) {
+        var h = 40 + ((i * 53) % 110), x = 60 + i * 96;
+        out += '<rect x="' + x + '" y="' + (400 - h) + '" width="78" height="' + h + '" fill="#F7F0DF" stroke="#23202B" stroke-width="3"/><path d="M' + (x + 6) + ' ' + (400 - h + 14) + ' H' + (x + 72) + ' M' + (x + 6) + ' ' + (400 - h + 28) + ' H' + (x + 60) + '" stroke="#23202B" stroke-width="2"/>';
+        if (i % 3 === 0) out += T(x + 39, 400 - h + 56, 'ZENNIT', 14, '#B5432E', 'middle', 'Special Elite, monospace');
+      }
+      out += clerk(30, 100, 0.5, 'calm') + T(150, 100, '?', 70 + k * 6, '#FFE98A', 'middle', 'Patua One, serif');
+      out += '<g transform="rotate(' + [-34, -30, -38][k] + ' 490 250)"><rect x="440" y="244" width="100" height="12" rx="5" fill="#23202B"/><path d="M540 244 L564 250 L540 256 Z" fill="#C99A3B" stroke="#23202B" stroke-width="2"/></g>';
+      out += zen(690, 100, 0.55, [-2, 2, 0][k]);
+      return out;
+    }
+  });
+
+  // Chapter 9 (g4): the Ritual names its price.
+  scenes.push({
+    label: 'Closure', dur: 22.0,
+    text: 'The Ritual of Summoning, once asked, was only too happy to talk. It had never wanted gold, it explained. It had wanted a proper ending: a last summons, performed with attention, followed by closure. It had been waiting for one since before the tavern. It was very good about it.',
+    frame: function (k) {
+      var out = bg();
+      out += '<circle cx="480" cy="300" r="' + [190, 210, 200][k] + '" fill="url(#zglow)" opacity="0.5"/>' + ritualCircle(330, 120, 300, 0.95);
+      out += bubble(290, 20, 380, 56, 'I never wanted gold.', 22);
+      out += '<circle cx="770" cy="170" r="46" fill="#C99A3B" stroke="#23202B" stroke-width="5"/>' + T(770, 186, '$', 48, '#23202B') + '<path d="M726 126 L814 214 M814 126 L726 214" stroke="#B5432E" stroke-width="10" stroke-linecap="round"/>';
+      out += hero(110, 300, '#5B3FA0', 'wizard', false) + hero(220, 310, '#7A3A22', 'spiky', k === 1) + hero(790, 340, '#2D4339', 'hood', false) + hero(890, 330, '#B5432E', 'horns', false);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The price', dur: 22.0,
+    text: 'The price was modest. Fifty silver, paid in person, in cash. And the third copy of the form, to complete the set. The Ritual had waited a very long time for the set. It understood how that looked, and said so, which the party agreed was decent of it.',
+    frame: function (k) {
+      var out = bg();
+      [['50 SILVER', 60], ['COPY 3', 350], ['A RECEIPT', 640]].forEach(function (c, i) {
+        out += '<g transform="rotate(' + [[-1, 1, -1], [1, -1, 1], [-1, 1, 0]][i][k] + ' ' + (c[1] + 130) + ' 200)"><rect x="' + c[1] + '" y="70" width="260" height="250" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' + T(c[1] + 130, 114, c[0], 26, '#23202B');
+        if (i === 0) out += '<circle cx="' + (c[1] + 130) + '" cy="210" r="62" fill="#D9D9E3" stroke="#23202B" stroke-width="5"/>' + T(c[1] + 130, 228, '50', 56, '#23202B');
+        if (i === 1) out += '<rect x="' + (c[1] + 70) + '" y="146" width="120" height="150" fill="#3E5FA8" stroke="#23202B" stroke-width="4"/>' + T(c[1] + 130, 206, 'FORM', 18, '#C9D6F5') + T(c[1] + 130, 246, '27B/6', 30, '#E4ECFF');
+        if (i === 2) out += '<path d="M' + (c[1] + 40) + ' 160 H' + (c[1] + 220) + ' M' + (c[1] + 40) + ' 186 H' + (c[1] + 190) + ' M' + (c[1] + 40) + ' 212 H' + (c[1] + 210) + '" stroke="#23202B" stroke-width="3"/><circle cx="' + (c[1] + 170) + '" cy="266" r="30" fill="none" stroke="#B5432E" stroke-width="6"/>' + T(c[1] + 170, 276, 'PAID', 18, '#B5432E');
+        out += '</g>';
+      });
+      out += ritualCircle(60, 350, 130, 0.9) + bubble(220, 392, 460, 62, 'I understand how that looks.', 22) + hero(830, 380, '#5B3FA0', 'wizard', k === 2);
+      return out;
+    }
+  });
+
+  // Chapter 10 (z5, the finale): Zennit becomes the clerk.
+  scenes.push({
+    label: 'The hat', dur: 26.0,
+    text: 'In the fifth week, the clerk found his hat. It was on his head. He said this was the sort of thing that happens to a person who has looked at nothing but the Index for nine thousand years. He shook Zennit\'s hand, left through the side door, and was last seen walking toward the sea, without his coat, visibly lighter.',
+    frame: function (k) {
+      var out = bg();
+      out += '<path d="M690 470 V200 Q790 110 890 200 V470 Z" fill="url(#gSunset)" stroke="#23202B" stroke-width="6"/><circle cx="790" cy="270" r="40" fill="#FFD27A"/>';
+      out += '<path d="M700 380 Q725 366 750 380 T800 380 T850 380 T884 380 M700 410 Q725 396 750 410 T800 410 T850 410 T884 410" fill="none" stroke="#3E5FA8" stroke-width="5"/>';
+      out += zen(70, 130, 0.62, [-2, 2, 0][k]) + clerk(360 + k * 24, 170, 0.5, 'calm');
+      out += burst(330, 36, 0.9, 'FOUND IT', 18);
+      out += '<path d="M250 340 H340" stroke="#EDE6D6" stroke-width="5" stroke-dasharray="8 8"/>';
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The chair', dur: 27.0,
+    text: 'Zennit sat down. The chair fit, as expected. He read the Index from the beginning, which took a week, and found it sound, apart from the letter Z, where one entry had been smudged and then misfiled by a sneeze. He corrected it with a single stroke of the pen. Somewhere far below, the Ritual of Summoning went quiet.',
+    frame: function (k) {
+      var out = bg();
+      out += '<rect x="110" y="250" width="16" height="190" fill="#7A3A22" stroke="#23202B" stroke-width="3"/><rect x="110" y="340" width="100" height="14" fill="#7A3A22" stroke="#23202B" stroke-width="3"/><rect x="196" y="354" width="14" height="86" fill="#7A3A22" stroke="#23202B" stroke-width="3"/>';
+      out += '<rect x="150" y="440" width="700" height="22" fill="#6B4A2E" stroke="#23202B" stroke-width="5"/>';
+      out += '<rect x="250" y="210" width="220" height="230" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/><rect x="480" y="210" width="220" height="230" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>';
+      out += '<path d="M268 250 H452 M268 276 H430 M268 302 H452 M268 328 H410" stroke="#23202B" stroke-width="3"/>' + T(590, 270, 'Z', 70, '#B5432E');
+      out += '<path d="M500 316 H680 M500 342 H640" stroke="#23202B" stroke-width="3"/><ellipse cx="590" cy="384" rx="' + [46, 34, 14][k] + '" ry="' + [26, 20, 8][k] + '" fill="#23202B" opacity="' + [0.9, 0.7, 0.3][k] + '"/><circle cx="590" cy="384" r="48" fill="none" stroke="#B5432E" stroke-width="4"/>';
+      out += '<g transform="rotate(' + [-30, -26, -34][k] + ' 700 300)"><rect x="660" y="294" width="90" height="10" rx="5" fill="#23202B"/></g>';
+      out += zen(720, 90, 0.5, [0, 2, -2][k]);
+      out += ritualCircle(30, 400, 110, 0.4) + T(85, 520, '...', 30, '#EDE6D6');
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The new clerk', dur: 28.0,
+    text: 'Then he did what no clerk had done in nine thousand years. He added entries. The party went in first, in alphabetical order, each with a short note of thanks. Zennit, Licensed Summoning Liaison, Third Class, was promoted to Clerk, and invited the party to summon him whenever they liked. He would, of course, always accept. The Index wrote that down.',
+    frame: function (k) {
+      var out = bg();
+      out += '<rect x="300" y="50" width="300" height="380" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>' + T(450, 96, 'THE INDEX', 28, '#23202B');
+      ['A', 'B', 'C', 'D'].forEach(function (l, i) {
+        out += T(326, 150 + i * 52, l, 26, '#B5432E', 'start') + '<path d="M360 ' + (146 + i * 52) + ' H' + (570 - (i % 2) * 30) + '" stroke="#23202B" stroke-width="3"/>' + (i <= k + 1 ? '<path d="M548 ' + (136 + i * 52) + ' l8 10 l14 -18" stroke="#3E5B4E" stroke-width="5" fill="none"/>' : '');
+      });
+      out += hero(80, 260, '#5B3FA0', 'wizard', k !== 1) + hero(165, 280, '#7A3A22', 'spiky', k === 1) + hero(240, 260, '#2D4339', 'hood', false);
+      out += '<rect x="590" y="396" width="330" height="18" fill="#6B4A2E" stroke="#23202B" stroke-width="4"/><rect x="620" y="334" width="270" height="60" fill="#C99A3B" stroke="#23202B" stroke-width="4"/>' + T(755, 374, 'ZENNIT, CLERK', 28, '#23202B');
+      out += zen(680, 56, 0.5, [-2, 2, 0][k]) + bubble(620, 10, 320, 44, 'I shall always accept.', 17);
+      return out;
+    }
+  });
+
+  // Chapter 11 (g5, the finale): the receipt, and Zennit is freed.
+  scenes.push({
+    label: 'The cellar again', dur: 24.0,
+    text: 'On the group\'s fifth win, the party went down into the cellar with fifty silver in cash, the third copy of the form, and the kind of nerves usually reserved for exams. The Ritual of Summoning glowed. It was clear that it, too, had prepared something.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="#17141F"/><polygon points="0,150 300,380 300,540 0,540" fill="#231E30"/>';
+      out += '<path d="M0 150 L300 380 M0 220 L240 400 M0 290 L190 430" stroke="#3B3348" stroke-width="5"/>';
+      out += hero(160, 220 + k * 4, '#5B3FA0', 'wizard', false) + hero(270, 300, '#7A3A22', 'spiky', k === 1) + hero(380, 360, '#2D4339', 'hood', false);
+      out += '<circle cx="100" cy="350" r="36" fill="#D9D9E3" stroke="#23202B" stroke-width="4"/>' + T(100, 366, '50', 34, '#23202B');
+      out += '<g transform="rotate(-6 330 280)"><rect x="300" y="240" width="52" height="72" fill="#3E5FA8" stroke="#23202B" stroke-width="3"/><path d="M308 262 H344 M308 278 H336" stroke="#9DB4E8" stroke-width="3"/></g>';
+      out += '<circle cx="760" cy="380" r="' + [170, 200, 184][k] + '" fill="url(#zglow)" opacity="0.6"/>' + ritualCircle(610, 200, 300, 0.95) + bubble(560, 80, 380, 56, 'I have prepared something.', 20);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The receipt', dur: 24.0,
+    text: 'The silver was counted. The copy was handed over. The Ritual, for the first time in its existence, was given a receipt: Form 27B slash 6, complete in triplicate, and stamped. The Index approved, from a distance. Closure, it turned out, was mostly paperwork.',
+    frame: function (k) {
+      var out = bg();
+      [0, 1, 2, 3].forEach(function (c) {
+        for (var i = 0; i <= 3 + (c + k) % 3; i++) out += '<ellipse cx="' + (90 + c * 46) + '" cy="' + (470 - i * 12) + '" rx="30" ry="9" fill="#D9D9E3" stroke="#23202B" stroke-width="3"/>';
+      });
+      [['COPY 1', 260], ['COPY 2', 410], ['COPY 3', 560]].forEach(function (c, i) {
+        out += '<g transform="rotate(' + [-3, 1, 3][i] + ' ' + (c[1] + 70) + ' 260)"><rect x="' + c[1] + '" y="160" width="140" height="200" fill="' + (i === 2 ? '#3E5FA8' : '#F7F0DF') + '" stroke="#23202B" stroke-width="4"/>' + T(c[1] + 70, 204, 'FORM 27B/6', 18, i === 2 ? '#E4ECFF' : '#23202B') + T(c[1] + 70, 236, c[0], 15, i === 2 ? '#C9D6F5' : '#B5432E', 'middle', 'Special Elite, monospace') + '</g>';
+      });
+      out += burst(720, 90 - k * 4, 1.0, 'PAID', 26);
+      out += '<rect x="780" y="250" width="130" height="170" fill="#F7F0DF" stroke="#23202B" stroke-width="4"/>' + T(845, 290, 'RECEIPT', 20, '#23202B') + '<path d="M796 320 H894 M796 344 H870" stroke="#23202B" stroke-width="3"/><circle cx="850" cy="388" r="22" fill="none" stroke="#B5432E" stroke-width="5"/>';
+      out += U('book', 860, 430, 70, 96);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'Free', dur: 30.0,
+    text: 'The Ritual let go. Zennit felt it as a small click, like a lock turning in a door he had never noticed. For the first time in his life, he was summoned by nobody. He stood in the cellar, free. Then he did the only thing he could think of, and summoned the party to his place, for cake. They accepted. It was, by general agreement, a very small cake.',
+    frame: function (k) {
+      var out = bg();
+      out += '<rect x="110" y="240" width="140" height="110" rx="12" fill="#C99A3B" stroke="#23202B" stroke-width="6"/><circle cx="180" cy="294" r="14" fill="#23202B"/>';
+      out += '<path d="M138 240 V186 Q138 130 180 130 Q222 130 222 186 V' + (200 - k * 12) + '" fill="none" stroke="#9AA0A8" stroke-width="16" stroke-linecap="round"/>';
+      out += '<circle cx="470" cy="330" r="' + [150, 170, 160][k] + '" fill="url(#zglow)" opacity="0.5"/>' + ritualCircle(380, 400, 180, 0.3);
+      out += zen(330, 90, 0.7, [-2, 2, 0][k]);
+      out += '<rect x="590" y="430" width="300" height="20" fill="#6B4A2E" stroke="#23202B" stroke-width="4"/>';
+      out += '<rect x="690" y="392" width="76" height="38" fill="#F2B6C6" stroke="#23202B" stroke-width="4"/><rect x="690" y="392" width="76" height="11" fill="#FFFFFF" stroke="#23202B" stroke-width="3"/><rect x="725" y="372" width="6" height="20" fill="#FFE98A"/><circle cx="728" cy="' + (366 - [0, 2, -1][k]) + '" r="6" fill="#FFB347"/>';
+      out += hero(640, 250, '#5B3FA0', 'wizard', k !== 1) + hero(850, 250, '#7A3A22', 'spiky', k === 1);
+      out += T(500, 70, 'FREE', 48, '#FFE98A', 'middle', 'Patua One, serif', 'opacity="' + [0.6, 1, 0.8][k] + '"');
+      return out;
+    }
+  });
+
   var starts = [], acc = 0;
   scenes.forEach(function (s, i) { s.start = acc; starts[i] = acc; acc += s.dur; });
   TOTAL = acc;

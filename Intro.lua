@@ -58,6 +58,26 @@ local scenes = {
     -- chapter 5, the group's 2nd win (g2): the carbon copy of the Form
     { chapter = 5, label = "The carbon", dur = 24.00 + PAUSE, text = [=[The group's second win arrived with an unexpected receipt. Tucked into the cake box, under the napkins, was a sheet of faint blue carbon paper, which, held up to the light, showed the cover of a form. The title was smudged. The number was not. It was Form 27B slash 6, or at least the part that had pressed through to the next page.]=] },
     { chapter = 5, label = "In triplicate", dur = 28.00 + PAUSE, text = [=[Scholars had always maintained that the form did not exist. The carbon copy suggested otherwise. It suggested that the form had once been filled in, by someone, in triplicate, and that the other two copies had gone to the Index and to the Ritual of Summoning. The party kept the third. The Index asked for it back. The party said they would think about it.]=] },
+    -- chapter 6, Zennit's 3rd win (z3): the list is a syllabus
+    { chapter = 6, label = "The syllabus", dur = 25.00 + PAUSE, text = [=[Zennit's third week off began with the second item on his list, which was not an errand. It was a pamphlet, titled Module One: Alphabetical Order. The third item was Module Two: The Care and Feeding of Ink. He understood, slowly, that the list had never been a list of errands. It was a syllabus.]=] },
+    { chapter = 6, label = "The nameplate", dur = 24.00 + PAUSE, text = [=[He studied in the corridor behind the side door, with the kettle for company. By Friday he could recite the alphabet forwards, which the Index considered a promising start, and backwards, which it considered a gift. On the desk, a nameplate was being engraved. It had not yet been decided whose.]=] },
+    -- chapter 7, the group's 3rd win (g3): the Ritual holds the Form
+    { chapter = 7, label = "The glow", dur = 26.00 + PAUSE, text = [=[The group's third win was celebrated without cake, because the Ritual of Summoning had begun to answer back. It did this in the only way a spell can, by glowing in a meaningful manner whenever the carbon copy was in the room. The party found this unsettling. They also found it encouraging. It is possible to feel both.]=] },
+    { chapter = 7, label = "The cellar", dur = 30.00 + PAUSE, text = [=[The glow led them to a cellar beneath a tavern, where a chalk circle had been drawn on the floor so long ago that the tavern had been built on top of it. In a crack at its centre, wedged tight, was a folded sheet of paper. It was Form 27B slash 6. The Ritual had been sitting on it for as long as anyone could remember, with the quiet pride of a spell that has finally been asked the right question.]=] },
+    -- chapter 8, Zennit's 4th win (z4): the clerk shows him the desk
+    { chapter = 8, label = "The wrong book", dur = 24.00 + PAUSE, text = [=[In the fourth week, the clerk found Zennit in the corridor, reciting. The clerk was very old and very tired, and had not left his desk since the invention of desks. He looked at Zennit for a long time. "You are in the wrong book," he said. Zennit replied that he had been told. The clerk said that this was not a criticism.]=] },
+    { chapter = 8, label = "The pen", dur = 24.00 + PAUSE, text = [=[The clerk showed him the desk. It was enormous, and covered in nine thousand years of unfinished business, most of which turned out, on inspection, to be about Zennit. "I am not asking you to take it," said the clerk. "I am only asking you to hold the pen, while I find my hat."]=] },
+    -- chapter 9, the group's 4th win (g4): the Ritual names its price
+    { chapter = 9, label = "Closure", dur = 22.00 + PAUSE, text = [=[The Ritual of Summoning, once asked, was only too happy to talk. It had never wanted gold, it explained. It had wanted a proper ending: a last summons, performed with attention, followed by closure. It had been waiting for one since before the tavern. It was very good about it.]=] },
+    { chapter = 9, label = "The price", dur = 22.00 + PAUSE, text = [=[The price was modest. Fifty silver, paid in person, in cash. And the third copy of the form, to complete the set. The Ritual had waited a very long time for the set. It understood how that looked, and said so, which the party agreed was decent of it.]=] },
+    -- chapter 10, Zennit's 5th win (z5): the finale, he becomes the clerk
+    { chapter = 10, label = "The hat", dur = 26.00 + PAUSE, text = [=[In the fifth week, the clerk found his hat. It was on his head. He said this was the sort of thing that happens to a person who has looked at nothing but the Index for nine thousand years. He shook Zennit's hand, left through the side door, and was last seen walking toward the sea, without his coat, visibly lighter.]=] },
+    { chapter = 10, label = "The chair", dur = 27.00 + PAUSE, text = [=[Zennit sat down. The chair fit, as expected. He read the Index from the beginning, which took a week, and found it sound, apart from the letter Z, where one entry had been smudged and then misfiled by a sneeze. He corrected it with a single stroke of the pen. Somewhere far below, the Ritual of Summoning went quiet.]=] },
+    { chapter = 10, label = "The new clerk", dur = 28.00 + PAUSE, text = [=[Then he did what no clerk had done in nine thousand years. He added entries. The party went in first, in alphabetical order, each with a short note of thanks. Zennit, Licensed Summoning Liaison, Third Class, was promoted to Clerk, and invited the party to summon him whenever they liked. He would, of course, always accept. The Index wrote that down.]=] },
+    -- chapter 11, the group's 5th win (g5): the finale, the receipt and Zennit freed
+    { chapter = 11, label = "The cellar again", dur = 24.00 + PAUSE, text = [=[On the group's fifth win, the party went down into the cellar with fifty silver in cash, the third copy of the form, and the kind of nerves usually reserved for exams. The Ritual of Summoning glowed. It was clear that it, too, had prepared something.]=] },
+    { chapter = 11, label = "The receipt", dur = 24.00 + PAUSE, text = [=[The silver was counted. The copy was handed over. The Ritual, for the first time in its existence, was given a receipt: Form 27B slash 6, complete in triplicate, and stamped. The Index approved, from a distance. Closure, it turned out, was mostly paperwork.]=] },
+    { chapter = 11, label = "Free", dur = 30.00 + PAUSE, text = [=[The Ritual let go. Zennit felt it as a small click, like a lock turning in a door he had never noticed. For the first time in his life, he was summoned by nobody. He stood in the cellar, free. Then he did the only thing he could think of, and summoned the party to his place, for cake. They accepted. It was, by general agreement, a very small cake.]=] },
 }
 
 -- A chapter is a run of scenes that plays on its own and ends with the fade to "THE END".
@@ -83,6 +103,20 @@ local lo, hi = 1, lastOf[1] -- the scenes of the chapter being played
 -- The fifth win of either side is that side's finale. victory and group are the first win of each.
 local CHAPTER_KEYS = { victory = 2, group = 3, z1 = 2, g1 = 3, z2 = 4, g2 = 5, z3 = 6, g3 = 7, z4 = 8, g4 = 9, z5 = 10, g5 = 11 }
 function Intro.HasChapter(key) return firstOf[CHAPTER_KEYS[key] or 0] ~= nil end
+
+-- Chapter number -> its key (z1, g1, ...); the intro (chapter 1) has none.
+Intro.KeyOf = {}
+for key, chapter in pairs(CHAPTER_KEYS) do
+    if key:match("^[zg]%d$") then Intro.KeyOf[chapter] = key end
+end
+
+-- Has the season's race reached this chapter's win?
+function Intro.Reached(key)
+    for _, c in ipairs(ST.Week.Season().chapters) do
+        if c.key == key then return true end
+    end
+    return false
+end
 
 local function endTime() return starts[hi] + scenes[hi].dur end
 
@@ -562,6 +596,11 @@ function Intro.Toggle(arg)
         si = tonumber(arg) or 1
     end
     si = math.max(1, math.min(#scenes, si))
+    -- a chapter can only be played once the season has reached it (the admin can play any)
+    local chapterKey = Intro.KeyOf[scenes[si].chapter]
+    if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) then
+        return ST.print("that chapter of the story has not been reached yet")
+    end
     lo, hi = firstOf[scenes[si].chapter], lastOf[scenes[si].chapter]
     shownScene = 0
     seek(starts[si])

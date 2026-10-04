@@ -31,6 +31,29 @@ function ST.baseName(name)
     return name:match("^[^%s%-]+")
 end
 
+-- The admin is whoever is logged in to this Battle.net account. The check runs on the player's own computer, so
+-- it keeps the debug tools and unreached chapters out of the way; it is not security.
+ST.ADMIN_TAG = "Gravypower#1577"
+
+function ST.BattleTag()
+    if not BNGetInfo then return nil end
+    local ok, _, tag = pcall(BNGetInfo)
+    if ok and type(tag) == "string" and not ST.isSecret(tag) then return tag end
+end
+
+function ST.IsAdmin()
+    local tag = ST.BattleTag()
+    return tag ~= nil and tag:lower() == ST.ADMIN_TAG:lower()
+end
+
+-- Zennit's own Battle.net account: it is Zennit whichever character he is playing.
+ST.ZENNIT_TAG = "Zennit#11523"
+
+function ST.IsZennitAccount()
+    local tag = ST.BattleTag()
+    return tag ~= nil and tag:lower() == ST.ZENNIT_TAG:lower()
+end
+
 ST.RITUAL_ID = 698 -- Ritual of Summoning (classic ID; confirm with /st test)
 
 -- Spell name for an ID, or nil if unknown, secret or the lookup fails.
@@ -151,6 +174,7 @@ end
 -- Test switch: makes this character behave as Zennit's so the gag can be tried solo.
 function commands.zenit(rest)
     local sub, arg = (rest or ""):match("^(%S*)%s*(.-)$")
+    if sub ~= "list" and not ST.IsAdmin() then return print_("that is an admin tool") end
     if sub == "list" then
         -- his secret list: /st zennit list [add <place> | remove <n> | clear]
         local R = ST.Respond
@@ -247,7 +271,18 @@ function commands.week(rest)
 end
 
 function commands.respond(rest)
-    if rest == "test" then ST.Respond.Test() else ST.Respond.Open() end
+    if rest == "test" then
+        if not ST.IsAdmin() then return print_("that is an admin tool") end
+        ST.Respond.Test()
+    else
+        ST.Respond.Open()
+    end
+end
+
+-- Says whether this account is the admin, and what the game reports as its BattleTag.
+function commands.admin()
+    local tag = ST.BattleTag()
+    print_(ST.IsAdmin() and ("admin: yes (" .. tag .. ")") or ("admin: no (this account's BattleTag reads " .. tostring(tag) .. ")"))
 end
 
 function commands.gag()
@@ -285,6 +320,15 @@ local HELP = {
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
     "/st undo - remove the latest summon    /st debug - toggle detector messages",
 }
+
+-- Debug and test tools are for the admin's account only.
+for _, name in ipairs({ "test", "fake", "fakeprompt", "comic", "synctest", "debug", "gag" }) do
+    local run = commands[name]
+    commands[name] = function(...)
+        if not ST.IsAdmin() then return print_("that is an admin tool") end
+        return run(...)
+    end
+end
 
 SLASH_SUMMONCORE1 = "/st"
 SLASH_SUMMONCORE2 = "/summoncore"

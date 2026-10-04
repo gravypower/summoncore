@@ -318,13 +318,15 @@ local function buildStory(f)
     head:SetWidth(700)
     return function()
         local reached = {}
+        local admin = ST.IsAdmin()
         for _, c in ipairs(ST.Week.Season().chapters) do reached[c.key] = true end
         for i, c in ipairs(STORY) do
             local written = ST.Intro.HasChapter(c[1]) or c[1] == "1"
+            local isReached = reached[c[1]] or c[1] == "1"
             local row = rows[i]
             row.status:SetText(not written and "|cff888888not written yet|r" or
-                ((reached[c[1]] or c[1] == "1") and "|cff33ff66reached|r" or "ready"))
-            row.play:SetEnabled(written)
+                (isReached and "|cff33ff66reached|r" or (admin and "not reached (admin)" or "|cff888888not reached yet|r")))
+            row.play:SetEnabled(written and (isReached or admin))
         end
     end
 end
@@ -337,6 +339,7 @@ local function buildSync(f)
         Hub.Refresh()
     end)
     button(f, "Run self-test", 172, -140, 150, function()
+        if not ST.IsAdmin() then return out:SetText("The self-test is an admin tool.") end
         ST.SyncTest.Run()
         out:SetText("Self-test results are in the chat window.")
     end)
@@ -360,17 +363,18 @@ local function buildTools(f)
 
     -- left column
     label(f, "Windows", 16, -10)
-    button(f, "Diagnostics", 16, -34, 170, function() ST.ToggleTests("") end)
+    local dbg = {} -- debug tools: shown only to the admin
+    dbg[#dbg + 1] = button(f, "Diagnostics", 16, -34, 170, function() ST.ToggleTests("") end)
     button(f, "Import / Export", 16, -64, 170, function() ST.Export.Open("import") end)
     button(f, "Play the intro", 16, -94, 170, function() window:Hide() ST.Intro.Toggle("") end)
-    button(f, "Large-image test", 16, -124, 170, function() ST.Comic.Toggle("") end)
+    dbg[#dbg + 1] = button(f, "Large-image test", 16, -124, 170, function() ST.Comic.Toggle("") end)
 
     -- middle column
     label(f, "Try things", 210, -10)
-    button(f, "Preview Zennit gag", 210, -34, 170, function() ST.Gag.Play() end)
-    button(f, "Intro sound check", 210, -64, 170, function() ST.Intro.Check() end)
-    button(f, "Test a summoning", 404, -124, 200, function() ST.Respond.Test() end)
-    button(f, "Assistants prompt demo", 210, -94, 170, function()
+    dbg[#dbg + 1] = button(f, "Preview Zennit gag", 210, -34, 170, function() ST.Gag.Play() end)
+    dbg[#dbg + 1] = button(f, "Intro sound check", 210, -64, 170, function() ST.Intro.Check() end)
+    dbg[#dbg + 1] = button(f, "Test a summoning", 404, -124, 200, function() ST.Respond.Test() end)
+    dbg[#dbg + 1] = button(f, "Assistants prompt demo", 210, -94, 170, function()
         ST.Prompt.Ask("Target", { "Alice", "Bob", "Cara" }, {}, function(names, confirmed)
             show(string.format("Prompt result: %s (%s)", #names > 0 and table.concat(names, ", ") or "nobody",
                 confirmed and "confirmed" or "unconfirmed"))
@@ -388,21 +392,23 @@ local function buildTools(f)
             paint()
         end)
         paint()
+        return b
     end
-    switch(-34, "Zennit test mode", function() return ST.db.settings.zenitTest == true end,
+    dbg[#dbg + 1] = switch(-34, "Zennit test mode", function() return ST.db.settings.zenitTest == true end,
         function(v) ST.db.settings.zenitTest = v end)
-    switch(-64, "Detector messages", function() return ST.db.settings.debug == true end,
+    dbg[#dbg + 1] = switch(-64, "Detector messages", function() return ST.db.settings.debug == true end,
         function(v) ST.db.settings.debug = v end)
     switch(-94, "Sounds", function() return ST.db.settings.soundOn ~= false end,
         function(v) ST.db.settings.soundOn = v end)
 
     -- ping and voice clips
-    label(f, "Ping a player", 16, -168)
+    dbg[#dbg + 1] = label(f, "Ping a player", 16, -168)
     local ping = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
     ping:SetSize(150, 22)
     ping:SetPoint("TOPLEFT", 130, -166)
     ping:SetAutoFocus(false)
-    button(f, "Send ping", 292, -164, 100, function()
+    dbg[#dbg + 1] = ping
+    dbg[#dbg + 1] = button(f, "Send ping", 292, -164, 100, function()
         ST.SendPings(ping:GetText())
         show("Ping sent. Replies appear in Diagnostics > Addon messages.")
     end)
@@ -425,7 +431,10 @@ local function buildTools(f)
         for _, c in ipairs(cats) do lines[#lines + 1] = string.format("%s: %d", c[1], c[2]) end
         show("Voice clips: " .. table.concat(lines, ",  "))
     end)
-    return function() end
+    return function()
+        local admin = ST.IsAdmin()
+        for _, w in ipairs(dbg) do w:SetShown(admin) end
+    end
 end
 
 local BUILDERS = { summary = buildSummary, log = buildLog, answer = buildAnswer, tally = buildTally, badges = buildBadges, story = buildStory,

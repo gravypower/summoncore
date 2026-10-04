@@ -22,6 +22,7 @@ function Gag.IsZennit()
     local s = ST.db and ST.db.settings
     if not s then return false end
     if s.zenitTest then return true end
+    if ST.IsZennitAccount() then return true end -- his Battle.net account counts, whichever character he plays
     local me = (UnitName("player") or ""):lower()
     for _, n in ipairs(s.zenitNames or {}) do
         if n:lower() == me then return true end
