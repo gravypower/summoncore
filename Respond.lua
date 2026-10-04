@@ -6,7 +6,7 @@
 --   Refuse          the summon does not count.
 --   50 silver       the summon counts once he says the silver was paid ("owes" until then).
 --   Dice            he rolls 1-100 (a real /roll, so the party sees it); the summoner is asked to roll back;
---                   Zennit adds 10 to his roll, higher wins and a tie goes to him. If he wins, the summon does not count.
+--                   Zennit adds 10 to his roll (a little less or more as the season's catch-up moves it), higher wins and a tie goes to him. If he wins, the summon does not count.
 -- His answer is stored on the event and sent to everyone (message Z); only his own client can answer for him.
 -- The dice use messages D (his roll, to the summoner) and S (the summoner's roll, back to him).
 local ADDON, ST = ...
@@ -32,8 +32,13 @@ local dlg, dlgSurface   -- the popup
 -- summoner adds `bonus` (Week.HelperBonus: so much per helper), so a well-organised summon can beat his edge.
 -- "won" means Zennit won, so the summon does not count.
 Respond.EDGE = 10
-function Respond.Resolve(zroll, sroll, bonus)
-    return zroll + Respond.EDGE >= sroll + (bonus or 0) and "won" or "lost"
+function Respond.Resolve(zroll, sroll, bonus, edge)
+    return zroll + (edge or Respond.EDGE) >= sroll + (bonus or 0) and "won" or "lost"
+end
+
+-- His edge on the dice for the week of this summon: EDGE, moved by the season's catch-up (Week.Edge).
+local function edgeFor(ev)
+    return (ST.Week.Edge(ST.Week.Start(ev.time)))
 end
 
 -- The summoner's roll as shown: "58", or "58+10" with the helpers' bonus.
@@ -61,7 +66,7 @@ local function plural(n) return n == 1 and "" or "s" end
 -- " Al and Cy's +10 tipped it." Otherwise "".
 local function tippedBy(ev, resp)
     local bonus = ST.Week.HelperBonus(ev)
-    if bonus == 0 or resp.result ~= "lost" or Respond.Resolve(resp.zroll, resp.sroll, 0) ~= "won" then return "" end
+    if bonus == 0 or resp.result ~= "lost" or Respond.Resolve(resp.zroll, resp.sroll, 0, edgeFor(ev)) ~= "won" then return "" end
     local names = {}
     for i = 1, math.min(#ev.assistants, ST.Week.RULES.helpersMax) do names[i] = ev.assistants[i] end
     return string.format(" %s's +%d tipped it.", table.concat(names, " and "), bonus)
@@ -225,7 +230,8 @@ function Respond.OnDiceReply(id, ev, sroll)
     local st = state[id]
     if not st then return end
     state[id] = nil
-    Respond.Decide(id, Respond.Resolve(st.zroll, sroll, ST.Week.HelperBonus(ST.Store.Get(id) or ev)), st.zroll, sroll)
+    local target = ST.Store.Get(id) or ev
+    Respond.Decide(id, Respond.Resolve(st.zroll, sroll, ST.Week.HelperBonus(target), edgeFor(target)), st.zroll, sroll)
 end
 
 ----------------------------------------------------------------------
@@ -300,8 +306,8 @@ function Respond.OnDiceChallenge(id, ev, zroll)
     if not diceDlg then buildDiceDialog() end
     diceCurrent = { id = id, ev = ev, zroll = zroll }
     local bonus = ST.Week.HelperBonus(ev)
-    diceDlg.text:SetText(string.format("%s suggests dice for your summon of him, and has rolled %d.\n\nRoll 1-100: beat his roll plus 10 and the summon counts. A tie goes to him.%s",
-        ev.target, zroll, bonus > 0 and string.format(" Your helpers add +%d to your roll.", bonus) or ""))
+    diceDlg.text:SetText(string.format("%s suggests dice for your summon of him, and has rolled %d.\n\nRoll 1-100: beat his roll plus %d and the summon counts. A tie goes to him.%s",
+        ev.target, zroll, edgeFor(ev), bonus > 0 and string.format(" Your helpers add +%d to your roll.", bonus) or ""))
     diceDlg.rollBtn:Show()
     diceDlg:Show()
 end
@@ -389,8 +395,8 @@ local function render(s, stage, extra)
         })
     elseif stage == "roll" then
         local bonus = ST.Week.HelperBonus(ev)
-        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add 10 to your roll%s; higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
-            ev.caster, bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or ""))
+        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add %d to your roll%s; higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
+            ev.caster, edgeFor(ev), bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or ""))
         setButtons(s, {
             { "Roll 1-100", function()
                 if diceLeft(id, ev) == 0 then return render(s, "choose") end -- the last die went on another summon

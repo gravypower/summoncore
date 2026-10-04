@@ -24,7 +24,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
-| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C built (his week off); A, a catch-up, is next |
+| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
 
 ## Entries
 
@@ -368,6 +368,31 @@ unlocks. The week after is a normal one. A first simulation of the cost: with no
 normal effort (28% a week); with a rest after each of his wins it is **10.7**, and at 45% it goes from 7.5 to 11
 (simulated, 100,000 seasons each). That is long: C and the season's five wins need to be looked at together (see below).
 
+**Built: A, catch-up.** The lever is Zennit's edge on the dice, because it is the one dial that moves a week smoothly (his
+head start does not: 2 and 0 are the same, and 3 drops a normal week from 28% to 8%). From the weekly model that reproduces the
+Fairness table (15%, 28%, 64% at edge 10), his edge moves the group's chance like this:
+
+| His edge | -10 | 0 | 5 | **10 (now)** | 15 | 20 |
+|---|---|---|---|---|---|---|
+| Quiet week | 32% | 23% | 19% | **15%** | 12% | 9% |
+| Normal week | 50% | 39% | 33% | **27%** | 23% | 18% |
+| Trying week | 82% | 74% | 69% | **63%** | 58% | 52% |
+
+The rule: a lead of 2 weekly wins moves it by 5 for the side behind, and 3 or more by 10 (so it is +5 or +15, then +0 or
++20; never below 0, and a lead of 1 changes nothing). Simulated seasons (60,000 each):
+
+| | Quiet | Normal | Trying |
+|---|---|---|---|
+| Blowout (loser has 0 or 1 win): without / with | 78% / 69% | 49% / 39% | 32% / 23% |
+| Close finish (loser has 3 or more): without / with | 7% / 10% | 27% / 34% | 43% / 52% |
+| Weeks to a finale | 5.9 / 6.1 | 6.7 / 6.9 | 7.2 / 7.5 |
+
+It is gentle on purpose: it narrows the lopsided seasons without deciding them, and the group's effort still matters most.
+A stronger version (steps of 5 at a lead of 1 and 10 from 2) gets normal-effort blowouts to 33% and close finishes to 41%,
+but it penalises the side for leading by one win, which feels like punishment. Not chosen; `Week.RULES.catchup` is one line.
+It shows in the briefing, the "Week:" line, his popup, the dice prompts and "The Index today", in the Index's voice:
+"The Index, which takes no sides, has cut his edge on the dice to +5 this week."
+
 **Found while building:** the week off had no effect on the score at all (only `Week.Warn` and `Week.Briefing` mentioned it),
 so a win for Zennit left the group's next week unchanged. And a new week off must not become a free win for him: with
 no summons counted his head start of 2 would beat 0, so a week off has no winner at all.
@@ -394,3 +419,4 @@ no summons counted his head start of 2 would beat 0, so a week off has no winner
 | 2026-10-04 | Show where the week stands when it changes: briefing at the ritual, a chat line after summons and answers, in his popup, and the lead in the band | Visible Progress, Feedback | Progress was only in the hub, and the facts that decide how to summon him came too late |
 | 2026-10-04 | Helpers named when their bonus wins a roll; the assistants prompt saves itself; Zennit told he can ignore a summon; no helper badges | The Player | The group likes banter and doing things together, and hates bookkeeping; rewards don't motivate them |
 | 2026-10-04 | His week off is real: summons of him are filler, the race skips the week, and the gags carry on | Interest Curve | His wins were a story beat with no effect; a pause makes them count without silencing the joke |
+| 2026-10-04 | Catch-up: Zennit's dice edge moves 5 (a lead of 2 wins) or 10 (3 or more) toward the side that is behind | Interest Curve | Blowouts were 49% of seasons at normal effort; the Index now leans on the scale, gently |

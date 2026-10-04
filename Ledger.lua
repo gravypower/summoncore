@@ -96,6 +96,13 @@ function Ledger.Build(s)
         say("Zennit is one win from the clerk's chair, and the kettle is on.", "ONE WIN FROM THE CHAIR")
     end
 
+    -- the Index's thumb on the scale, when the season is lopsided (Week.Edge)
+    if s.edgeMoved and s.edgeMoved ~= 0 then
+        say(s.edgeMoved < 0 and string.format("The Index, which takes no sides, has noticed that the group is behind, and has taken %d off Zennit's dice this week.", -s.edgeMoved)
+            or string.format("The Index, which takes no sides, has noticed that Zennit is behind, and has put %d on his dice this week.", s.edgeMoved),
+            "THE INDEX TAKES NO SIDES")
+    end
+
     local text, cue = weekLine(s)
     say(text, cue)
     say("The Index is accepting further evidence.")
@@ -127,5 +134,5 @@ function Ledger.State()
     local now = time()
     local start = W.Start(now)
     return { season = W.Season(now), score = W.Score(start), immune = (W.Immune(now)), wins = W.WINS,
-        cap = W.RULES.cap }
+        cap = W.RULES.cap, edgeMoved = select(2, W.Edge(start)) }
 end

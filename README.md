@@ -272,6 +272,11 @@ numbers behind it, is in `design/lenses.md`):
 
 - **Only summons of Zennit count**, up to **10** of them each week. Any after that are logged as usual but "filed under
   'enthusiasm'": the race ignores them. Summons of each other still count for the tally and badges.
+- **The Index keeps the season close.** Zennit's edge on the dice (the +10) moves with the season's lead, worked out from
+  the weeks before the current one. At a lead of two weekly wins it is **+5** for the side behind: his edge shrinks when
+  he is ahead (to +5), and grows when the group is ahead (to +15). At three or more it moves by **10** (to +0, or +20);
+  a lead of one changes nothing. The briefing, the "Week:" line, his popup, the dice prompts and "The Index today" say
+  so ("The Index, which takes no sides, has cut his edge on the dice to +5 this week"). Tune it in `Week.RULES.catchup`.
 - **His week off is real.** After a week Zennit wins, the next week is his: summons of him are still logged, answered and
   gagged as usual (the warnings, his popup, the dice), but they are filed as **filler**: the race ignores them, nobody
   wins the week, and no chapter is unlocked. So a win for Zennit is a pause for the group, not a head start; the week
@@ -293,7 +298,7 @@ numbers behind it, is in `design/lenses.md`):
 
 Earlier weeks keep the rules they were played under (his head start of 10, a week off that was only a warning, every landed summon counting for the group,
 unlimited dice), so the season and the chapters already reached do not change. Tune the race in `Week.RULES`
-(head start, the minimum before he can close and the limit, dice, helper bonus, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro
+(head start, the minimum before he can close and the limit, dice, helper bonus, the catch-up steps, and the week it starts) and `Respond.EDGE`. Scenes 9 and 10 of the intro
 narrate these rules; if they change, re-voice those two scenes (`.claude/skills/zenit-narrator-audio`).
 
 ### The season

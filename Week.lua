@@ -54,7 +54,11 @@ end
 -- the latest answered, he may close the Index for the rest of the week (an answer with `closes` set). He has `dice`
 -- rolls a week; each helper (up to `helpersMax`) adds `helperBonus` to the summoner's roll. Weeks before `from` keep the
 -- rules they were played under, so the season and the chapters already reached do not change.
-Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3, helperBonus = 5, helpersMax = 2 }
+Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3, helperBonus = 5, helpersMax = 2,
+    -- Catch-up (design/lenses.md, the Interest Curve): when one side is this many wins ahead in the season, the Index
+    -- moves Zennit's edge on the dice by this much for the side that is behind, and the other way for the side ahead.
+    -- A lead of 1 changes nothing; a lead past the last step uses the last step.
+    catchup = { [2] = 5, [3] = 10 } }
 
 function Week.NewRules(start)
     return start >= Week.RULES.from
@@ -160,6 +164,24 @@ function Week.DiceLeft(start)
         if res == "won" or res == "lost" then used = used + 1 end
     end
     return math.max(0, Week.RULES.dice - used)
+end
+
+-- Zennit's edge on the dice for the week starting at `start`: Respond.EDGE, moved by the season's lead (RULES.catchup).
+-- Zennit ahead by wins: the edge shrinks, so the group has a way back; the group ahead: it grows. It is worked out from
+-- the weeks before `start`, so it does not change during the week. Second value: how far it moved (negative: in the
+-- group's favour).
+function Week.Edge(start)
+    local base = ST.Respond.EDGE
+    if not Week.NewRules(start) then return base, 0 end
+    local season = Week.Season(start)
+    local lead = season.zennit - season.group -- Zennit's lead in weekly wins
+    local steps, top = Week.RULES.catchup, 0
+    for lead_ in pairs(steps) do top = math.max(top, lead_) end
+    local by = steps[math.min(math.abs(lead), top)] or 0
+    if lead == 0 or by == 0 then return base, 0 end
+    local moved = lead > 0 and -by or by
+    if base + moved < 0 then moved = -base end -- never a handicap for Zennit
+    return base + moved, moved
 end
 
 -- What the summoner adds to their dice roll for this summon: a bonus per helper (0 under the old rules).
@@ -344,6 +366,8 @@ function Week.StatusLine(start, you)
     if r.off then return "Week: Zennit's week off, so summons of him are filler and nothing counts." end
     local parts = { leadText(r, you), string.format("%d of %d filed", r.counted, Week.RULES.cap),
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
+    local edge, moved = Week.Edge(start)
+    if moved ~= 0 and not r.closed then parts[#parts + 1] = string.format("his dice edge is +%d", edge) end
     return "Week: " .. table.concat(parts, ", ") .. "."
 end
 
@@ -364,9 +388,15 @@ function Week.Briefing(target)
         return target .. " has had all the summons that count this week: this one will not count."
     end
     local dice = Week.DiceLeft(start)
-    return string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
+    local edge, moved = Week.Edge(start)
+    local text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
         Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
         string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.RULES.helperBonus))
+    if moved ~= 0 and dice > 0 then
+        text = text .. string.format(" The Index, which takes no sides, has %s his edge on the dice to +%d this week.",
+            moved < 0 and "cut" or "raised", edge)
+    end
+    return text
 end
 
 -- The caster is told when they summon Zennit during his week off, or after he has closed the Index for the week.
