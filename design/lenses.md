@@ -22,8 +22,8 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Meaningful Choices | Zennit's four answers are the main decision in the game | Dice limited (3 a week); playtest |
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
+| Visible Progress / Feedback | The season band and answer colours in the hub | Findings in; changes proposed |
 | The Player | One friend group, and one of them (Zennit) is the target | |
-| Visible Progress / Feedback | The season band and answer colours in the hub | |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
 
 ## Entries
@@ -195,6 +195,43 @@ always timestamped after the one it replaces. The closing self-test caught it: t
 - How do 5, 8 and 10 summons in a week feel?
 - Does he use the close button? Early, late, never? If he always closes at 5, the extra five slots do nothing.
 - Does closing feel like a fair way out, or like giving up?
+
+### 2026-10-04 · Lens of Visible Progress, with the Lens of Feedback
+
+**The questions (paraphrased):** what progress matters to the players, and can they see it at the moment they care?
+After acting, what do they need to know, and does the game tell them clearly and quickly?
+
+**What a player sees, moment by moment, as built:**
+
+| Moment | They want to know | They see |
+|---|---|---|
+| Deciding to summon Zennit | Worth it now? Dice left, filed, will helpers matter? | Nothing, unless they open `/st` |
+| The ritual begins (caster) | Same | A voice clip |
+| The summon is logged | Did that count? | "Summon logged: Zennit in X (+5, dungeon)": tally points, not the race |
+| Zennit's popup | How close is his week off? | The summon, the cost of refusing, dice left; no week score |
+| His answer arrives | Who is ahead now? | "+5 points", but not where the week stands |
+| End of the week | Who won, where is the season? | A chat line about a minute after the next login |
+| The hub's season band | Everything | Season wins, then `GROUP 9 / ZENNIT 8 · FILED 4/10 · DICE 1` |
+
+**Findings**
+1. **Progress is only visible where nobody is looking.** The race changes when a summon of Zennit is logged and when he
+   answers; at both moments players are in the world, not in `/st`.
+2. **Feedback arrives too late to help decide.** Dice left and the helper bonus should decide whether and how to summon
+   him now; the summoner only learns the bonus from the dice prompt, after the ritual.
+3. **Totals, not distance to the goal.** "GROUP 9 / ZENNIT 8" makes you subtract; "GROUP LEADS BY 1" tells you whether to
+   push.
+4. **A legibility problem we introduced.** Fitting FILED and DICE into the band dropped the "THIS WEEK" label, so two
+   ZENNIT/GROUP scoreboards (season wins, week points) sit side by side. The lens works on recent decisions too.
+
+**Proposed changes**
+
+| # | Change | Fixes |
+|---|---|---|
+| 1 | After each summon of Zennit and each answer, a chat line: "Week: group leads by 1 · 4 of 10 filed · 1 die left." | 1 |
+| 2 | The band shows the lead, not two totals: `WEEK: GROUP +1 · FILED 4/10 · DICE 1` | 3, 4 |
+| 3 | When a ritual on Zennit begins, brief the caster: filed, dice left, what two helpers add | 2 |
+| 4 | Zennit's popup shows where the week stands | 1, for Zennit |
+| 5 | An optional on-screen tracker | 1; held back: clutter is a cost, wait for a playtest to ask for it |
 
 ## Decisions
 
