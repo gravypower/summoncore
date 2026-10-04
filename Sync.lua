@@ -22,7 +22,7 @@ local MAX_BATCH = 500      -- most events sent in reply to one REQUEST
 local SEND_INTERVAL = 0.34 -- about 3 messages per second
 local REQUEST_COOLDOWN = 10
 local HELLO_BACK_COOLDOWN = 30
-local REQUEST_WINDOW = 120 -- how long after our REQUEST we accept a BATCH from that sender
+local REQUEST_WINDOW = 120 -- how long after our REQUEST (or the last BATCH message) we accept more from that sender
 
 local function newState()
     return { queue = {}, requested = {}, lastReq = {}, lastHelloBack = {}, added = 0 }
@@ -326,6 +326,7 @@ function Sync.OnMessage(text, channel, sender)
             if not st.requested[sender] or now - st.requested[sender] > REQUEST_WINDOW then
                 return "rejected:unrequested"
             end
+            st.requested[sender] = now -- sliding window: a long batch keeps itself open
         end
         local id, ev = Sync.Decode(body)
         if not id then return "rejected:" .. tostring(ev) end
