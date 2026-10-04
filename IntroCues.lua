@@ -2,7 +2,7 @@
 -- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.
 local ADDON, ST = ...
 ST.introEnding = 3.20
-ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50, 24.70, 27.00, 27.70, 26.50 }
+ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50, 24.70, 27.00, 27.70, 26.50, 25.90, 29.80, 27.60, 29.40 }
 ST.introCues = {
     [1] = {
         { t = 0.55, text = "THE COSMIC INDEX OF SUMMONABLE PERSONS" },
@@ -83,6 +83,32 @@ ST.introCues = {
         { t = 15.24, text = "A SMALL CAKE" },
         { t = 16.60, text = "WHICH HE DID NOT TRUST" },
         { t = 24.43, text = "COUNTING THE NEXT ONE" },
+    },
+    [15] = {
+        { t = 3.65, text = "A PARCEL" },
+        { t = 6.29, text = "A BRASS KEY" },
+        { t = 8.60, text = "SIDE DOOR" },
+        { t = 17.81, text = "THE FIRST ITEM" },
+        { t = 23.06, text = "TOO BUSY BEING SUMMONED" },
+    },
+    [16] = {
+        { t = 4.67, text = "BEHIND THE LETTER Q" },
+        { t = 8.84, text = "PLEASE DO NOT" },
+        { t = 15.23, text = "A VERY OLD KETTLE" },
+        { t = 18.27, text = "A CHAIR THAT FIT HIM" },
+        { t = 27.88, text = "SOMEONE CLEARED HIS THROAT" },
+    },
+    [17] = {
+        { t = 2.87, text = "AN UNEXPECTED RECEIPT" },
+        { t = 9.72, text = "BLUE CARBON PAPER" },
+        { t = 15.18, text = "THE TITLE WAS SMUDGED" },
+        { t = 21.37, text = "FORM 27B/6" },
+    },
+    [18] = {
+        { t = 3.02, text = "THE FORM DID NOT EXIST" },
+        { t = 13.15, text = "IN TRIPLICATE" },
+        { t = 20.63, text = "THE PARTY KEPT THE THIRD" },
+        { t = 27.73, text = "THEY WILL THINK ABOUT IT" },
     },
 }
 -- introSentences: when each sentence of the narration starts, for the subtitles.
@@ -167,6 +193,35 @@ ST.introSentences = {
         { t = 11.13, text = [=[He arrived, as he always did, slightly confused, and was handed a small cake, which he did not trust.]=] },
         { t = 18.53, text = [=[The Index recorded the week as a narrow win for hope over paperwork, and began, quietly, to count the next one.]=] },
     },
+    [15] = {
+        { t = 0.41, text = [=[Zennit's second week off began, as these things do, with a parcel.]=] },
+        { t = 5.58, text = [=[Inside was a brass key, a luggage tag that said Side Door, and a note that said, helpfully, nothing.]=] },
+        { t = 13.07, text = [=[He checked the key against his secret list.]=] },
+        { t = 17.06, text = [=[It was the first item.]=] },
+        { t = 20.08, text = [=[It had been the first item all along, and he had been too busy being summoned to read it.]=] },
+    },
+    [16] = {
+        { t = 0.41, text = [=[The side door of the Index was exactly where the key said it would be, behind the letter Q, between a filing cabinet and a sign that said Please Do Not.]=] },
+        { t = 10.73, text = [=[Zennit went in.]=] },
+        { t = 13.13, text = [=[Beyond it was a quiet corridor, a very old kettle, and a desk with a chair that fit him suspiciously well.]=] },
+        { t = 21.00, text = [=[He did not sit down.]=] },
+        { t = 23.72, text = [=[He ticked the first item on his list, and somewhere in the Index, a clerk cleared his throat.]=] },
+    },
+    [17] = {
+        { t = 0.42, text = [=[The group's second win arrived with an unexpected receipt.]=] },
+        { t = 5.51, text = [=[Tucked into the cake box, under the napkins, was a sheet of faint blue carbon paper, which, held up to the light, showed the cover of a form.]=] },
+        { t = 15.03, text = [=[The title was smudged.]=] },
+        { t = 17.91, text = [=[The number was not.]=] },
+        { t = 20.66, text = [=[It was Form 27B slash 6, or at least the part that had pressed through to the next page.]=] },
+    },
+    [18] = {
+        { t = 0.40, text = [=[Scholars had always maintained that the form did not exist.]=] },
+        { t = 5.35, text = [=[The carbon copy suggested otherwise.]=] },
+        { t = 9.46, text = [=[It suggested that the form had once been filled in, by someone, in triplicate, and that the other two copies had gone to the Index and to the Ritual of Summoning.]=] },
+        { t = 20.06, text = [=[The party kept the third.]=] },
+        { t = 23.07, text = [=[The Index asked for it back.]=] },
+        { t = 26.39, text = [=[The party said they would think about it.]=] },
+    },
 }
 -- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).
 ST.introHighlights = {
@@ -247,5 +302,34 @@ ST.introHighlights = {
         { t = 15.34, x = 232, y = 306, w = 118, h = 100 },
         { t = 16.70, x = 550, y = 140, w = 250, h = 350 },
         { t = 24.53, x = 822, y = 350, w = 106, h = 160 },
+    },
+    [15] = {
+        { t = 3.75, x = 50, y = 190, w = 290, h = 230 },
+        { t = 6.39, x = 396, y = 140, w = 250, h = 120 },
+        { t = 7.25, x = 396, y = 286, w = 190, h = 100 },
+        { t = 10.48, x = 610, y = 262, w = 140, h = 128 },
+        { t = 15.03, x = 40, y = 30, w = 220, h = 140 },
+        { t = 17.91, x = 40, y = 30, w = 220, h = 140 },
+    },
+    [16] = {
+        { t = 4.77, x = 396, y = 70, w = 186, h = 400 },
+        { t = 6.70, x = 36, y = 196, w = 128, h = 272 },
+        { t = 8.01, x = 176, y = 142, w = 208, h = 72 },
+        { t = 15.33, x = 612, y = 396, w = 106, h = 80 },
+        { t = 16.72, x = 696, y = 290, w = 240, h = 190 },
+    },
+    [17] = {
+        { t = 6.45, x = 36, y = 296, w = 270, h = 190 },
+        { t = 9.82, x = 372, y = 52, w = 276, h = 356 },
+        { t = 15.28, x = 396, y = 86, w = 228, h = 70 },
+        { t = 21.47, x = 396, y = 200, w = 228, h = 100 },
+    },
+    [18] = {
+        { t = 3.12, x = 50, y = 50, w = 760, h = 150 },
+        { t = 13.25, x = 50, y = 50, w = 760, h = 150 },
+        { t = 16.67, x = 90, y = 290, w = 440, h = 170 },
+        { t = 20.73, x = 590, y = 170, w = 310, h = 240 },
+        { t = 23.77, x = 46, y = 436, w = 328, h = 72 },
+        { t = 27.83, x = 586, y = 436, w = 328, h = 72 },
     },
 }

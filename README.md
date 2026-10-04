@@ -128,7 +128,7 @@ up new files). The art lives in `Media/intro_l1.blp` to `intro_l10.blp` (lines) 
 
 Scenes 9 and 10 explain the weekly challenge: the group earns points by place, Zennit holds a secret list, and he may refuse, ask for fifty silver, or suggest dice. They were rendered here from the draft rules and may need rewording once the rules are final.
 
-The narration is `Media/intro_1.ogg` to `intro_14.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
+The narration is `Media/intro_1.ogg` to `intro_18.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
 start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
 mutes the narration.
@@ -229,7 +229,7 @@ story. The rules are tilted his way on purpose, so he wins more weeks than he lo
 
 The weekly wins add up to a race: the first side (Zennit or the group) to **5 weekly wins** takes the finale, then the
 count starts again. It is worked out from the log, so every client agrees. Each win plays its own chapter of the story:
-`z1` to `z5` for Zennit's wins and `g1` to `g5` for the group's, so `/st intro z2` or `/st week g3` replays one. `z1` and
-`g1` are written (scenes 11 to 14); the rest are planned: Zennit's track ends with him becoming the clerk of the Index,
+`z1` to `z5` for Zennit's wins and `g1` to `g5` for the group's, so `/st intro z2` or `/st week g3` replays one. `z1`,
+`g1`, `z2` and `g2` are written (scenes 11 to 18); the rest are planned: Zennit's track ends with him becoming the clerk of the Index,
 the group's with Form 27B/6 turning out to be the receipt for the fifty silver, the Ritual getting its closure and Zennit
 being freed. `/st week` shows the standing.

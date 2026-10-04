@@ -58,7 +58,7 @@ $sceneCount = (Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg"
 $voices = 1..$sceneCount | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
 $pause = 0.6   # keep in step with PAUSE in Intro.lua
 $ending = 3.2   # extra seconds after the last scene: the music fades out while the picture fades to black
-$chapterEnds = @(10, 12, 14)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua)
+$chapterEnds = @(10, 12, 14, 16, 18)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua)
 $lengths = $voices | ForEach-Object { Duration $_ }
 $starts = @(); $acc = 0.0
 for ($k = 0; $k -lt $lengths.Count; $k++) {
@@ -240,7 +240,25 @@ $cueSpec = @(
     @(14, "victory for persistence", "A VICTORY FOR PERSISTENCE"),
     @(14, "small cake", "A SMALL CAKE"),
     @(14, "did not trust", "WHICH HE DID NOT TRUST"),
-    @(14, "count the next one", "COUNTING THE NEXT ONE")
+    @(14, "count the next one", "COUNTING THE NEXT ONE"),
+    @(15, "with a parcel", "A PARCEL"),
+    @(15, "brass key", "A BRASS KEY"),
+    @(15, "Side Door", "SIDE DOOR"),
+    @(15, "first item", "THE FIRST ITEM"),
+    @(15, "too busy being summoned", "TOO BUSY BEING SUMMONED"),
+    @(16, "behind the letter Q", "BEHIND THE LETTER Q"),
+    @(16, "Please Do Not", "PLEASE DO NOT"),
+    @(16, "very old kettle", "A VERY OLD KETTLE"),
+    @(16, "fit him suspiciously well", "A CHAIR THAT FIT HIM"),
+    @(16, "cleared his throat", "SOMEONE CLEARED HIS THROAT"),
+    @(17, "unexpected receipt", "AN UNEXPECTED RECEIPT"),
+    @(17, "carbon paper", "BLUE CARBON PAPER"),
+    @(17, "title was smudged", "THE TITLE WAS SMUDGED"),
+    @(17, "27B slash 6", "FORM 27B/6"),
+    @(18, "form did not exist", "THE FORM DID NOT EXIST"),
+    @(18, "in triplicate", "IN TRIPLICATE"),
+    @(18, "kept the third", "THE PARTY KEPT THE THIRD"),
+    @(18, "think about it", "THEY WILL THINK ABOUT IT")
 )
 $lead = 0.25   # show a cue a little before the words are spoken
 
@@ -337,7 +355,28 @@ $highlightSpec = @(
     @(14, "traditional manner", 90, 140, 360, 230),
     @(14, "small cake", 232, 306, 118, 100),
     @(14, "did not trust", 550, 140, 250, 350),
-    @(14, "count the next one", 822, 350, 106, 160)
+    @(14, "count the next one", 822, 350, 106, 160),
+    @(15, "with a parcel", 50, 190, 290, 230),
+    @(15, "brass key", 396, 140, 250, 120),
+    @(15, "luggage tag", 396, 286, 190, 100),
+    @(15, "said, helpfully, nothing", 610, 262, 140, 128),
+    @(15, "secret list", 40, 30, 220, 140),
+    @(15, "first item", 40, 30, 220, 140),
+    @(16, "behind the letter Q", 396, 70, 186, 400),
+    @(16, "filing cabinet", 36, 196, 128, 272),
+    @(16, "sign that said", 176, 142, 208, 72),
+    @(16, "very old kettle", 612, 396, 106, 80),
+    @(16, "a desk with a chair", 696, 290, 240, 190),
+    @(17, "cake box", 36, 296, 270, 190),
+    @(17, "carbon paper", 372, 52, 276, 356),
+    @(17, "title was smudged", 396, 86, 228, 70),
+    @(17, "27B slash 6", 396, 200, 228, 100),
+    @(18, "form did not exist", 50, 50, 760, 150),
+    @(18, "in triplicate", 50, 50, 760, 150),
+    @(18, "the Index and to the Ritual", 90, 290, 440, 170),
+    @(18, "kept the third", 590, 170, 310, 240),
+    @(18, "asked for it back", 46, 436, 328, 72),
+    @(18, "think about it", 586, 436, 328, 72)
 )
 
 $cues = @{}
