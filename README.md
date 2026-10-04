@@ -18,7 +18,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 
 | Command | What it does |
 |---|---|
-| `/st` | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story lists every chapter with a Play button, and keeps the end of a chapter's title hidden until the weekly race reaches it (everything below is in it too) |
+| `/st` | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
 | `/st help` | List the commands in chat |
 | `/st panel` | Open the window on the Summary tab |
 | `/st log [n]` | Recent summons |

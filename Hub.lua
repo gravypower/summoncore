@@ -325,51 +325,185 @@ local function buildBadges(f)
     end
 end
 
--- Every chapter of the story: the intro, then one for each win of the season race (z = Zennit's, g = the group's).
-local STORY = {
-    { "1", "The intro: Zennit and the Index" },
-    { "z1", "Zennit's 1st win: the week off" },
-    { "g1", "The group's 1st win: the cake" },
-    { "z2", "Zennit's 2nd win: the key to the side door" },
-    { "g2", "The group's 2nd win: the carbon copy of the Form" },
-    { "z3", "Zennit's 3rd win: the list is training modules" },
-    { "g3", "The group's 3rd win: the Ritual holds the Form" },
-    { "z4", "Zennit's 4th win: the clerk shows him the desk" },
-    { "g4", "The group's 4th win: the Ritual names its price" },
-    { "z5", "FINALE, Zennit: he becomes the clerk" },
-    { "g5", "FINALE, the group: the receipt, and Zennit is freed" },
+-- The story as a talent tree: the intro at the top, then one trunk for each side of the season race (z = Zennit's,
+-- g = the group's). Each weekly win unlocks the next chapter down its side; the fifth win is that side's finale.
+-- Chapters the race has reached light up in the side's colour and play when clicked; the next win on each side
+-- pulses; the rest stay dark, and their titles stay hidden (spoilers) unless you are the admin.
+local TREE = {
+    zennit = {
+        { "z1", "the week off" },
+        { "z2", "the key to the side door" },
+        { "z3", "the list is training modules" },
+        { "z4", "the clerk shows him the desk" },
+        { "z5", "he becomes the clerk" },
+    },
+    group = {
+        { "g1", "the cake" },
+        { "g2", "the carbon copy of the Form" },
+        { "g3", "the Ritual holds the Form" },
+        { "g4", "the Ritual names its price" },
+        { "g5", "the receipt, and Zennit is freed" },
+    },
 }
+local SIDES = { "zennit", "group" }
+local SIDE_COLOR = { zennit = "pink", group = "cyan" }
+local SIDE_HEAD = { zennit = "ZENNIT", group = "THE GROUP" }
+local SIDE_OWN = { zennit = "Zennit's", group = "The group's" }
+local ORDINAL = { "1st", "2nd", "3rd", "4th" }
+
+-- Where everything sits inside the tab (776 x 458): two trunks either side of the middle, the intro on top.
+local NODE_W, NODE_H, PITCH = 330, 46, 70
+local MID_X, SIDE_X = 388, { zennit = 194, group = 582 }
+local ROOT_W, ROOT_TOP, BAR_Y, TIER_TOP = 220, -22, -80, -92
+
+local function tierTop(tier) return TIER_TOP - (tier - 1) * PITCH end
+
+local function paintTexture(tex, color, alpha)
+    local c = T.rgb[color]
+    tex:SetColorTexture(c[1], c[2], c[3], alpha or 1)
+end
+
+local function treeNode(f, cx, top, width)
+    local n = CreateFrame("Button", nil, f)
+    n:SetSize(width, NODE_H)
+    n:SetPoint("TOPLEFT", cx - width / 2, top)
+    T.Panel(n, { color = "line" })
+    local hl = T.Fill(n, "green", 0.14, "HIGHLIGHT")
+    hl:SetAllPoints()
+    n.tag = T.Text(n, 16, "dim", "OVERLAY")
+    n.tag:SetPoint("TOPLEFT", 8, -4)
+    n.state = T.Text(n, 16, "dim", "OVERLAY")
+    n.state:SetPoint("TOPRIGHT", -8, -4)
+    n.state:SetJustifyH("RIGHT")
+    n.title = T.Text(n, 18, "green", "OVERLAY")
+    n.title:SetPoint("TOPLEFT", 8, -22)
+    n.title:SetWidth(width - 16)
+    n.title:SetWordWrap(false)
+    n:SetScript("OnEnter", function(self)
+        if not self.tip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(self.tip[1], 1, 1, 1)
+        for i = 2, #self.tip do GameTooltip:AddLine(self.tip[i], 0.8, 0.8, 0.8, true) end
+        GameTooltip:Show()
+    end)
+    n:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    n:SetScript("OnClick", function(self)
+        if not (self.key and self.playable) then return end
+        GameTooltip:Hide()
+        window:Hide() -- the viewer sits under this window; it comes back when the viewer is closed
+        ST.Intro.Play(self.key, function() Hub.Open("story") end)
+    end)
+    -- the next win on a side breathes amber
+    n:SetScript("OnUpdate", function(self)
+        if self.pulse then self.border.SetColor("amber", 0.55 + 0.45 * math.sin(GetTime() * 4)) end
+    end)
+    return n
+end
+
+-- Sets a node's colours and wording. look: { border, pulse, tag, state, stateColor, title, titleColor, glow }
+local function setNode(n, look)
+    n.pulse = look.pulse
+    n.border.SetColor(look.border, 1)
+    n.tag:SetText(look.tag)
+    n.state:SetFontObject(T.Font(16, look.stateColor))
+    n.state:SetText(look.state)
+    n.title:SetFontObject(T.Font(18, look.titleColor))
+    n.title:SetText(look.title)
+    if n.glow then
+        for _, ring in ipairs(n.glow) do
+            for i = 1, 4 do ring[i]:SetShown(look.glow == true) end
+        end
+    end
+end
 
 local function buildStory(f)
-    label(f, "Every chapter of the story. Each win in the weekly race plays its own; replay any that is written.", 16, -8):SetWidth(740)
-    local rows = {}
-    for i, c in ipairs(STORY) do
-        local y = -34 - (i - 1) * 32
-        local row = {
-            title = label(f, c[2], 16, y - 4, "green"),
-            status = label(f, "", 470, y - 4),
-        }
-        row.play = button(f, "> PLAY", 656, y, 90, function()
-            window:Hide() -- the viewer sits under this window; it comes back when the viewer is closed
-            ST.Intro.Play(c[1], function() Hub.Open("story") end)
-        end)
-        rows[i] = row
+    label(f, "Each weekly win unlocks the next chapter on its side. Click a lit chapter to replay it.", 16, -2):SetWidth(744)
+
+    -- connectors first, so the nodes draw over them
+    local function stroke(x, y, w, h)
+        local tex = T.Fill(f, "line", 1, "BACKGROUND")
+        tex:SetPoint("TOPLEFT", x, y)
+        tex:SetSize(w, h)
+        return tex
     end
+    local rootStem = stroke(MID_X - 1, ROOT_TOP - NODE_H, 2, (ROOT_TOP - NODE_H) - BAR_Y)
+    local bars = {
+        zennit = stroke(SIDE_X.zennit - 1, BAR_Y - 1, MID_X - SIDE_X.zennit + 1, 2),
+        group = stroke(MID_X, BAR_Y - 1, SIDE_X.group - MID_X + 1, 2),
+    }
+    local sides = {}
+    for _, side in ipairs(SIDES) do
+        local col = { nodes = {}, links = {} }
+        col.drop = stroke(SIDE_X[side] - 1, BAR_Y - 1, 2, BAR_Y - TIER_TOP + 1)
+        col.head = T.Text(f, 22, SIDE_COLOR[side])
+        col.head:SetPoint("TOPLEFT", SIDE_X[side] - 120, -34)
+        col.head:SetWidth(240)
+        col.head:SetJustifyH("CENTER")
+        for tier = 1, #TREE[side] do
+            if tier < #TREE[side] then
+                col.links[tier] = stroke(SIDE_X[side] - 1, tierTop(tier) - NODE_H, 2, PITCH - NODE_H)
+            end
+            local node = treeNode(f, SIDE_X[side], tierTop(tier), NODE_W)
+            node.key = TREE[side][tier][1]
+            if tier == ST.Week.WINS then -- the finale: ringed in the side's colour while it is lit
+                node.glow = { T.Border(node, SIDE_COLOR[side], 0.22, 2, 2), T.Border(node, SIDE_COLOR[side], 0.08, 3, 4) }
+            end
+            col.nodes[tier] = node
+        end
+        sides[side] = col
+    end
+    local root = treeNode(f, MID_X, ROOT_TOP, ROOT_W)
+    root.key, root.playable = "1", true
+    root.tag:SetText("THE INTRO")
+    root.tip = { "The intro: Zennit and the Index", "Click to play." }
+
     return function()
+        local season = ST.Week.Season()
         local reached = {}
+        for _, c in ipairs(season.chapters) do reached[c.key] = true end
         local admin = ST.IsAdmin()
-        for _, c in ipairs(ST.Week.Season().chapters) do reached[c.key] = true end
-        for i, c in ipairs(STORY) do
-            local written = ST.Intro.HasChapter(c[1]) or c[1] == "1"
-            local isReached = reached[c[1]] or c[1] == "1"
-            local row = rows[i]
-            -- the part after the colon gives the chapter away, so it stays hidden until the race gets there
-            local title = c[2]
-            if not (isReached or admin) then title = title:match("^(.-:)") .. " ???" end
-            row.title:SetText(title)
-            row.status:SetText(not written and "not written yet" or
-                (isReached and T.Paint("green", "REACHED") or (admin and T.Paint("amber", "not reached (admin)") or "not reached yet")))
-            row.play:SetEnabled(written and (isReached or admin))
+
+        setNode(root, { border = "green", tag = "THE INTRO", state = "", stateColor = "dim", title = "Zennit and the Index",
+            titleColor = "green" })
+        paintTexture(rootStem, "dim")
+
+        for _, side in ipairs(SIDES) do
+            local col, color = sides[side], SIDE_COLOR[side]
+            local done = season[side]
+            col.head:SetText(string.format("%s  %d/%d", SIDE_HEAD[side], done, ST.Week.WINS))
+            for tier, node in ipairs(col.nodes) do
+                local key, short = TREE[side][tier][1], TREE[side][tier][2]
+                local finale = tier == ST.Week.WINS
+                local written = ST.Intro.HasChapter(key)
+                local isReached = reached[key] == true
+                local full = finale and ("FINALE, " .. (side == "zennit" and "Zennit" or "the group") .. ": " .. short)
+                    or (SIDE_OWN[side] .. " " .. ORDINAL[tier] .. " win: " .. short)
+                local show = isReached or admin -- the title gives the chapter away, so it waits for the race
+                local look = { tag = finale and "FINALE" or (ORDINAL[tier]:upper() .. " WIN"), title = show and short or "???" }
+                if isReached then
+                    look.border, look.titleColor, look.glow = color, color, finale
+                    look.state, look.stateColor = tier <= done and "THIS SEASON" or "REACHED", "green"
+                    node.tip = { full, "Click to play." }
+                elseif not written then
+                    look.border, look.titleColor, look.state, look.stateColor = "line", "line", "NOT WRITTEN", "line"
+                    node.tip = { show and full or "???", "This chapter is not written yet." }
+                elseif tier == done + 1 then
+                    look.border, look.pulse, look.state, look.stateColor = "amber", true, "NEXT WIN", "amber"
+                    look.titleColor = admin and "dim" or "line"
+                    node.tip = { show and full or "???", "Unlocks when " .. (side == "zennit" and "Zennit" or "the group") ..
+                        " wins the week." .. (admin and " (Admin: click to play.)" or "") }
+                else
+                    look.border, look.state, look.stateColor = "line", admin and "ADMIN" or "LOCKED", admin and "amber" or "line"
+                    look.titleColor = admin and "dim" or "line"
+                    node.tip = { show and full or "???", "Not reached yet." .. (admin and " (Admin: click to play.)" or "") }
+                end
+                node.playable = written and show or false
+                setNode(node, look)
+                -- the line into this node is lit once the node is
+                local link = tier == 1 and col.drop or col.links[tier - 1]
+                paintTexture(link, isReached and color or "line")
+                if tier == 1 then paintTexture(bars[side], isReached and color or "line") end
+            end
         end
     end
 end
