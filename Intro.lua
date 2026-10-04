@@ -24,10 +24,6 @@ local function look()
     return chosen
 end
 
-local function artPath(si)
-    return MEDIA .. LOOKS[look()] .. si
-end
-
 -- With the music bed the clip is intro_<n>; without it, intro_<n>_voice.
 local function audioPath(si)
     return MEDIA .. "intro_" .. si .. (ST.db.settings.introMusic == false and "_voice" or "") .. ".ogg"
@@ -80,6 +76,11 @@ local scenes = {
     { chapter = 11, label = "Free", dur = 30.00 + PAUSE, text = [=[The Ritual let go. Zennit felt it as a small click, like a lock turning in a door he had never noticed. For the first time in his life, he was summoned by nobody. He stood in the cellar, free. Then he did the only thing he could think of, and summoned the party to his place, for cake. They accepted. It was, by general agreement, a very small cake.]=] },
 }
 
+-- A scene can borrow another scene's picture (the Ledger scene does).
+local function artPath(si)
+    return MEDIA .. LOOKS[look()] .. (scenes[si].art or si)
+end
+
 -- A chapter is a run of scenes that plays on its own and ends with the fade to "THE END".
 local firstOf, lastOf = {}, {}
 for i, s in ipairs(scenes) do
@@ -87,6 +88,15 @@ for i, s in ipairs(scenes) do
     firstOf[s.chapter] = firstOf[s.chapter] or i
     lastOf[s.chapter] = i
 end
+
+-- The scenes that have a narration clip and a picture of their own: everything above.
+local RECORDED = #scenes
+-- The last scene is not recorded: "The Index today" (Ledger.lua) is written from the season tree each time it plays.
+-- It borrows the picture of the latest chapter the season has reached, has no narration (its lines are typed to the
+-- key clicks alone), and follows the intro's ten scenes, or plays on its own as /sc intro now.
+local EPI = RECORDED + 1
+scenes[EPI] = { chapter = "now", label = "The Index today", dur = 30, text = "", silent = true }
+firstOf.now, lastOf.now = EPI, EPI
 
 -- Scene lengths come from IntroCues.lua (measured from the narration); the table above is the fallback.
 local ENDING = ST.introEnding or 3.2 -- after the last line: the music fades out, the picture fades to black, "THE END"
@@ -97,11 +107,14 @@ for i, s in ipairs(scenes) do
     starts[i] = total
     total = total + s.dur
 end
-local lo, hi = 1, lastOf[1] -- the scenes of the chapter being played
+-- The scenes of the chapter being played, in order. The intro is followed by the Ledger scene.
+local playlist = {}
+for i = firstOf[1], lastOf[1] do playlist[#playlist + 1] = i end
+local lo, hi = 1, lastOf[1]
 
 -- The story after the intro is a race: z<n> is the chapter for Zennit's nth win of the season, g<n> for the group's.
 -- The fifth win of either side is that side's finale. victory and group are the first win of each.
-local CHAPTER_KEYS = { victory = 2, group = 3, z1 = 2, g1 = 3, z2 = 4, g2 = 5, z3 = 6, g3 = 7, z4 = 8, g4 = 9, z5 = 10, g5 = 11 }
+local CHAPTER_KEYS = { now = "now", victory = 2, group = 3, z1 = 2, g1 = 3, z2 = 4, g2 = 5, z3 = 6, g3 = 7, z4 = 8, g4 = 9, z5 = 10, g5 = 11 }
 function Intro.HasChapter(key) return firstOf[CHAPTER_KEYS[key] or 0] ~= nil end
 
 -- Chapter number -> its key (z1, g1, ...); the intro (chapter 1) has none.
@@ -120,6 +133,35 @@ end
 
 local function endTime() return starts[hi] + scenes[hi].dur end
 
+-- Where a scene sits in the chapter being played (nil if it is not in it).
+local function posOf(si)
+    for k, i in ipairs(playlist) do
+        if i == si then return k end
+    end
+end
+
+-- Lays out the chapter that scene `chapter` belongs to: its scenes in order, and for the intro the Ledger scene
+-- after them (the intro's own ending fades out only when it is the last thing played).
+local function setChapter(chapter)
+    playlist = {}
+    for i = firstOf[chapter], lastOf[chapter] do playlist[#playlist + 1] = i end
+    if chapter == 1 then playlist[#playlist + 1] = EPI end
+    local epi = posOf(EPI)
+    if epi then
+        local W = ST.Ledger.State()
+        local sentences, cues, length = ST.Ledger.Timed(ST.Ledger.Build(W))
+        local key = ST.Ledger.ArtKey(W.season)
+        local scene = scenes[EPI]
+        scene.sentences, scene.cues, scene.length = sentences, cues, length
+        scene.art = key and lastOf[CHAPTER_KEYS[key]] or 8 -- the latest chapter reached, else "The week"
+        scene.dur = length + PAUSE + ENDING
+        -- chained after the intro: scene 10 ends where its narration does, and no "THE END" until the Ledger's
+        local before = playlist[epi - 1]
+        if before then starts[EPI] = starts[before] + scenes[before].dur - ENDING end
+    end
+    lo, hi = playlist[1], playlist[#playlist]
+end
+
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
 local onClose -- runs once when the viewer is next closed (Intro.Play's whenClosed)
 local pictureH, pictureW, buttonsWidth = 300, 533, 700
@@ -130,10 +172,10 @@ local function fmt(sec)
 end
 
 local function sceneAt(sec)
-    for i = #scenes, 1, -1 do
-        if sec >= starts[i] then return i end
+    for k = #playlist, 1, -1 do
+        if sec >= starts[playlist[k]] then return playlist[k] end
     end
-    return 1
+    return playlist[1]
 end
 
 -- Index of the key phrase showing `rel` seconds into a scene, and how long it has been up; nil if none.
@@ -214,7 +256,7 @@ end
 
 -- natural: the scene advanced by itself, so let the previous clip finish instead of cutting it.
 local function playClip(si, natural)
-    if ST.db.settings.introMute or clipScene == si then return end
+    if ST.db.settings.introMute or clipScene == si or scenes[si].silent then return end
     if natural then
         clipToken = (clipToken or 0) + 1
         clipHandle = nil
@@ -250,7 +292,7 @@ local function show(sec)
         lastCue = nil
         if playing then
             playClip(si, true)
-            if si > lo and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
+            if posOf(si) > 1 and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
         end
     end
     if fi ~= shownFrame then
@@ -292,8 +334,8 @@ local function show(sec)
     if mode == "full" then
         -- the whole narration, a sentence at a time, typed out in the terminal box under the picture
         tape:Hide()
-        local sentences = ST.introSentences and ST.introSentences[si] or { { t = 0, text = scenes[si].text } }
-        local text, index, elapsed, span = Intro.SentenceAt(sentences, rel, ST.introLength and ST.introLength[si])
+        local sentences = scenes[si].sentences or ST.introSentences and ST.introSentences[si] or { { t = 0, text = scenes[si].text } }
+        local text, index, elapsed, span = Intro.SentenceAt(sentences, rel, scenes[si].length or ST.introLength and ST.introLength[si])
         if text then
             if index ~= lastCue then
                 lastCue = index
@@ -308,7 +350,7 @@ local function show(sec)
         end
     elseif mode == "key" then
         -- just the punchlines, flashed over the picture
-        local cues = ST.introCues and ST.introCues[si]
+        local cues = scenes[si].cues or ST.introCues and ST.introCues[si]
         local index, elapsed = Intro.CueAt(cues, rel)
         if index then
             tape:Show()
@@ -330,7 +372,7 @@ local function show(sec)
         stopKeys()
     end
 
-    status:SetText(string.format("Scene %d/%d: %s     %s / %s%s", si - lo + 1, hi - lo + 1, scenes[si].label,
+    status:SetText(string.format("Scene %d/%d: %s     %s / %s%s", posOf(si), #playlist, scenes[si].label,
         fmt(sec - starts[lo]), fmt(endTime() - starts[lo]), audioMissing and "     (narration files missing)" or ""))
 end
 
@@ -488,14 +530,14 @@ local function build()
     status:SetPoint("BOTTOMLEFT", 14, 42)
 
     nextX = 12
-    button(frame, "<", 30, function() seek(starts[math.max(lo, sceneAt(t) - 1)]) end)
+    button(frame, "<", 30, function() seek(starts[playlist[math.max(1, posOf(sceneAt(t)) - 1)]]) end)
     playBtn = button(frame, "Play", 70, function()
         if t >= endTime() - 0.05 then seek(starts[lo]) end
         setPlaying(not playing)
     end)
     button(frame, ">", 30, function()
-        local nxt = sceneAt(t) + 1
-        if nxt <= hi then seek(starts[nxt]) end
+        local nxt = playlist[posOf(sceneAt(t)) + 1]
+        if nxt then seek(starts[nxt]) end
     end)
     button(frame, "Restart", 70, function() seek(starts[lo]) setPlaying(true) end)
     button(frame, "Close", 60, function() frame:Hide() end)
@@ -575,7 +617,7 @@ function Intro.Check()
             ST.print("cannot play: " .. name:match("[^\\]+$"))
         end
     end
-    for i = 1, #scenes do
+    for i = 1, RECORDED do
         try(MEDIA .. "intro_" .. i .. ".ogg")
         try(MEDIA .. "intro_" .. i .. "_voice.ogg")
     end
@@ -602,13 +644,13 @@ function Intro.Toggle(arg)
     else
         si = tonumber(arg) or 1
     end
-    si = math.max(1, math.min(#scenes, si))
+    si = math.max(1, math.min(#scenes, si)) -- #scenes is the Ledger scene
     -- a chapter can only be played once the season has reached it (the admin can play any)
     local chapterKey = Intro.KeyOf[scenes[si].chapter]
     if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) then
         return ST.print("that chapter of the story has not been reached yet")
     end
-    lo, hi = firstOf[scenes[si].chapter], lastOf[scenes[si].chapter]
+    setChapter(scenes[si].chapter)
     shownScene = 0
     seek(starts[si])
     setPlaying(true)
