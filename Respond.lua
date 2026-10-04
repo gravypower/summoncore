@@ -37,7 +37,8 @@ function Respond.Describe(ev)
     local r = ev.response
     if not r then return nil end
     if r.result == "accepted" then return "accepted" end
-    if r.result == "refused" then return "refused" end
+    if r.result == "refused" then return "refused (-" .. (ev.points or 0) .. ")" end
+    if r.result == "excused" then return "refused (on his list)" end
     if r.result == "owed" then return "owes " .. SILVER .. " silver" end
     if r.result == "paid" then return "paid " .. SILVER .. " silver" end
     if r.result == "won" then return string.format("won the dice %d-%d", r.zroll, r.sroll) end
@@ -50,12 +51,50 @@ local function plural(n) return n == 1 and "" or "s" end
 function Respond.Announce(ev, resp)
     local who, pts = ev.target, ev.points or 0
     local r = resp.result
-    if r == "accepted" then return string.format("%s accepted the summon from %s. +%d point%s.", who, ev.caster, pts, plural(pts)) end
-    if r == "refused" then return string.format("%s refused the summon from %s. No points.", who, ev.caster) end
+    local bonus = ""
+    if resp.listed and ST.Store.Lands({ response = resp }) then
+        bonus = string.format(" It is on his list: +%d point%s toward his week off.", pts, plural(pts))
+    end
+    if r == "accepted" then return string.format("%s accepted the summon from %s. +%d point%s.%s", who, ev.caster, pts, plural(pts), bonus) end
+    if r == "refused" then return string.format("%s refused the summon from %s. No points for them, and %s loses %d point%s toward his goal.", who, ev.caster, who, pts, plural(pts)) end
+    if r == "excused" then return string.format("%s refused the summon from %s. No points, but the destination is on his list, so it costs him nothing.", who, ev.caster) end
     if r == "owed" then return string.format("%s demands %d silver, in cash, with no receipt. The points land when he says it was paid.", who, SILVER) end
-    if r == "paid" then return string.format("%s says the %d silver was paid. +%d point%s.", who, SILVER, pts, plural(pts)) end
-    if r == "won" then return string.format("%s won the dice (%d to %d): the summon does not count.", who, resp.zroll, resp.sroll) end
-    if r == "lost" then return string.format("%s lost the dice (%d to %d): the summon counts. +%d point%s.", who, resp.zroll, resp.sroll, pts, plural(pts)) end
+    if r == "paid" then return string.format("%s says the %d silver was paid. +%d point%s.%s", who, SILVER, pts, plural(pts), bonus) end
+    if r == "won" then return string.format("%s won the dice (%d to %d): the summon does not count, and he gains %d point%s toward his week off.", who, resp.zroll, resp.sroll, pts, plural(pts)) end
+    if r == "lost" then return string.format("%s lost the dice (%d to %d): the summon counts. +%d point%s.%s", who, resp.zroll, resp.sroll, pts, plural(pts), bonus) end
+end
+
+-- Zennit's secret list for the week: destination words kept on his client only (never synced or exported).
+function Respond.List()
+    ST.db.settings.zennitList = ST.db.settings.zennitList or {}
+    return ST.db.settings.zennitList
+end
+
+function Respond.ListAdd(text)
+    text = (text or ""):match("^%s*(.-)%s*$")
+    if text == "" then return false end
+    local list = Respond.List()
+    list[#list + 1] = text
+    return true
+end
+
+function Respond.ListRemove(n)
+    return table.remove(Respond.List(), tonumber(n) or 0) ~= nil
+end
+
+function Respond.ListClear()
+    local list = Respond.List()
+    for i = #list, 1, -1 do list[i] = nil end
+end
+
+-- Is the summon's destination (zone or subzone name) on the list? A word on the list matches any part of the name.
+function Respond.OnList(ev)
+    local zone = ev.mapID and C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(ev.mapID)
+    local where = ((ev.subzone or "") .. " " .. ((zone and zone.name) or "")):lower()
+    for _, word in ipairs(Respond.List()) do
+        if where:find(word:lower(), 1, true) then return true end
+    end
+    return false
 end
 
 -- Summons of this character that still need an answer (none yet, or owing the silver), newest first.
@@ -77,7 +116,8 @@ local refreshSurfaces
 function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
     if not ev or not ST.Store.RESULTS[result] then return nil end
-    local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0, time = time() }
+    local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0, time = time(),
+        listed = Respond.OnList(ev) or nil }
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
@@ -249,10 +289,13 @@ local function render(s, stage, extra)
     local id, ev = s.current.id, s.current.ev
     s.stage = stage
     if stage == "choose" then
-        s.text:SetText(summonText(ev) .. "\n\nHow will you deal with it?")
+        local free = Respond.OnList(ev)
+        local cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
+            string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))
+        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\n\nHow will you deal with it?")
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
-            { "Refuse", function() Respond.Decide(id, "refused") end },
+            { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },
             { "Demand " .. SILVER .. " silver, in cash, no receipt", function() Respond.Decide(id, "owed") end },
             { "Suggest dice (1-100)", function() render(s, "roll") end },
         })

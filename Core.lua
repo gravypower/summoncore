@@ -149,7 +149,20 @@ function commands.hub()
 end
 
 -- Test switch: makes this character behave as Zennit's so the gag can be tried solo.
-function commands.zenit()
+function commands.zenit(rest)
+    local sub, arg = (rest or ""):match("^(%S*)%s*(.-)$")
+    if sub == "list" then
+        -- his secret list: /st zennit list [add <place> | remove <n> | clear]
+        local R = ST.Respond
+        local verb, what = arg:match("^(%S*)%s*(.-)$")
+        if verb == "add" then print_(R.ListAdd(what) and ("added '" .. what .. "'") or "add what?")
+        elseif verb == "remove" then print_(R.ListRemove(what) and "removed" or "no such entry")
+        elseif verb == "clear" then R.ListClear() print_("list cleared") end
+        local list = R.List()
+        print_(#list == 0 and "secret list is empty" or "secret list: " .. table.concat(list, "; "))
+        if ST.Hub then ST.Hub.Refresh() end
+        return
+    end
     ST.db.settings.zenitTest = not ST.db.settings.zenitTest
     print_("Zennit test mode " .. (ST.db.settings.zenitTest and "on" or "off"))
 end
@@ -251,7 +264,8 @@ local HELP = {
     "/st export / /st import - copy-paste strings of the summon log",
     "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
-    "/st respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
+    "/st zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
+    "/st respond [test] -Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/st gag - preview the Zennit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",
     "/st undo - remove the latest summon    /st debug - toggle detector messages",

@@ -202,7 +202,25 @@ local function buildAnswer(f)
     button(f, "< Previous", 16, -300, 110, function() go(-1) end)
     button(f, "Next >", 132, -300, 110, function() go(1) end)
 
+    -- his secret list: refusing a summon to one of these costs him nothing (kept on this client only)
+    label(f, "Secret list", 360, -304, "GameFontNormalSmall")
+    local entry = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
+    entry:SetSize(150, 22)
+    entry:SetPoint("TOPLEFT", 440, -301)
+    entry:SetAutoFocus(false)
+    local function addEntry()
+        if ST.Respond.ListAdd(entry:GetText()) then entry:SetText("") end
+        entry:ClearFocus()
+        Hub.Refresh()
+    end
+    entry:SetScript("OnEnterPressed", addEntry)
+    button(f, "Add", 600, -300, 50, addEntry)
+    button(f, "Clear", 654, -300, 56, function() ST.Respond.ListClear() Hub.Refresh() end)
+    local listText = label(f, "", 360, -326, "GameFontDisableSmall")
+
     return function()
+        local list = ST.Respond.List()
+        listText:SetText(#list == 0 and "empty: refusing always costs points" or table.concat(list, ", "))
         local pending = ST.Respond.Pending()
         local current = surface.current
         -- keep what is on show (a summon being answered, or its outcome) until the user moves on

@@ -35,6 +35,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
 | `/st intro [scene]` | Play the illustrated intro, "Zennit and the Index" |
 | `/st clip [category|file]` | List or play voice clips from `Media/clips` |
+| `/st zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Answer tab |
 | `/st respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
 | `/st gag` | Preview the Zennit gag |
 | `/st zenit` | Toggle Zennit test mode on this character |

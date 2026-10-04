@@ -35,11 +35,24 @@ end
 
 -- Zennit's answer to a summon of him (set by his client, carried by sync): { result, zroll, sroll, time }.
 -- A summon still counts unless it was refused, still owes the 50 silver, or he won the dice.
-Store.RESULTS = { accepted = true, refused = true, owed = true, paid = true, won = true, lost = true }
-local NO_POINTS = { refused = true, owed = true, won = true }
+-- "excused" is a refusal of a destination on his secret list: no points for the summoner and no penalty for him.
+Store.RESULTS = { accepted = true, refused = true, excused = true, owed = true, paid = true, won = true, lost = true }
+local NO_POINTS = { refused = true, excused = true, owed = true, won = true }
 
 function Store.Lands(ev)
     return not (ev.response and NO_POINTS[ev.response.result])
+end
+
+-- Points toward Zennit's goal (a week off from being summoned), from the summon's worth P (draft rules):
+--   he wins the dice: +P        a plain refusal: -P
+--   a summon that lands at a place on his list: +P bonus (response.listed, set by his client)
+function Store.Goal(ev)
+    local r, p = ev.response, ev.points or 0
+    if not r then return 0 end
+    if r.result == "won" then return p end
+    if r.result == "refused" then return -p end
+    if r.listed and Store.Lands(ev) then return p end
+    return 0
 end
 
 function Store.SetResponse(id, resp)
@@ -114,7 +127,9 @@ function Store.Tallies()
         local c = row(ev.caster)
         c.cast = c.cast + 1
         if Store.Lands(ev) then c.points = c.points + (ev.points or 0) end
-        row(ev.target).received = row(ev.target).received + 1
+        local tr = row(ev.target)
+        tr.received = tr.received + 1
+        tr.points = tr.points + Store.Goal(ev)
         for _, a in ipairs(ev.assistants or {}) do row(a).assisted = row(a).assisted + 1 end
     end
     return t

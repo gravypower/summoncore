@@ -513,6 +513,31 @@ add("points only count for summons that land", function()
         string.format("cast=%d points=%d landed=%d", tally.cast, tally.points, stats.cast)
 end)
 
+add("a refusal costs Zennit the points unless the place is on his list", function()
+    local a = newClient("Alpha")
+    local plain = cast(a, 950, true, { target = "Zennit", response = { result = "refused", zroll = 0, sroll = 0, time = BASE + 5 } })
+    local free = cast(a, 951, true, { target = "Zennit", response = { result = "excused", zroll = 0, sroll = 0, time = BASE + 5 } })
+    local won = cast(a, 952, true, { target = "Zennit", response = { result = "won", zroll = 80, sroll = 20, time = BASE + 5 } })
+    local listed = cast(a, 953, true, { target = "Zennit", response = { result = "accepted", zroll = 0, sroll = 0, time = BASE + 5, listed = true } })
+    -- the listed flag survives the wire format
+    local back = select(2, Sync.Decode(Sync.Encode(listed, a.db.events[listed])))
+    if not (back and back.response and back.response.listed) then return false, "listed flag lost in the codec" end
+    local onList, offList, tally
+    with(a, function()
+        ST.Respond.ListClear()
+        ST.Respond.ListAdd("Stormwind")
+        onList = ST.Respond.OnList({ subzone = "Trade District", mapID = 1453 }) -- zone name needs the client's map data
+        offList = ST.Respond.OnList({ subzone = "Mudsprocket", mapID = 0 })
+        ST.Respond.ListClear()
+        tally = ST.Store.Tallies().Zennit
+    end)
+    local pts = a.db.events[plain].points
+    -- refused -P, excused 0, dice won +P, accepted at a listed place +P
+    local want = -pts + pts + pts
+    return offList == false and onList ~= nil and tally.points == want and not Store.Lands(a.db.events[free])
+        and won ~= nil, string.format("Zennit points=%d (expected %d), off-list=%s", tally.points, want, tostring(offList))
+end)
+
 add("only Zennit can answer for himself, and a newer answer wins", function()
     local a, z = newClient("Alpha"), newClient("Zennit")
     local id = cast(a, 900, false, { target = "Zennit" })
