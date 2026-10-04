@@ -7,6 +7,7 @@
 
 Core.lua
 Theme.lua
+Voice.lua
 Scoring.lua
 ClipList.lua
 Clips.lua

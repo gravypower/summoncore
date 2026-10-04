@@ -27,6 +27,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
 | Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
 | Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
+| Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; A, B, C and D built; playtest |
 
 ## Entries
 
@@ -536,6 +537,91 @@ playtest: B adds reading to chat the group may not want, and E is the largest pi
 - Does Zennit say which ending he wanted? Does the clerk ending feel like a prize to him?
 - Do people replay chapters, or skip them once heard?
 
+### 2026-10-04 · Lens of Surprise, with the Lens of Curiosity: week 9
+
+**The questions (paraphrased):** what will surprise the players, in the rules, the story and the people? What questions
+does the game put in their heads, and are they worth answering? Surprise wears off, so the real test is a surprise that
+still works the tenth time.
+
+**Where surprise comes from, as built** (`Respond.lua`, `Gag.lua`, `Clips.lua`, `Intro.lua`, `Ledger.lua`)
+
+| Source | Who it surprises | Variants shipped | Shelf life |
+|---|---|---|---|
+| Zennit's choice of answer (accept, refuse, silver, dice) | The summoner | Four, picked by a person | **Does not wear off**: it is a friend |
+| The dice | Everyone in chat | A fresh pair of numbers each time | Long, but only the numbers change |
+| A place on his secret list | The group, when it hits ("It is on his list: +3") | One per place on the list | Each place once, then it is known |
+| A chapter | Everyone | 10, hidden as "???" until the race reaches them | Once each; season 2 is a replay |
+| "The Index today": a named moment, the silver | The group | Worked out from the log | Fresh each time the facts change |
+| The gag on the wrong tab | Zennit, or the party | **1** animation, 1 recording | A few viewings |
+| Voice clips: `wag`, `zenit_land`, `zenit_refuse`, `zenit_win`, `ritual`, `narrator_weekopen` | The player who triggers them | **0** recorded (`ClipList.lua` is empty) | None yet: every random pick picks silence |
+| The Index's chat lines | Nobody | About 11 templates | See finding 3 |
+
+**Findings**
+1. **The surprises are in the people and the story, which is where a friend group wants them.** Zennit's answers and the
+   reveals in the story are the two sources that do not run out in a season, and neither is a random table.
+2. **The authored randomness is empty.** The addon picks a random clip per category and avoids repeating, but no clip is
+   recorded and only one gag exists, so a random pick is the same pick. The README says some lines are meant to surprise
+   Zennit; none can yet.
+3. **The lines that repeat are wallpaper by week 9.** A normal season has about 6.7 weeks of play and 3 summons of him a
+   week, so about 20 summons. Each prints five lines (the briefing, "Summon logged", "Week:", his answer, "Week:") from
+   fewer than a dozen templates: about 100 lines, each template seen 10 to 20 times, none varying but the numbers.
+4. **Every week plays under the same rules.** Apart from the catch-up edge, week 9 is week 1 with different dice. The
+   Interest Curve entry found the same thing from the other side (a flat week); a surprise inside the rules would help both.
+5. **The list is the best-designed surprise we have and it is a one-shot.** It is secret, it reveals itself in front of
+   the group at the moment it hits, and it gives Zennit something to lose and win. After a place is revealed the group
+   knows it, and nothing in the game remembers.
+6. **We do not know what surprises Zennit.** He sees every summon from the receiving end; the one thing he does not choose
+   is who, where and when. The playtest should ask.
+
+**Stale note found in passing:** the README's Status table said no place is marked `remote`, so the Far Flung badge could not
+be earned. Ten far-flung maps have been marked for a while (from memory, to be confirmed with `/sc where`); the row is fixed.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Pools of lines**: three to five variants for each line that repeats most (his answers, "Summon logged", the week's result, the last die), same facts, picked at random without an immediate repeat | 2, 3 | Wording and one small helper; more flavour in chat |
+| B | **A whim of the week**: each Monday the Index draws one of about eight small rule twists (dungeons count double, ties go to the group, a helper adds +10), announced at login and shown in the briefing; it follows from the week number, so every client agrees and nobody keeps books | 4 | A rule layer: wording, the balance simulation, and a toggle |
+| C | **A recording sheet**: the lines to record for each clip category, so the group can fill `Media/clips` in one evening | 2 | A page of wording; no code |
+| D | **The list remembers**: when a place on his list hits a second time, the Index says so ("Darnassus again. The Index is beginning to see a pattern.") | 5 | Wording and a counter on the log |
+
+**Our answer:** build all four.
+
+**Built**
+- **A, pools of lines** (`Voice.lua`). His seven answers, "Summon logged", the "Week:" line, the last die and the week's result
+  each come in three variants with the same facts; one is picked at random and never the one before. The self-test checks that a
+  variant is never repeated, that all three get used, and that every answer variant still names its numbers.
+- **B, the whim of the week.** About half the weeks the Index draws one of four twists from the week number (the same on every
+  client, nothing synced): *distracted* (his edge 5 lower), *attentive* (5 higher), *a helpers' feast* (+8 a helper) or *the
+  helpers are tired* (+2). I measured each in the week model before choosing the size (group's chance, quiet / normal / trying):
+
+  | Whim | Quiet | Normal | Trying |
+  |---|---|---|---|
+  | A plain week | 15% | 27% | 63% |
+  | Distracted (edge 5) | 19% | 32% | 69% |
+  | Attentive (edge 15) | 12% | 23% | 58% |
+  | A helpers' feast (+8) | 15% | 31% | 70% |
+  | The helpers are tired (+2) | 15% | 24% | 56% |
+
+  Each moves a normal week 3 to 5 points either way, so the deck is about neutral and no week is much easier than another. I
+  left out whims that change the dice (a fourth die moves a trying week from 63% to 45%, a second from 63% to 83%): too large for
+  a week to survive, and he can already close the Index. Weeks off have none. `Week.RULES.whims = false` turns the layer off.
+  It is said at login, in the briefing, in "The Index today" and in `/sc week`.
+- **C, the recording sheet** (`design/recording-sheet.md`): the six clip categories, what triggers each and who hears it, and six
+  or so lines to start from, with how to convert, name and install the takes. It makes the dormant random picks real. It is in
+  the repo so it is not lost, and so are the takes, which means Zennit can read and hear them there.
+- **D, the list remembers.** When a place on his list comes up a second time, the answer line adds "Darnassus again. The Index is
+  beginning to see a pattern." (then "for the third time"). Never the first time, so the list keeps its secret until it hits. It
+  reads only what his answers already say (`listed`), so every client agrees.
+
+**To decide before building**
+- How much extra flavour in chat before it becomes the reading the group dislikes? (Asked at the playtest.)
+
+**To watch in playtests**
+- Which lines does the group stop reading? Which do they repeat to each other?
+- Does Zennit use his list to surprise, or does he forget it is there?
+- Does anyone ask what next week's rules will be?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -551,3 +637,4 @@ playtest: B adds reading to chat the group may not want, and E is the largest pi
 | 2026-10-04 | Keep five weekly wins to a finale (a season of about 11 weeks at normal effort) until a real season shows how long it takes | Interest Curve | Simulated length is long, but the group's real pace is unknown; shortening later is one constant (`Week.WINS`) |
 | 2026-10-04 | No rule change for Skill and Chance; say so when his last die is spent | Skill and Chance | A week is mostly chance and a season mostly skill, and the group's best order depends on how he rolls; the moment their ordering pays off was invisible |
 | 2026-10-04 | The Index remembers named moments, the silver he is paid, and a keepsake of each finished season; players named by character | Story and Emotion | The personal material was in the log and scrolled away; naming players is what a friend group repeats |
+| 2026-10-04 | Pools of lines, a whim of the week (four small twists, about half the weeks), a recording sheet and a list that remembers | Surprise | The surprises were in the people and the story only; the repeating lines were wallpaper by week 9 and every week played under the same rules |

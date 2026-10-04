@@ -58,7 +58,44 @@ Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3
     -- Catch-up (design/lenses.md, the Interest Curve): when one side is this many wins ahead in the season, the Index
     -- moves Zennit's edge on the dice by this much for the side that is behind, and the other way for the side ahead.
     -- A lead of 1 changes nothing; a lead past the last step uses the last step.
-    catchup = { [2] = 5, [3] = 10 } }
+    catchup = { [2] = 5, [3] = 10 },
+    -- The whim of the week (design/lenses.md, Surprise): about half the weeks, the Index draws one small twist.
+    whims = true }
+
+-- Each whim moves one rule for one week, by a few points of the group's chance (about +6 or -5 in a normal week), so no
+-- week is much easier or harder than another. `show` is the rule whose number the text names, when it does.
+Week.WHIMS = {
+    distracted = { name = "The Index is distracted", rules = { edge = -5 }, text = "Zennit's edge on the dice is 5 lower this week." },
+    attentive = { name = "The Index is attentive", rules = { edge = 5 }, text = "Zennit's edge on the dice is 5 higher this week." },
+    feast = { name = "A helpers' feast", rules = { helperBonus = 3 }, show = "helperBonus",
+        text = "Each helper adds +%d to the summoner's roll this week." },
+    tired = { name = "The helpers are tired", rules = { helperBonus = -3 }, show = "helperBonus",
+        text = "Each helper adds only +%d to the summoner's roll this week." },
+}
+-- Half the weeks have none. The week number picks one, the same on every client, so nothing is synced or kept.
+local DECK = { false, "distracted", false, "feast", false, "attentive", false, "tired" }
+
+function Week.Whim(start)
+    if not Week.RULES.whims or not Week.NewRules(start) then return nil end
+    local n = math.floor((start - MONDAY) / LENGTH)
+    local x = (n * 1103515245 + 12345) % 2147483648
+    local id = DECK[math.floor(x / 65536) % #DECK + 1]
+    return id and Week.WHIMS[id] or nil, id
+end
+
+-- A rule's value for the week starting at `start`: its base value, moved by the week's whim (never below 0).
+function Week.Rule(name, start)
+    local base = name == "edge" and ST.Respond.EDGE or Week.RULES[name]
+    local whim = Week.Whim(start)
+    return math.max(0, base + (whim and whim.rules[name] or 0))
+end
+
+-- The week's whim in one sentence ("The Index is distracted. Zennit's edge on the dice is 5 lower this week."), or nil.
+function Week.WhimLine(start)
+    local whim = Week.Whim(start)
+    if not whim then return nil end
+    return whim.name .. ". " .. (whim.show and string.format(whim.text, Week.Rule(whim.show, start)) or whim.text)
+end
 
 function Week.NewRules(start)
     return start >= Week.RULES.from
@@ -171,7 +208,7 @@ end
 -- the weeks before `start`, so it does not change during the week. Second value: how far it moved (negative: in the
 -- group's favour).
 function Week.Edge(start)
-    local base = ST.Respond.EDGE
+    local base = Week.Rule("edge", start)
     if not Week.NewRules(start) then return base, 0 end
     local season = Week.Season(start)
     local lead = season.zennit - season.group -- Zennit's lead in weekly wins
@@ -187,7 +224,7 @@ end
 -- What the summoner adds to their dice roll for this summon: a bonus per helper (0 under the old rules).
 function Week.HelperBonus(ev)
     if not Week.NewRules(Week.Start(ev.time)) then return 0 end
-    return math.min(#(ev.assistants or {}), Week.RULES.helpersMax) * Week.RULES.helperBonus
+    return math.min(#(ev.assistants or {}), Week.RULES.helpersMax) * Week.Rule("helperBonus", Week.Start(ev.time))
 end
 
 -- The score for the week starting at `start`: { start, group, zennit, summons, winner, over, new, counted, extra,
@@ -310,8 +347,19 @@ function Week.Season(now)
     return s
 end
 
+-- Says once a week what the whim of this week is (nothing in a week off, or when there is none).
+function Week.AnnounceWhim()
+    local settings = ST.db and ST.db.settings
+    local start = Week.Start()
+    if not settings or settings.whimSeen == start then return end
+    local line = Week.WhimLine(start)
+    if not line or Week.IsOff(start) then return end
+    settings.whimSeen = start
+    ST.print("|cffffd100This week's whim:|r " .. line)
+end
+
 -- Says once when a finished week has been won, and points to that win's chapter of the story.
-function Week.Check()
+local function checkLastWeek()
     if not ST.db or not ST.db.settings then return end
     Week.Freeze()
     local last = Week.Score(Week.Start() - LENGTH)
@@ -334,9 +382,15 @@ function Week.Check()
         end
     end
     if last.winner == "zennit" then
-        ST.print("|cffffd100Zennit won the week|r (" .. lines(last) .. "). He is on leave until next Monday." .. story)
+        ST.print(ST.Voice.Say("week.zennit", {
+            "|cffffd100Zennit won the week|r (%s). He is on leave until next Monday.%s",
+            "|cffffd100Zennit has won the week|r (%s). He is on leave until Monday, and the Index has been told not to look for him.%s",
+            "|cffffd100The week was Zennit's|r (%s). He is on leave until next Monday.%s" }, lines(last), story))
     else
-        ST.print("The group won the week (" .. lines(last) .. "). Zennit is back on the list." .. story)
+        ST.print(ST.Voice.Say("week.group", {
+            "The group won the week (%s). Zennit is back on the list.%s",
+            "The group took the week (%s). Zennit is back on the list, and has been told.%s",
+            "The week went to the group (%s). Zennit is back on the list.%s" }, lines(last), story))
     end
     ST.print(string.format("Season: Zennit %d of %d, the group %d of %d.", season.zennit, Week.WINS, season.group, Week.WINS))
     -- a finale just landed: the Index's keepsake of the season, with who was there
@@ -346,6 +400,12 @@ function Week.Check()
             for _, line in ipairs(seasons[1].lines) do ST.print(line) end
         end
     end
+end
+
+-- At login: how the last week ended, then this week's whim.
+function Week.Check()
+    checkLastWeek()
+    Week.AnnounceWhim()
 end
 
 -- Who is ahead in a week's score, and by how much: "group" or "zennit" (a tie is his, so "zennit" with 0).
@@ -373,8 +433,16 @@ function Week.LastDie(ev, you)
     local start = Week.Start(ev.time)
     if ev.fake or (res ~= "won" and res ~= "lost") or Week.DiceLeft(start) ~= 0 then return nil end
     if Week.IsOff(start) or Week.IsClosed(start) then return nil end
-    if you then return "That was your last die this week. From here you can only accept, refuse or ask for the silver." end
-    return "That was Zennit's last die this week. Every summon from here is certain: he can only accept, refuse or ask for the silver."
+    if you then
+        return ST.Voice.Say("lastdie.you", {
+            "That was your last die this week. From here you can only accept, refuse or ask for the silver.",
+            "That was your last die of the week. From here it is accept, refuse or the silver.",
+            "Your dice are spent for the week. From here you can only accept, refuse or ask for the silver." })
+    end
+    return ST.Voice.Say("lastdie.them", {
+        "That was Zennit's last die this week. Every summon from here is certain: he can only accept, refuse or ask for the silver.",
+        "That was Zennit's last die of the week. Every summon from here is certain: he can only accept, refuse or ask for the silver.",
+        "Zennit's dice are spent for the week. Every summon from here is certain: he can only accept, refuse or ask for the silver." })
 end
 
 -- One line on where the week starting at `start` stands (default: this week), for the chat after a summon of Zennit
@@ -388,7 +456,8 @@ function Week.StatusLine(start, you)
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
     local edge, moved = Week.Edge(start)
     if moved ~= 0 and not r.closed then parts[#parts + 1] = string.format("his dice edge is +%d", edge) end
-    return "Week: " .. table.concat(parts, ", ") .. "."
+    return ST.Voice.Say("week.status", { "Week: %s.", "The Index's tally for the week: %s.", "Standing: %s." },
+        table.concat(parts, ", "))
 end
 
 -- What the caster should know as a ritual on `target` begins, or nil when it is not Zennit or the old rules apply:
@@ -411,11 +480,13 @@ function Week.Briefing(target)
     local edge, moved = Week.Edge(start)
     local text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
         Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
-        string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.RULES.helperBonus))
+        string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.Rule("helperBonus", start)))
     if moved ~= 0 and dice > 0 then
         text = text .. string.format(" The Index, which takes no sides, has %s his edge on the dice to +%d this week.",
             moved < 0 and "cut" or "raised", edge)
     end
+    local whim = Week.WhimLine(start)
+    if whim then text = text .. " This week's whim: " .. whim end
     return text
 end
 

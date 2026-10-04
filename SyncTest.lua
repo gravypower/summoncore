@@ -1061,6 +1061,104 @@ add("the Index remembers: tipped rolls, the heaviest hand, a run of dice and the
     return tie.heaviest == nil, "tipped roll, heaviest hand, dice run, silver and who was there, and a tie names nobody"
 end)
 
+add("pools of lines: a variant is never the one before it, every variant carries the facts, and the plain one is first", function()
+    local V = ST.Voice
+    local fixedBefore = V.fixed
+    V.fixed = false
+    local seq, prev, repeated = {}, nil, false
+    for i = 1, 200 do
+        local pick = V.Choose("selftest", 3)
+        if pick == prev then repeated = true end
+        prev = pick
+        seq[pick] = true
+    end
+    local one = V.Choose("selftest-one", 1)
+    V.fixed = true
+    local plain = V.Choose("selftest", 3)
+    local line = V.Say("selftest-say", { "%s and %d", "%d with %s" }, "x", 2)
+    V.fixed = fixedBefore
+    -- every answer pool names the same facts: the dice numbers, the points and the silver
+    local R, a = ST.Respond, newClient("Alpha")
+    local ok, bad = true, nil
+    V.fixed = false
+    with(a, function()
+        local ev = { caster = "Alpha", target = "Zennit", assistants = {}, time = ST.Week.Start() + 60, points = 5, kind = "dungeon" }
+        for _, r in ipairs({ "accepted", "refused", "excused", "owed", "paid", "won", "lost" }) do
+            for _ = 1, 12 do
+                local text = R.Announce(ev, { result = r, zroll = 77, sroll = 31, time = 1 })
+                local needs = (r == "won" or r == "lost") and "77" or (r == "owed" or r == "paid") and "50" or "Alpha"
+                if not text or not text:find(needs, 1, true) then ok, bad = false, r end
+            end
+        end
+    end)
+    V.fixed = fixedBefore
+    return not repeated and seq[1] and seq[2] and seq[3] and one == 1 and plain == 1 and line == "x and 2" and ok,
+        bad and ("a variant of '" .. bad .. "' lost a fact") or "never the same twice running; all three used; the facts survive"
+end)
+
+add("the whim of the week: the same on every client, about half the weeks, and each moves one rule a little", function()
+    return newRules(function()
+        local W = ST.Week
+        local saved = W.RULES.whims
+        W.RULES.whims = true
+        local counts, none, again = {}, 0, true
+        local start = W.Start()
+        for n = 0, 199 do
+            local at = start + n * 7 * 86400
+            local whim, id = W.Whim(at)
+            if whim then counts[id] = (counts[id] or 0) + 1 else none = none + 1 end
+            if (W.Whim(at)) ~= whim then again = false end
+        end
+        local edge, helper = W.Rule("edge", start), W.Rule("helperBonus", start)
+        -- find a week of each kind and read its rule
+        local seen = {}
+        for n = 0, 199 do
+            local at = start + n * 7 * 86400
+            local whim, id = W.Whim(at)
+            if id then seen[id] = at end
+        end
+        local ok = again and none > 60 and none < 140 and counts.distracted and counts.attentive and counts.feast and counts.tired
+            and W.Rule("edge", seen.distracted) == ST.Respond.EDGE - 5 and W.Rule("edge", seen.attentive) == ST.Respond.EDGE + 5
+            and W.Rule("helperBonus", seen.feast) == W.RULES.helperBonus + 3 and W.Rule("helperBonus", seen.tired) == W.RULES.helperBonus - 3
+            and W.WhimLine(seen.feast):find("Each helper adds %+8") and W.WhimLine(seen.distracted):find("5 lower")
+        local plainWeek
+        for n = 0, 199 do local at = start + n * 7 * 86400 if not W.Whim(at) then plainWeek = at break end end
+        ok = ok and W.WhimLine(plainWeek) == nil and W.Rule("edge", plainWeek) == ST.Respond.EDGE
+        W.RULES.whims = false
+        ok = ok and W.Whim(start) == nil and W.Rule("edge", seen.distracted) == ST.Respond.EDGE
+        W.RULES.whims = saved
+        W.RULES.from = math.huge
+        local old = W.Whim(start) == nil -- the old rules have none
+        W.RULES.from = 0
+        return ok and old, string.format("200 weeks: %d plain, %d distracted, %d attentive, %d feast, %d tired", none,
+            counts.distracted or 0, counts.attentive or 0, counts.feast or 0, counts.tired or 0)
+    end)
+end)
+
+add("the list remembers: a place on his list that comes up again is noticed, and the first time is not", function()
+    return newRules(function()
+        local a = newClient("Alpha")
+        local W, R = ST.Week, ST.Respond
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local function put(key, n, where, listed)
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + 60 * n, points = 3,
+                    subzone = where, mapID = 1, kind = "zone",
+                    response = { result = "accepted", zroll = 0, sroll = 0, time = this + 60 * n + 1, listed = listed } }
+            end
+            put("a", 1, "Darnassus", true); put("b", 2, "Stormwind", true); put("c", 3, "Darnassus", true)
+            put("d", 4, "Darnassus", false); put("e", 5, "Darnassus", true)
+            local function say(key) return R.Announce(a.db.events[key], a.db.events[key].response) end
+            out.first, out.other, out.second, out.unlisted, out.third = say("a"), say("b"), say("c"), say("d"), say("e")
+            out.hits = R.ListHits(a.db.events.e, a.db.events.e.response)
+        end)
+        local ok = not out.first:find("again") and not out.other:find("again") and out.second:find("Darnassus again", 1, true)
+            and not out.unlisted:find("again") and out.third:find("third time", 1, true) and out.hits == 3
+        return ok, string.format("first: %s | second: %s | third: %s", out.first:sub(-40), out.second:sub(-60), out.third:sub(-70))
+    end)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")
@@ -1178,6 +1276,9 @@ function T.Run()
     ST.Week.EventClosed = function() return false end -- the other tests use old summons
     local rulesFrom = ST.Week.RULES.from
     ST.Week.RULES.from = math.huge -- and the old race rules (the new-rules tests switch them on themselves)
+    local whims, fixed = ST.Week.RULES.whims, ST.Voice.fixed
+    ST.Week.RULES.whims = false -- no whim of the week, and the plain variant of every line: the tests read exact words
+    ST.Voice.fixed = true
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -1192,5 +1293,6 @@ function T.Run()
     end
     ST.Week.EventClosed = realEventClosed
     ST.Week.RULES.from = rulesFrom
+    ST.Week.RULES.whims, ST.Voice.fixed = whims, fixed
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end
