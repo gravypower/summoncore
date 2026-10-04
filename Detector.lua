@@ -18,7 +18,7 @@ end
 
 -- Plain string name, or nil if the value is missing or secret.
 local function cleanName(v)
-    if type(v) == "string" and not ST.isSecret(v) and v ~= "" then return v end
+    return ST.baseName(v)
 end
 
 local function partyMembers()

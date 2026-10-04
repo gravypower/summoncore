@@ -377,6 +377,80 @@ add("Zenit hears a recorded complaint when summoned live, not from history", fun
     return #calls == 1 and calls[1] == "zenit_land", #calls .. " clip call(s)"
 end)
 
+add("intro key phrases: shown at the right time, typed out, and every cue falls inside its scene", function()
+    local I = ST.Intro
+    local cues = { { t = 1, text = "ONE" }, { t = 3, text = "TWO" } }
+    local before = I.CueAt(cues, 0.5)
+    local first, firstElapsed = I.CueAt(cues, 1.5)
+    local stillFirst = I.CueAt(cues, 2.9)
+    local second = I.CueAt(cues, 3.1)
+    local expired = I.CueAt({ { t = 1, text = "X" } }, 6)
+    local none = I.CueAt(nil, 1)
+    if before or first ~= 1 or stillFirst ~= 1 or second ~= 2 or expired or none then
+        return false, "cue lookup is wrong"
+    end
+    if math.abs(firstElapsed - 0.5) > 1e-6 then return false, "elapsed time is wrong" end
+    if I.Typed("HELLO", 0) ~= "H" or I.Typed("HELLO", 0.1) ~= "HEL" or I.Typed("HELLO", 10) ~= "HELLO" then
+        return false, "typing is wrong"
+    end
+    local bad = {}
+    for si, list in pairs(ST.introCues or {}) do
+        local length = ST.introLength and ST.introLength[si]
+        local prev = -1
+        for _, c in ipairs(list) do
+            if c.t <= prev or (length and c.t >= length) or #c.text == 0 then bad[#bad + 1] = si .. ":" .. tostring(c.text) end
+            prev = c.t
+        end
+    end
+    return #bad == 0, #bad == 0 and "all generated cues are ordered and inside their scenes" or table.concat(bad, ", ")
+end)
+
+add("senders shown as 'Name Surname' or 'Name-Realm' are matched by their plain name", function()
+    local a = newClient("Alpha")
+    local id, ev = sample({ caster = "Beta", time = BASE + 400 })
+    id = "Beta-" .. ev.time
+    local r1 = with(a, function() return Sync.OnMessage("1~E~" .. Sync.Encode(id, ev), "PARTY", "Beta Mcbane") end)
+    local id2, ev2 = sample({ caster = "Gamma", time = BASE + 401 })
+    id2 = "Gamma-" .. ev2.time
+    local r2 = with(a, function() return Sync.OnMessage("1~E~" .. Sync.Encode(id2, ev2), "GUILD", "Gamma-SomeRealm") end)
+    local r3 = with(a, function() return Sync.OnMessage("1~H~0|0|x", "GUILD", "Alpha Zennit") end) -- our own echo
+    return r1 == "added" and r2 == "added" and r3 == "ignored:self", r1 .. ", " .. r2 .. ", " .. r3
+end)
+
+add("plain names: first word only, nothing for unusable values", function()
+    local b = ST.baseName
+    local ok = b("Poogs Mcbane") == "Poogs" and b("Club-Zennit") == "Club" and b("Solo") == "Solo"
+        and b("") == nil and b(nil) == nil and b(42) == nil and b(" x") == nil
+    return ok, "Poogs Mcbane -> " .. tostring(b("Poogs Mcbane"))
+end)
+
+add("intro subtitles: the sentence being spoken, and the generated times are ordered", function()
+    local I = ST.Intro
+    local _, idx, since, span = I.SentenceAt({ { t = 1, text = "a" }, { t = 4, text = "b" } }, 2, 9)
+    local _, lastIdx, _, lastSpan = I.SentenceAt({ { t = 1, text = "a" }, { t = 4, text = "b" } }, 5, 9)
+    if idx ~= 1 or math.abs(since - 1) > 1e-6 or span ~= 3 or lastIdx ~= 2 or lastSpan ~= 5 then
+        return false, "sentence index or span is wrong"
+    end
+    local fast, slow = I.SentenceSpeed(100, 5), I.SentenceSpeed(100, 20)
+    if not (fast > slow) or I.SentenceSpeed(50, nil) ~= 26 or I.SentenceSpeed(1, 100) < 8 then
+        return false, "typing speed is wrong"
+    end
+    local list = { { t = 0.4, text = "first" }, { t = 10, text = "second" } }
+    if I.SentenceAt(list, 0) ~= nil or I.SentenceAt(list, 5) ~= "first" or I.SentenceAt(list, 10) ~= "second"
+        or I.SentenceAt(list, 99) ~= "second" or I.SentenceAt(nil, 1) ~= nil then
+        return false, "sentence lookup is wrong"
+    end
+    local bad = {}
+    for si, sentences in pairs(ST.introSentences or {}) do
+        local prev = -1
+        for _, s in ipairs(sentences) do
+            if s.t <= prev or #s.text == 0 then bad[#bad + 1] = si end
+            prev = s.t
+        end
+    end
+    return #bad == 0, #bad == 0 and "generated sentence times are ordered" or ("scenes " .. table.concat(bad, ","))
+end)
+
 function T.Run()
     local pass = 0
     local results = {}

@@ -1,36 +1,51 @@
 -- Intro: /st intro plays "Zenit and the Index", an illustrated intro. Each scene is a 3-frame flipbook
--- (Media\intro_<n>, a 2048x1024 sheet of 1024x512 cells) flipped about six times a second, with the
--- narration shown as a caption. Rebuild the sheets with tools\intro\render_intro.ps1.
+-- (Media\intro_<n>, a 2048x1024 sheet of 1024x512 cells) flipped about six times a second, narrated, with a
+-- quiet synth music bed. Key phrases are typed out over the picture, in sync with the narration, with
+-- beeps and clicks (the full text is available behind the Text button). Rebuild the art with
+-- tools\intro\render_intro.ps1 and the audio and cue timings with tools\intro\build_audio.ps1.
 local ADDON, ST = ...
 local Intro = {}
 ST.Intro = Intro
 
-local PATH = "Interface\\AddOns\\summoncore\\Media\\intro_"
+local MEDIA = "Interface\\AddOns\\summoncore\\Media\\"
+local SFX = MEDIA .. "sfx\\"
 local FPS = 6
 local FRAMES = 3
-local AUDIO = "Interface\\AddOns\\summoncore\\Media\\intro_"
+local CPS, HOLD = 26, 2.6 -- key phrase typing speed (characters a second) and how long each stays up
+
+local function artPath(si)
+    return MEDIA .. (ST.db.settings.introTerminal and "intro_t" or "intro_") .. si
+end
+
+-- With the music bed the clip is intro_<n>; without it, intro_<n>_voice.
+local function audioPath(si)
+    return MEDIA .. "intro_" .. si .. (ST.db.settings.introMusic == false and "_voice" or "") .. ".ogg"
+end
 
 -- Each scene lasts as long as its narration clip (measured) plus a short pause, so a clip is never cut off.
 local PAUSE = 0.6
 local scenes = {
-    { label = "The Index", dur = 20.80 + PAUSE, text = [=[The Cosmic Index of Summonable Persons is, by general agreement, the most important document in Azeroth that nobody has ever read. It lists every being that may legally be summoned, in alphabetical order, and it was compiled by a single clerk who had, at the time, been on shift for nine thousand years.]=] },
-    { label = "The sneeze", dur = 9.10 + PAUSE, text = [=[Somewhere around the letter Zed, the clerk sneezed. This is generally accepted to be the origin of the entire problem.]=] },
-    { label = "The wrong ritual", dur = 25.10 + PAUSE, text = [=[As a result of the sneeze, a Licensed Summoning Liaison, Third Class, named Zenit was entered into the Index as the default recipient of every Ritual of Summoning completed within range of his name. This includes rituals meant for other people. It includes rituals meant for nobody. It includes at least one ritual intended for a goat.]=] },
-    { label = "The missing form", dur = 23.00 + PAUSE, text = [=[Zenit did what any reasonable person would do. He looked for the form. The form turned out to be Form 27B slash 6, which is referenced throughout the Index and has never been seen. Several scholars believe it does not exist. Zenit believes that is exactly what a form would say.]=] },
-    { label = "The attachment", dur = 20.40 + PAUSE, text = [=[Meanwhile, the Ritual of Summoning, a spell with a great deal of free time and a fragile sense of self, had formed an attachment. It does not want gold. It wants, in its own words, attention and closure. It will, however, accept fifty silver as a gesture.]=] },
-    { label = "The debt", dur = 12.20 + PAUSE, text = [=[And so every completed summon is recorded as an installment on a debt Zenit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.]=] },
-    { label = "The party", dur = 13.10 + PAUSE, text = [=[You, meanwhile, are a party of friends who have noticed that Zenit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.]=] },
-    { label = "The week", dur = 13.30 + PAUSE, text = [=[This is the story of his week, and the week after that. If the form is ever found, you will be the first to know. Or the last. The Index is unclear.]=] },
+    { label = "The Index", dur = 22.10 + PAUSE, text = [=[The Cosmic Index of Summonable Persons is, by general agreement, the most important document in Azeroth that nobody has ever read. It lists every being that may legally be summoned, in alphabetical order, and it was compiled by a single clerk who had, at the time, been on shift for nine thousand years.]=] },
+    { label = "The sneeze", dur = 9.80 + PAUSE, text = [=[Somewhere around the letter Zed, the clerk sneezed. This is generally accepted to be the origin of the entire problem.]=] },
+    { label = "The wrong ritual", dur = 26.40 + PAUSE, text = [=[As a result of the sneeze, a Licensed Summoning Liaison, Third Class, named Zenit was entered into the Index as the default recipient of every Ritual of Summoning completed within range of his name. This includes rituals meant for other people. It includes rituals meant for nobody. It includes at least one ritual intended for a goat.]=] },
+    { label = "The missing form", dur = 24.70 + PAUSE, text = [=[Zenit did what any reasonable person would do. He looked for the form. The form turned out to be Form 27B slash 6, which is referenced throughout the Index and has never been seen. Several scholars believe it does not exist. Zenit believes that is exactly what a form would say.]=] },
+    { label = "The attachment", dur = 21.90 + PAUSE, text = [=[Meanwhile, the Ritual of Summoning, a spell with a great deal of free time and a fragile sense of self, had formed an attachment. It does not want gold. It wants, in its own words, attention and closure. It will, however, accept fifty silver as a gesture.]=] },
+    { label = "The debt", dur = 12.50 + PAUSE, text = [=[And so every completed summon is recorded as an installment on a debt Zenit never agreed to, cannot find the paperwork for, and is nevertheless making definite progress on.]=] },
+    { label = "The party", dur = 14.00 + PAUSE, text = [=[You, meanwhile, are a party of friends who have noticed that Zenit is, technically, very easy to summon. The Index has no objection. The Index has never been asked.]=] },
+    { label = "The week", dur = 14.30 + PAUSE, text = [=[This is the story of his week, and the week after that. If the form is ever found, you will be the first to know. Or the last. The Index is unclear.]=] },
 }
 
+-- Scene lengths come from IntroCues.lua (measured from the narration); the table above is the fallback.
 local starts, total = {}, 0
 for i, s in ipairs(scenes) do
+    if ST.introLength and ST.introLength[i] then s.dur = ST.introLength[i] + PAUSE end
     starts[i] = total
     total = total + s.dur
 end
 
-local frame, picture, caption, status, playBtn
-local t, playing, shownScene, shownFrame = 0, false, 0, -1
+local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText
+local pictureH, buttonsWidth = 300, 700
+local t, playing, shownScene, shownFrame, lastCue = 0, false, 0, -1, nil
 
 local function fmt(sec)
     return string.format("%d:%02d", math.floor(sec / 60), math.floor(sec % 60))
@@ -41,6 +56,45 @@ local function sceneAt(sec)
         if sec >= starts[i] then return i end
     end
     return 1
+end
+
+-- Index of the key phrase showing `rel` seconds into a scene, and how long it has been up; nil if none.
+-- A phrase stays up for HOLD seconds or until the next one starts.
+function Intro.CueAt(cues, rel)
+    if not cues then return nil end
+    local index
+    for i, c in ipairs(cues) do
+        if c.t <= rel then index = i else break end
+    end
+    if not index then return nil end
+    local elapsed = rel - cues[index].t
+    if elapsed > HOLD then return nil end
+    return index, elapsed
+end
+
+-- The sentence being spoken `rel` seconds into a scene: the last one that has started. Returns its text, its
+-- index and how long it has been going; nil before the first. `length` is the scene's narration length.
+function Intro.SentenceAt(sentences, rel, length)
+    local index
+    for i, s in ipairs(sentences or {}) do
+        if s.t <= rel then index = i else break end
+    end
+    if not index then return nil end
+    local s, nextStart = sentences[index], sentences[index + 1] and sentences[index + 1].t or length
+    return s.text, index, rel - s.t, nextStart and (nextStart - s.t) or nil
+end
+
+-- How much of a phrase has been typed after `elapsed` seconds (at least one character), at `cps` characters
+-- a second (default: the key-phrase speed).
+function Intro.Typed(text, elapsed, cps)
+    return text:sub(1, math.min(#text, math.floor(elapsed * (cps or CPS)) + 1))
+end
+
+-- Typing speed for narrating a sentence of `chars` characters that is spoken over `span` seconds: slightly
+-- faster than the voice, so the text is complete just before the next sentence starts.
+function Intro.SentenceSpeed(chars, span)
+    if not span or span <= 0.5 then return CPS end
+    return math.max(8, chars / (span * 0.8))
 end
 
 -- Narration: one clip per scene (PlaySoundFile cannot start mid-file), so pausing replays the scene.
@@ -65,14 +119,18 @@ local function playClip(si, natural)
         stopClip()
     end
     clipScene = si
-    local token = clipToken
-    local function start()
-        if token ~= clipToken then return end
-        local ok, willPlay, handle = pcall(PlaySoundFile, AUDIO .. si .. ".ogg", "Dialog")
-        audioMissing = not (ok and willPlay)
-        clipHandle = handle
-    end
-    start()
+    local ok, willPlay, handle = pcall(PlaySoundFile, audioPath(si), "Dialog")
+    audioMissing = not (ok and willPlay)
+    clipHandle = handle
+end
+
+-- A chirp as a key phrase appears, followed a moment later by a burst of key clicks as it types out.
+local function cueSound(cueIndex)
+    if ST.db.settings.introMute then return end
+    pcall(PlaySoundFile, SFX .. "sfx_chirp_" .. math.random(3) .. ".ogg", "SFX")
+    C_Timer.After(0.12, function()
+        if playing and lastCue == cueIndex then pcall(PlaySoundFile, SFX .. "sfx_keys.ogg", "SFX") end
+    end)
 end
 
 local function show(sec)
@@ -80,16 +138,59 @@ local function show(sec)
     local fi = math.floor(sec * FPS) % FRAMES
     if si ~= shownScene then
         shownScene = si
-        picture:SetTexture(PATH .. si)
-        caption:SetText(scenes[si].text)
+        picture:SetTexture(artPath(si))
         shownFrame = -1
-        if playing then playClip(si, true) end
+        lastCue = nil
+        if playing then
+            playClip(si, true)
+            if si > 1 and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
+        end
     end
     if fi ~= shownFrame then
         shownFrame = fi
         local l, tp = (fi % 2) * 0.5, math.floor(fi / 2) * 0.5
         picture:SetTexCoord(l, l + 0.5, tp, tp + 0.5)
     end
+
+    local rel = sec - starts[si]
+    local mode = ST.db.settings.introTextMode or "full"
+    local cursor = (sec * 4) % 1 < 0.5 and "_" or " "
+
+    if mode == "full" then
+        -- the whole narration, a sentence at a time, typed out in the terminal box under the picture
+        tape:Hide()
+        local sentences = ST.introSentences and ST.introSentences[si] or { { t = 0, text = scenes[si].text } }
+        local text, index, elapsed, span = Intro.SentenceAt(sentences, rel, ST.introLength and ST.introLength[si])
+        if text then
+            if index ~= lastCue then
+                lastCue = index
+                if playing then cueSound(index) end
+            end
+            terminalText:SetText(Intro.Typed(text, elapsed, Intro.SentenceSpeed(#text, span)) .. cursor)
+        else
+            terminalText:SetText("")
+        end
+    elseif mode == "key" then
+        -- just the punchlines, flashed over the picture
+        local cues = ST.introCues and ST.introCues[si]
+        local index, elapsed = Intro.CueAt(cues, rel)
+        if index then
+            tape:Show()
+            if index ~= lastCue then
+                lastCue = index
+                -- size the strip for the whole phrase first, so it does not jump while it types
+                tapeText:SetText(cues[index].text)
+                tape:SetHeight(math.max(pictureH * 0.075, tapeText:GetStringHeight() + 14))
+                if playing then cueSound(index) end
+            end
+            tapeText:SetText(Intro.Typed(cues[index].text, elapsed) .. cursor)
+        else
+            tape:Hide()
+        end
+    else
+        tape:Hide()
+    end
+
     status:SetText(string.format("Scene %d/%d: %s     %s / %s%s", si, #scenes, scenes[si].label, fmt(sec),
         fmt(total), audioMissing and "     (narration files missing)" or ""))
 end
@@ -113,20 +214,66 @@ local function seek(sec)
     show(t)
 end
 
-local function button(parent, text, width, x, onClick)
+-- Button helper: lays buttons out left to right along the bottom.
+local nextX = 12
+local function button(parent, text, width, onClick)
     local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
     b:SetSize(width, 24)
     b:SetText(text)
-    b:SetPoint("BOTTOMLEFT", x, 10)
+    b:SetPoint("BOTTOMLEFT", nextX, 10)
     b:SetScript("OnClick", onClick)
+    nextX = nextX + width + 6
+    return b
+end
+
+local SIZES = { small = 0.36, medium = 0.46, large = 0.6 } -- picture height as a fraction of the screen height
+local SIZE_ORDER = { "small", "medium", "large" }
+local FONT = "Fonts\\FRIZQT__.TTF"
+
+-- Sizes everything from the Size and Text settings. Runs once built, then again when either changes.
+local function layout()
+    local settings = ST.db.settings
+    local h = math.min(UIParent:GetHeight() * (SIZES[settings.introSize] or SIZES.medium), 540)
+    local w = h * 16 / 9
+    pictureH = h
+    picture:SetSize(w, h)
+    local mode = settings.introTextMode or "full"
+    -- the terminal box under the picture holds four lines of the narration
+    local fontSize = math.max(11, math.floor(h * 0.04))
+    local boxHeight = math.ceil(fontSize * 1.4) * 4 + 16
+    terminal:SetShown(mode == "full")
+    terminal:SetSize(w, boxHeight)
+    terminalText:SetFont(FONT, fontSize, "OUTLINE")
+    tape:SetWidth(w * 0.8)
+    tape:SetPoint("BOTTOM", picture, "BOTTOM", 0, h * 0.03)
+    tapeText:SetFont(FONT, fontSize, "OUTLINE")
+    if mode ~= "key" then tape:Hide() end
+    frame:SetSize(math.max(w + 24, buttonsWidth), h + 24 + 44 + (mode == "full" and boxHeight + 8 or 0))
+end
+
+-- A button that flips a setting and shows its state in its label.
+local function toggle(parent, width, label, key, default, onChange)
+    local function get()
+        local v = ST.db.settings[key]
+        if v == nil then v = default end
+        return v
+    end
+    local b
+    local function paint() b:SetText(label .. ": " .. (get() and "on" or "off")) end
+    b = button(parent, "", width, function()
+        ST.db.settings[key] = not get()
+        paint()
+        onChange()
+    end)
+    paint()
     return b
 end
 
 local function build()
-    local h = math.min(UIParent:GetHeight() * 0.6, 540)
-    local w = h * 16 / 9
+    local h, w = 300, 533 -- placeholders: layout() sets the real sizes once everything exists
     frame = CreateFrame("Frame", "SummonCoreIntro", UIParent)
-    frame:SetSize(w + 24, h + 24 + 130 + 44)
+    ST.db.settings.introMute = ST.db.settings.introSound == false
+    frame:SetSize(w + 24, h + 24 + 44)
     frame:SetPoint("CENTER", 0, 20)
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
@@ -144,34 +291,87 @@ local function build()
     picture:SetSize(w, h)
     picture:SetPoint("TOP", 0, -12)
 
-    caption = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    caption:SetPoint("TOPLEFT", picture, "BOTTOMLEFT", 4, -10)
-    caption:SetWidth(w - 8)
-    caption:SetHeight(120)
-    caption:SetJustifyH("LEFT")
-    caption:SetJustifyV("TOP")
+    -- two green-on-black boxes, like an old terminal: one under the picture that types out the whole
+    -- narration, and a small strip over the picture for the punchlines ("key" mode)
+    local function terminalBox(alpha)
+        local box = CreateFrame("Frame", nil, frame)
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        boxBg:SetAllPoints()
+        boxBg:SetColorTexture(0, 0.04, 0.01, alpha)
+        for _, edge in ipairs({ { "TOPLEFT", "TOPRIGHT", true }, { "BOTTOMLEFT", "BOTTOMRIGHT", true },
+            { "TOPLEFT", "BOTTOMLEFT", false }, { "TOPRIGHT", "BOTTOMRIGHT", false } }) do
+            local line = box:CreateTexture(nil, "BORDER")
+            line:SetColorTexture(0.25, 1, 0.45, 0.9)
+            line:SetPoint(edge[1])
+            line:SetPoint(edge[2])
+            if edge[3] then line:SetHeight(1.5) else line:SetWidth(1.5) end
+        end
+        local text = box:CreateFontString(nil, "OVERLAY")
+        text:SetFont(FONT, 14, "OUTLINE")
+        text:SetTextColor(0.4, 1, 0.55)
+        text:SetPoint("TOPLEFT", 12, -6)
+        text:SetPoint("BOTTOMRIGHT", -10, 6)
+        text:SetJustifyH("LEFT")
+        text:SetJustifyV("MIDDLE")
+        return box, text
+    end
+    tape, tapeText = terminalBox(0.82)
+    tape:SetSize(w * 0.88, h * 0.14)
+    tape:SetPoint("BOTTOM", picture, "BOTTOM", 0, h * 0.05)
+    tape:Hide()
+    terminal, terminalText = terminalBox(0.95)
+    terminal:SetPoint("TOPLEFT", picture, "BOTTOMLEFT", 0, -6)
+    terminalText:SetJustifyV("TOP")
 
     status = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     status:SetPoint("BOTTOMRIGHT", -14, 16)
 
-    button(frame, "<", 30, 12, function() seek(starts[math.max(1, sceneAt(t) - 1)]) end)
-    playBtn = button(frame, "Play", 70, 46, function()
+    nextX = 12
+    button(frame, "<", 30, function() seek(starts[math.max(1, sceneAt(t) - 1)]) end)
+    playBtn = button(frame, "Play", 70, function()
         if t >= total - 0.05 then seek(0) end
         setPlaying(not playing)
     end)
-    button(frame, ">", 30, 120, function()
+    button(frame, ">", 30, function()
         local nxt = sceneAt(t) + 1
         if nxt <= #scenes then seek(starts[nxt]) end
     end)
-    button(frame, "Restart", 70, 154, function() seek(0) setPlaying(true) end)
-    button(frame, "Close", 70, 228, function() frame:Hide() end)
-    local soundBtn
-    soundBtn = button(frame, "", 90, 302, function()
-        ST.db.settings.introMute = not ST.db.settings.introMute
-        if ST.db.settings.introMute then stopClip() elseif playing then playClip(sceneAt(t)) end
-        soundBtn:SetText(ST.db.settings.introMute and "Sound: off" or "Sound: on")
+    button(frame, "Restart", 70, function() seek(0) setPlaying(true) end)
+    button(frame, "Close", 60, function() frame:Hide() end)
+    toggle(frame, 86, "Sound", "introSound", true, function()
+        ST.db.settings.introMute = not ST.db.settings.introSound
+        if ST.db.settings.introMute then stopClip() elseif playing then setPlaying(true) end
     end)
-    soundBtn:SetText(ST.db.settings.introMute and "Sound: off" or "Sound: on")
+    toggle(frame, 86, "Music", "introMusic", true, function()
+        stopClip()
+        if playing then setPlaying(true) end -- replay this scene's clip with or without the music bed
+    end)
+    -- Text: the whole narration typed out under the picture ("full"), just the punchlines over it ("key"), or none
+    local textBtn
+    local TEXT_MODES = { "full", "key", "off" }
+    textBtn = button(frame, "", 90, function()
+        local current = ST.db.settings.introTextMode or "full"
+        for i, name in ipairs(TEXT_MODES) do
+            if name == current then ST.db.settings.introTextMode = TEXT_MODES[i % #TEXT_MODES + 1] break end
+        end
+        textBtn:SetText("Text: " .. ST.db.settings.introTextMode)
+        lastCue = nil
+        layout()
+        show(t)
+    end)
+    textBtn:SetText("Text: " .. (ST.db.settings.introTextMode or "full"))
+    toggle(frame, 118, "Terminal art", "introTerminal", false, function() shownScene = 0 show(t) end)
+    local sizeBtn
+    sizeBtn = button(frame, "", 100, function()
+        local current = ST.db.settings.introSize or "medium"
+        for i, name in ipairs(SIZE_ORDER) do
+            if name == current then ST.db.settings.introSize = SIZE_ORDER[i % #SIZE_ORDER + 1] break end
+        end
+        sizeBtn:SetText("Size: " .. ST.db.settings.introSize)
+        layout()
+    end)
+    sizeBtn:SetText("Size: " .. (ST.db.settings.introSize or "medium"))
+    buttonsWidth = nextX + 6
 
     frame:SetScript("OnUpdate", function(_, elapsed)
         if not playing then return end
@@ -183,9 +383,36 @@ local function build()
         show(t)
     end)
     frame:SetScript("OnHide", function() setPlaying(false) end)
+    layout()
+end
+
+-- /st intro check: tries every narration and effect file and reports the ones the game cannot play.
+function Intro.Check()
+    local bad = 0
+    local function try(name)
+        local ok, willPlay, handle = pcall(PlaySoundFile, name, "Dialog")
+        if handle then pcall(StopSound, handle) end
+        if not (ok and willPlay) then
+            bad = bad + 1
+            ST.print("cannot play: " .. name:match("[^\\]+$"))
+        end
+    end
+    for i = 1, #scenes do
+        try(MEDIA .. "intro_" .. i .. ".ogg")
+        try(MEDIA .. "intro_" .. i .. "_voice.ogg")
+    end
+    for _, name in ipairs({ "sfx_chirp_1", "sfx_chirp_2", "sfx_chirp_3", "sfx_keys", "sfx_pop" }) do
+        try(SFX .. name .. ".ogg")
+    end
+    if bad == 0 then
+        ST.print("all intro sound files play. If the pictures are blank, try Terminal art: on/off, or tell me.")
+    else
+        ST.print(bad .. " file(s) failed. If files were added or replaced while WoW was running, quit WoW completely and start it again: /reload does not pick up new media files.")
+    end
 end
 
 function Intro.Toggle(arg)
+    if arg == "check" then return Intro.Check() end
     if not frame then build() end
     if frame:IsShown() then frame:Hide() return end
     frame:Show()

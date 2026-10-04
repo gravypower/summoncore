@@ -100,13 +100,28 @@ newer-version strings are refused. This is the manual fallback if addon messages
 
 ### Intro
 
-`/st intro` plays "Zenit and the Index": 8 scenes of 3-frame flipbook art (about six flips a second) with the
-narration as captions, about 2:22 in all. Controls: previous/next scene, play/pause, restart. `/st intro 3` starts at
-scene 3. The art lives in `Media/intro_1.blp` to `intro_8.blp` (2048x1024 sheets, DXT1, about 1.3 MB each);
+`/st intro` plays "Zenit and the Index": 8 scenes of 3-frame flipbook art (about six flips a second), narrated, with
+a quiet synth music bed, about 2:30 in all. The whole narration is typed out, a sentence at a time and in step with the
+voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. The **Text**
+button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
+large), and toggles for Sound, Music, Text and Terminal art (a green-phosphor, scanline version of the pictures). `/st intro 3` starts at
+scene 3. `/st intro check` tries every intro sound
+file and lists the ones the game cannot play (after adding or replacing media, restart WoW: `/reload` does not pick
+up new files). The art lives in `Media/intro_1.blp` to `intro_8.blp` (2048x1024 sheets, DXT1, about 1.3 MB each);
 `tools/intro/render_intro.ps1` rebuilds them from `tools/intro/source.html` using headless Edge or Chrome
 (`-Format tga` writes uncompressed TGAs instead if BLPs misbehave in your client).
 
-The narration is `Media/intro_1.ogg` to `intro_8.ogg` (the "George" takes), one clip per scene, because
+**Rebuilding the pieces** (needs ffmpeg for the audio, Edge or Chrome for the art):
+
+- `tools/intro/render_intro.ps1 [-Style terminal]`: the picture sheets (`intro_<n>.blp`, `intro_t<n>.blp`).
+- `tools/intro/build_audio.ps1`: reads the narration takes in `tools/intro/narration/`, synthesises the music bed
+  and the beeps, chirps and key clicks (`Media/sfx/`), mixes `Media/intro_<n>.ogg` (voice plus music, which ducks
+  under the voice and swells in the pauses) and `Media/intro_<n>_voice.ogg` (voice only), and writes
+  `IntroCues.lua`. The key phrases and what they say are listed in that script; each is timed from where its
+  sentence sits in the audio (silence detection between sentences) and where the phrase sits in the sentence.
+  Nothing is sampled from any existing recording.
+
+The narration is `Media/intro_1.ogg` to `intro_8.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
 start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
 mutes the narration.
@@ -151,9 +166,9 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Area | State |
 |---|---|
 | Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zenit gag | Verified in the live client (solo, with `/st fake`) |
-| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 13/13; the 7 export, import and clip tests added since are unrun) |
+| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 23/23 in the live client on 2026-10-04, covering merge rules, export/import, voice clips, intro cues and name handling) |
 | Real Ritual of Summoning detection | **Untested.** Spell ID 698, the target field and whether `SUCCEEDED` fires at start or end are assumptions |
-| Addon messages between two real clients | **Untested** |
+| Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Deadmines entrance subzone string | A guess |
 | Gag clips | Not recorded yet |
 

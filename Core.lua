@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.9.0"
+ST.version = "0.11.1"
 
 local DB_VERSION = 1
 
@@ -21,6 +21,14 @@ end
 
 function ST.isSecret(v)
     return issecretvalue ~= nil and issecretvalue(v) == true
+end
+
+-- A character name as the addon stores it: just the first word. This client shows names as "Name Surname"
+-- (and other clients may use "Name-Realm"), but the plain UnitName is a single word, so that is what events,
+-- tallies and sender checks all compare. nil for anything that is not a usable name.
+function ST.baseName(name)
+    if type(name) ~= "string" or ST.isSecret(name) then return nil end
+    return name:match("^[^%s%-]+")
 end
 
 ST.RITUAL_ID = 698 -- Ritual of Summoning (classic ID; confirm with /st test)
@@ -222,7 +230,7 @@ local HELP = {
     "/st fake <target> [h1 h2] - add a test summon    /st fakeprompt <target> <members...>",
     "/st sync - say hello to party/guild and show sync status    /st synctest - run the merge self-test",
     "/st export / /st import - copy-paste strings of the summon log",
-    "/st intro [scene] - play the illustrated intro",
+    "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
     "/st gag - preview the Zenit gag",
     "/st comic [256|512|1024|2048] - large-image test pattern viewer",

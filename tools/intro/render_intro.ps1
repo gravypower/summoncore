@@ -7,7 +7,8 @@
 #      4th cell empty) and writes Media\intro_<n>.blp (DXT1 with mipmaps).
 #
 #   powershell -ExecutionPolicy Bypass -File tools\intro\render_intro.ps1 [-Format tga]
-param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender)
+param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender,
+      [ValidateSet("storybook", "terminal")][string]$Style = "storybook")
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
 $root = Split-Path -Parent (Split-Path -Parent $here)
@@ -24,11 +25,14 @@ var q = new URLSearchParams(location.hash.slice(1));
   if (q.has('s')) {
     document.documentElement.classList.add('shot');
     stage.setAttribute('preserveAspectRatio', 'none');
+    if (q.has('term')) document.documentElement.classList.add('term');
     render(+q.get('s'), +q.get('f'), +q.get('f'));
   } else { update(0); requestAnimationFrame(loop); }
 })();
 '@
-$css = '<style>html.shot,html.shot body{margin:0;padding:0;overflow:hidden;background:#000}html.shot main>*:not(.stage){display:none}html.shot header,html.shot .bigplay{display:none}html.shot .stage{position:fixed;left:0;top:0;width:100vw;height:100vh;max-width:none;border:0;border-radius:0;aspect-ratio:auto}</style></head>'
+$termCss = 'html.shot.term .stage{background:#000}html.shot.term #stage{filter:grayscale(1) contrast(1.45) brightness(1.25) drop-shadow(0 0 3px #3dff88)}html.shot.term .stage::before{content:"";position:absolute;inset:0;background:#2bff78;mix-blend-mode:multiply;z-index:2;pointer-events:none}html.shot.term .stage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.26) 0,rgba(0,0,0,.26) 1px,transparent 1px,transparent 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);z-index:3;pointer-events:none}'
+$baseCss = 'html.shot,html.shot body{margin:0;padding:0;overflow:hidden;background:#000}html.shot main>*:not(.stage){display:none}html.shot header,html.shot .bigplay{display:none}html.shot .stage{position:fixed;left:0;top:0;width:100vw;height:100vh;max-width:none;border:0;border-radius:0;aspect-ratio:auto}'
+$css = '<style>' + $baseCss + $termCss + '</style></head>'
 $patched = $tail.Replace($html, { param($m) $patch }).Replace("</head>", $css)
 $page = Join-Path $work "render.html"
 [IO.File]::WriteAllText($page, $patched)
@@ -42,14 +46,16 @@ $browser = @(
     "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $browser) { throw "Edge or Chrome not found" }
+$termFlag = if ($Style -eq "terminal") { "&term=1" } else { "" }
+$namePrefix = if ($Style -eq "terminal") { "intro_t" } else { "intro_" }
 $scenes = 8
 for ($s = 0; $s -lt $scenes -and -not $SkipRender; $s++) {
     for ($f = 0; $f -lt 3; $f++) {
-        $png = Join-Path $work ("s{0}_f{1}.png" -f $s, $f)
+        $png = Join-Path $work ("{0}_s{1}_f{2}.png" -f $Style, $s, $f)
         Remove-Item -LiteralPath $png -ErrorAction SilentlyContinue
         $p = Start-Process -FilePath $browser -PassThru -Wait -WindowStyle Hidden -ArgumentList @(
             "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
-            "--window-size=1024,512", "--virtual-time-budget=8000", "--screenshot=`"$png`"", "`"$url#s=$s&f=$f`"")
+            "--window-size=1024,512", "--virtual-time-budget=8000", "--screenshot=`"$png`"", "`"$url#s=$s&f=$f$termFlag`"")
         if (-not (Test-Path -LiteralPath $png)) { throw "no screenshot for scene $s frame $f" }
     }
     "rendered scene {0}/{1}" -f ($s + 1), $scenes
@@ -222,13 +228,13 @@ public static class SheetGen {
 "@
 
 for ($s = 0; $s -lt $scenes; $s++) {
-    $frames = 0..2 | ForEach-Object { Join-Path $work ("s{0}_f{1}.png" -f $s, $_) }
+    $frames = 0..2 | ForEach-Object { Join-Path $work ("{0}_s{1}_f{2}.png" -f $Style, $s, $_) }
     $sheet = [SheetGen]::Compose($frames)
-    $name = "intro_{0}" -f ($s + 1)
+    $name = "$namePrefix{0}" -f ($s + 1)
     if ($Format -eq "blp") { [SheetGen]::WriteBlp($sheet, (Join-Path $media "$name.blp")); $ext = "blp" }
     else { [SheetGen]::WriteTga($sheet, (Join-Path $media "$name.tga")); $ext = "tga" }
-    if ($s -eq 0) { $sheet.Save((Join-Path $work "sheet1_preview.png")) }
+    if ($s -eq 0) { $sheet.Save((Join-Path $work "sheet1_$Style.png")) }
     $sheet.Dispose()
     "{0}.{1}  {2:N2} MB" -f $name, $ext, ((Get-Item (Join-Path $media "$name.$ext")).Length / 1MB)
 }
-"Preview of sheet 1: " + (Join-Path $work "sheet1_preview.png")
+"Preview of sheet 1: " + (Join-Path $work "sheet1_$Style.png")

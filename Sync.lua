@@ -199,8 +199,7 @@ end
 -- Receiving
 ----------------------------------------------------------------------
 local function short(name)
-    if type(name) ~= "string" then return "" end
-    return Ambiguate and Ambiguate(name, "short") or name:match("^[^-]+") or name
+    return ST.baseName(name) or ""
 end
 
 local function announceSoon()
