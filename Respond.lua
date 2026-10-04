@@ -143,6 +143,12 @@ local function playAnswerClip(resp)
     end
 end
 
+-- Where the week stands after an answer to this summon, in chat (test summons don't move it).
+local function printWeek(ev, you)
+    local line = not ev.fake and ST.Week.StatusLine(ST.Week.Start(ev.time), you)
+    if line then ST.print(line) end
+end
+
 -- Records Zennit's decision on this client and tells everyone (test summons stay local).
 function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
@@ -155,6 +161,7 @@ function Respond.Decide(id, result, zroll, sroll)
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
+    printWeek(ev, true)
     playAnswerClip(resp)
     refreshSurfaces(id, "done")
     if ST.Hub then ST.Hub.Refresh() end
@@ -179,6 +186,7 @@ function Respond.CloseIndex(start)
     ST.Store.SetResponse(id, resp)
     ST.Sync.SendResponse(id, resp)
     ST.print(closedLine(ev))
+    printWeek(ev, true)
     if ST.Hub then ST.Hub.Refresh() end
     return true
 end
@@ -297,6 +305,7 @@ function Respond.OnResponse(id, ev, resp, before)
     end
     playAnswerClip(resp)
     if line then ST.print(line) end
+    printWeek(ev, false)
     if ST.Hub then ST.Hub.Refresh() end
     if diceDlg and diceCurrent and diceCurrent.id == id then
         diceDlg.text:SetText(line or "")
@@ -360,9 +369,9 @@ local function render(s, stage, extra)
             cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
                 string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))
         end
-        local dice = diceLeft(id, ev)
-        if dice then cost = cost .. string.format(" Dice left this week: %d of %d.", dice, ST.Week.RULES.dice) end
-        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\nHow will you deal with it?")
+        local dice = diceLeft(id, ev) -- the week line below says how many are left
+        local week = ST.Week.StatusLine(ST.Week.Start(ev.time), ST.Gag.IsZennit())
+        s.text:SetText(summonText(ev) .. "\n" .. cost .. "\n" .. (week and (week .. " ") or "") .. "How will you deal with it?")
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
             { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },

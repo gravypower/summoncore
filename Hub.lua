@@ -624,13 +624,17 @@ local function refreshChrome()
         chrome.week:SetText(T.Paint("amber", "ZENNIT IS ON HIS WEEK OFF UNTIL " .. date("%a %d %b", untilT):upper()))
     else
         local week = W.Score(W.Start())
-        local score = string.format("%s / %s", T.Paint("cyan", "GROUP " .. week.group), T.Paint("pink", "ZENNIT " .. week.zennit))
         if week.new then
-            -- the new race: how many summons of him have been filed this week, and his dice left (or the Index closed)
-            chrome.week:SetText(string.format("%s · FILED %d/%d · %s", score, week.counted, W.RULES.cap,
+            -- the new race: who leads the week and by how much (a tie is his), how many summons of him have been filed,
+            -- and his dice left (or the Index closed)
+            local side, by = W.Lead(week)
+            local lead = side == "group" and T.Paint("cyan", "GROUP +" .. by) or
+                T.Paint("pink", by == 0 and "ZENNIT (TIE)" or ("ZENNIT +" .. by))
+            chrome.week:SetText(string.format("WEEK: %s · FILED %d/%d · %s", lead, week.counted, W.RULES.cap,
                 week.closed and T.Paint("amber", "CLOSED") or ("DICE " .. W.DiceLeft(W.Start()))))
         else
-            chrome.week:SetText("THIS WEEK  " .. score)
+            chrome.week:SetText(string.format("THIS WEEK  %s / %s", T.Paint("cyan", "GROUP " .. week.group),
+                T.Paint("pink", "ZENNIT " .. week.zennit)))
         end
     end
     local channels = ST.Sync.channels()

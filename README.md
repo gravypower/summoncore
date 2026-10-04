@@ -268,8 +268,11 @@ numbers behind it, is in `design/lenses.md`):
   summon's points when he wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal.
 - **Zennit has 3 dice a week.** When they are gone he has to accept, refuse or ask for the silver. His roll gets **+10**;
   each helper on the summon (up to two) adds **+5** to the summoner's roll; a tie goes to him.
-- The hub's season band shows the week's score, how many summons of him have been filed (`FILED 3/10`) and his dice
-  left, or `CLOSED`.
+- **Where the week stands is shown when it changes**, not only in the hub:
+  - as a ritual on Zennit begins, the caster is told whether it will count, who leads, his dice left and what helpers add;
+  - after each summon of him and each of his answers, a chat line: "Week: the group leads by 1, 4 of 10 filed, 1 die left.";
+  - his answer popup says the same, worded for him ("you lead by 2");
+  - the hub's season band shows the lead (`WEEK: GROUP +1 · FILED 4/10 · DICE 1`, or `CLOSED`).
 
 Earlier weeks keep the rules they were played under (his head start of 10, every landed summon counting for the group,
 unlimited dice), so the season and the chapters already reached do not change. Tune the race in `Week.RULES`

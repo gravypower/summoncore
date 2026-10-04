@@ -278,6 +278,54 @@ function Week.Check()
     ST.print(string.format("Season: Zennit %d of %d, the group %d of %d.", season.zennit, Week.WINS, season.group, Week.WINS))
 end
 
+-- Who is ahead in a week's score, and by how much: "group" or "zennit" (a tie is his, so "zennit" with 0).
+function Week.Lead(r)
+    if r.group > r.zennit then return "group", r.group - r.zennit end
+    return "zennit", r.zennit - r.group
+end
+
+-- The lead in words; `you` words it for Zennit's own client.
+local function leadText(r, you)
+    local side, by = Week.Lead(r)
+    if side == "group" then return string.format("the group leads by %d", by) end
+    if by == 0 then return you and "it is level, and a tie is yours" or "it is level, and a tie goes to Zennit" end
+    return string.format(you and "you lead by %d" or "Zennit leads by %d", by)
+end
+
+local function diceText(n)
+    return string.format("%d %s left", n, n == 1 and "die" or "dice")
+end
+
+-- One line on where the week starting at `start` stands (default: this week), for the chat after a summon of Zennit
+-- or an answer: "Week: the group leads by 1, 4 of 10 filed, 1 die left." nil under the old rules.
+function Week.StatusLine(start, you)
+    start = start or Week.Start()
+    if not Week.NewRules(start) then return nil end
+    local r = Week.Score(start)
+    local parts = { leadText(r, you), string.format("%d of %d filed", r.counted, Week.RULES.cap),
+        r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
+    return "Week: " .. table.concat(parts, ", ") .. "."
+end
+
+-- What the caster should know as a ritual on `target` begins, or nil when it is not Zennit or the old rules apply:
+-- whether it will count, where the week stands, his dice, and what helpers add.
+function Week.Briefing(target)
+    if not isZennit(target) then return nil end
+    local now = time()
+    local start = Week.Start(now)
+    if not Week.NewRules(start) then return nil end
+    if Week.Immune(now) then return target .. " is on his week off. The Index will note the summons, and is not hopeful." end
+    local r = Week.Score(start)
+    if r.closed then return target .. " has closed the Index for the week: this summon will not count." end
+    if r.counted >= Week.RULES.cap then
+        return target .. " has had all the summons that count this week: this one will not count."
+    end
+    local dice = Week.DiceLeft(start)
+    return string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
+        Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
+        string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.RULES.helperBonus))
+end
+
 -- The caster is told when they summon Zennit during his week off, or after he has closed the Index for the week.
 function Week.Warn(ev)
     if ev.fake or not isZennit(ev.target) then return end

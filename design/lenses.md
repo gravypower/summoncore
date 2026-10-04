@@ -22,7 +22,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Meaningful Choices | Zennit's four answers are the main decision in the game | Dice limited (3 a week); playtest |
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
-| Visible Progress / Feedback | The season band and answer colours in the hub | Findings in; changes proposed |
+| Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
 
@@ -233,6 +233,20 @@ After acting, what do they need to know, and does the game tell them clearly and
 | 4 | Zennit's popup shows where the week stands | 1, for Zennit |
 | 5 | An optional on-screen tracker | 1; held back: clutter is a cost, wait for a playtest to ask for it |
 
+**Built: 1 to 4.**
+- As a ritual on Zennit begins: "Summoning Zennit: summon 3 of 10 this week, and the group leads by 3. He has 3 dice
+  left; each helper adds +5 to your roll if he suggests dice (two helpers at most)." Or that it won't count, or that
+  he is on his week off.
+- After each summon of him and each answer, everyone gets "Week: the group leads by 3, 2 of 10 filed, 3 dice left."
+- Zennit's popup ends with the same line in his words ("Week: you lead by 2, …"); the separate dice count it replaced
+  is gone, so the number appears once.
+- The band reads `WEEK: GROUP +3 · FILED 2/10 · DICE 3`; a tie reads `ZENNIT (TIE)`, because a tie is his.
+
+**To watch in playtests**
+- Do people read the chat lines, or do they scroll past? If they scroll past, that is the case for the tracker (5).
+- Two lines per answer, for everyone in the guild: welcome, or noise?
+- Does the briefing change behaviour: do people wait for a second helper when he still has dice?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -241,3 +255,4 @@ After acting, what do they need to know, and does the game tell them clearly and
 | 2026-10-04 | "Trying" means beating him at his own answers; keep it tongue in cheek | Essential Experience | Summoning Zennit should be how to win, not a risk to avoid |
 | 2026-10-04 | New race from 5 Oct 2026: only summons of him count, 5 a week, 3 dice a week, +5 per helper, head start 2 | Fairness, Meaningful Choices | See the Fairness entry: effort pays, and his list keeps his week off within reach |
 | 2026-10-04 | 5 to 10 summons of him count a week; he can close the Index for free once 5 are filed | Griefing / Friendship | He gets a way out; closing can't lock in a lead before the fair minimum |
+| 2026-10-04 | Show where the week stands when it changes: briefing at the ritual, a chat line after summons and answers, in his popup, and the lead in the band | Visible Progress, Feedback | Progress was only in the hub, and the facts that decide how to summon him came too late |
