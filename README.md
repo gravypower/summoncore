@@ -33,8 +33,8 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/st debug` | Toggle detector messages |
 | `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/st intro [scene|victory]` | Play the illustrated intro, "Zennit and the Index"; `victory` plays chapter 2, the week Zennit wins (scenes 11-12) |
-| `/st week [victory]` | The weekly contest: this week and last, and whether Zennit is on his week off |
+| `/st intro [scene|victory|group]` | Play the illustrated intro, "Zennit and the Index"; `victory` plays chapter 2, the week Zennit wins (scenes 11-12); `group` plays chapter 3, the week the group wins (scenes 13-14) |
+| `/st week [victory|group]` | The weekly contest: this week and last, and whether Zennit is on his week off |
 | `/st clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/st zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Answer tab |
 | `/st respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
@@ -104,7 +104,7 @@ newer-version strings are refused. This is the manual fallback if addon messages
 
 ### Intro
 
-`/st intro` plays "Zennit and the Index": 10 scenes (chapter 1; scenes 11-12 are chapter 2, the week he wins) of 3-frame flipbook art (about six flips a second), narrated, with
+`/st intro` plays "Zennit and the Index": 10 scenes (chapter 1; scenes 11-12 are chapter 2, the week he wins, and 13-14 chapter 3, the week the group wins) of 3-frame flipbook art (about six flips a second), narrated, with
 a quiet synth music bed, about 3:25 in all. The whole narration is typed out, a sentence at a time and in step with the
 voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. While the narrator mentions something (the three kinds of ritual, the book, the form, Zennit), a pulsing box lights up that part of the picture. The **Text**
 button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
@@ -128,7 +128,7 @@ up new files). The art lives in `Media/intro_l1.blp` to `intro_l10.blp` (lines) 
 
 Scenes 9 and 10 explain the weekly challenge: the group earns points by place, Zennit holds a secret list, and he may refuse, ask for fifty silver, or suggest dice. They were rendered here from the draft rules and may need rewording once the rules are final.
 
-The narration is `Media/intro_1.ogg` to `intro_12.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
+The narration is `Media/intro_1.ogg` to `intro_14.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
 start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
 mutes the narration.

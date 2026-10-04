@@ -48,7 +48,10 @@ local scenes = {
     { label = "The options", dur = 25.40 + PAUSE, text = [=[If Zennit completes his list first, he wins the week, and cannot be summoned for the seven days that follow. He may refuse a summons. He may demand fifty silver, in cash, with no receipt. Or he may suggest dice. The Index will accept any of these. The Index accepts most things.]=] },
     -- chapter 2, the week Zennit wins: played on its own with /st intro victory (or /st intro 11)
     { chapter = 2, label = "The count", dur = 24.00 + PAUSE, text = [=[At the end of the week, the Index counted. It counted the summons, and the places, and the refusals, and the dice, and then it counted them again, because the total was not the one it had expected. Zennit had won. He had won the dice when it mattered, and he had been summoned, entirely by accident, to several of the places on his list.]=] },
-    { chapter = 2, label = "Leave", dur = 28.00 + PAUSE, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount. On the eighth day, somewhere around the letter Z, the clerk sneezed.]=] },
+    { chapter = 2, label = "Leave", dur = 28.00 + PAUSE, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount.]=] },
+    -- chapter 3, the week the group wins: /st intro group (or /st intro 13)
+    { chapter = 3, label = "The group wins", dur = 27.00 + PAUSE, text = [=[The following week, the group won. Nobody was more surprised than the group. The Index counted the summons, and the places, and the refusals, and found that the party had finished ahead of Zennit, despite his head start, and despite a run of dice that had, until then, been entirely reliable. The Index checked the sum three times. It was not wrong.]=] },
+    { chapter = 3, label = "The cake", dur = 26.00 + PAUSE, text = [=[A victory for persistence, as the rules had promised. The party celebrated in the traditional manner, by summoning Zennit to the celebration. He arrived, as he always did, slightly confused, and was handed a small cake, which he did not trust. The Index recorded the week as a narrow win for hope over paperwork, and began, quietly, to count the next one.]=] },
 }
 
 -- A chapter is a run of scenes that plays on its own and ends with the fade to "THE END".
@@ -539,7 +542,7 @@ function Intro.Toggle(arg)
     if not frame then build() end
     if frame:IsShown() then frame:Hide() return end
     frame:Show()
-    local si = arg == "victory" and firstOf[2] or tonumber(arg) or 1
+    local si = (arg == "victory" and firstOf[2]) or (arg == "group" and firstOf[3]) or tonumber(arg) or 1
     si = math.max(1, math.min(#scenes, si))
     lo, hi = firstOf[scenes[si].chapter], lastOf[scenes[si].chapter]
     shownScene = 0

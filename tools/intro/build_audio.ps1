@@ -58,7 +58,7 @@ $sceneCount = (Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg"
 $voices = 1..$sceneCount | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
 $pause = 0.6   # keep in step with PAUSE in Intro.lua
 $ending = 3.2   # extra seconds after the last scene: the music fades out while the picture fades to black
-$chapterEnds = @(10, 12)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua)
+$chapterEnds = @(10, 12, 14)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua)
 $lengths = $voices | ForEach-Object { Duration $_ }
 $starts = @(); $acc = 0.0
 for ($k = 0; $k -lt $lengths.Count; $k++) {
@@ -233,7 +233,14 @@ $cueSpec = @(
     @(12, "seven days", "SEVEN DAYS. NO RITUAL COULD FIND HIM."),
     @(12, "on leave", "ON LEAVE"),
     @(12, "doing nothing at all", "DOING NOTHING AT ALL"),
-    @(12, "the clerk sneezed", "ACHOO. AGAIN.")
+    @(13, "the group won", "THE GROUP WON"),
+    @(13, "more surprised than the group", "NOBODY MORE SURPRISED"),
+    @(13, "head start", "DESPITE THE HEAD START"),
+    @(13, "three times", "CHECKED THREE TIMES"),
+    @(14, "victory for persistence", "A VICTORY FOR PERSISTENCE"),
+    @(14, "small cake", "A SMALL CAKE"),
+    @(14, "did not trust", "WHICH HE DID NOT TRUST"),
+    @(14, "count the next one", "COUNTING THE NEXT ONE")
 )
 $lead = 0.25   # show a cue a little before the words are spoken
 
@@ -322,7 +329,15 @@ $highlightSpec = @(
     @(12, "said his name", 340, 140, 170, 66),
     @(12, "on leave", 556, 104, 182, 84),
     @(12, "doing nothing at all", 766, 200, 170, 280),
-    @(12, "the clerk sneezed", 16, 330, 200, 210)
+    @(13, "the group won", 540, 120, 330, 250),
+    @(13, "finished ahead of Zennit", 40, 60, 440, 270),
+    @(13, "head start", 262, 140, 220, 170),
+    @(13, "run of dice", 50, 365, 150, 100),
+    @(14, "victory for persistence", 176, 22, 608, 86),
+    @(14, "traditional manner", 90, 140, 360, 230),
+    @(14, "small cake", 232, 306, 118, 100),
+    @(14, "did not trust", 550, 140, 250, 350),
+    @(14, "count the next one", 822, 350, 106, 160)
 )
 
 $cues = @{}

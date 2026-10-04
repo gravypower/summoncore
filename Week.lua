@@ -71,7 +71,7 @@ function Week.Check()
     if last.winner == "zennit" then
         ST.print("|cffffd100Zennit won the week|r (" .. lines(last) .. "). He is on leave until next Monday. The story: |cffffd100/st intro victory|r")
     else
-        ST.print("The group won the week (" .. lines(last) .. "). Zennit is back on the list.")
+        ST.print("The group won the week (" .. lines(last) .. "). Zennit is back on the list. The story: |cffffd100/st intro group|r")
     end
 end
 

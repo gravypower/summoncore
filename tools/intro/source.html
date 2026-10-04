@@ -547,7 +547,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
 
   scenes.push({
     label: 'Leave', dur: 28.0,
-    text: 'The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount. On the eighth day, somewhere around the letter Z, the clerk sneezed.',
+    text: 'The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount.',
     frame: function (k) {
       var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
       // seven days, crossed off
@@ -571,9 +571,48 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); ou
       // Zennit, doing nothing at all
       out += zen(748, 200, 0.5, 0);
       out += T(800 + k * 6, 180 - k * 8, 'z', 30, '#EDE6D6') + T(830 + k * 6, 150 - k * 8, 'Z', 40, '#EDE6D6');
-      // the clerk
-      out += clerk(30, 380, 0.3, k === 2 ? 'sneeze' : 'calm');
-      if (k === 2) out += burst(140, 340, 0.9, 'ACHOO!', 22);
+      return out;
+    }
+  });
+
+  // Chapter 3: the week the group wins.
+  scenes.push({
+    label: 'The group wins', dur: 27.0,
+    text: 'The following week, the group won. Nobody was more surprised than the group. The Index counted the summons, and the places, and the refusals, and found that the party had finished ahead of Zennit, despite his head start, and despite a run of dice that had, until then, been entirely reliable. The Index checked the sum three times. It was not wrong.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
+      out += '<rect x="40" y="60" width="440" height="270" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>';
+      out += T(260, 112, 'THE COUNT', 34, '#23202B');
+      out += '<path d="M260 130 V310" stroke="#23202B" stroke-width="3" stroke-dasharray="8 8" fill="none"/>';
+      out += T(150, 170, 'THE GROUP', 22, '#23202B', 'middle', 'Special Elite, monospace');
+      out += T(150, 270 + [0, -8, -3][k], '36', 96, '#3E5B4E');
+      out += T(370, 170, 'ZENNIT', 22, '#23202B', 'middle', 'Special Elite, monospace');
+      out += T(370, 270, '31', 96, '#B5432E');
+      out += T(370, 308, '(10 of them a head start)', 14, '#23202B', 'middle', 'Special Elite, monospace');
+      out += die(60, 372, 1) + die(128, [372, 366, 372][k], 2);
+      out += T(110, 462, 'ROLLED BADLY', 18, '#EDE6D6', 'middle', 'Special Elite, monospace');
+      out += zen(300, 336, 0.36, [-2, 2, 0][k]) + T(440, 440, '?', 60, '#FFE98A', 'middle', 'Patua One, serif');
+      out += hero(600, 210, '#5B3FA0', 'wizard', k !== 1) + hero(710, 210, '#7A3A22', 'spiky', k !== 0) + hero(820, 210, '#2D4339', 'hood', true);
+      out += burst(560, 40, 0.9, 'WE WON', 20);
+      return out;
+    }
+  });
+
+  scenes.push({
+    label: 'The cake', dur: 26.0,
+    text: 'A victory for persistence, as the rules had promised. The party celebrated in the traditional manner, by summoning Zennit to the celebration. He arrived, as he always did, slightly confused, and was handed a small cake, which he did not trust. The Index recorded the week as a narrow win for hope over paperwork, and began, quietly, to count the next one.',
+    frame: function (k) {
+      var out = '<rect width="960" height="540" fill="url(#gViolet)"/>';
+      out += '<rect x="180" y="26" width="600" height="78" fill="#F7F0DF" stroke="#23202B" stroke-width="5"/>' + T(480, 78, 'VICTORY FOR PERSISTENCE', 36, '#B5432E');
+      out += '<path d="M180 104 L220 140 L260 104 L300 140 L340 104 L380 140 L420 104 L460 140 L500 104 L540 140 L580 104 L620 140 L660 104 L700 140 L740 104 L780 140" fill="none" stroke="#E0674D" stroke-width="5"/>';
+      out += hero(150, 220, '#5B3FA0', 'wizard', k !== 1) + hero(260, 220, '#7A3A22', 'spiky', k !== 0) + hero(370, 220, '#2D4339', 'hood', k === 2);
+      // the small cake
+      out += '<rect x="80" y="400" width="420" height="40" fill="#6B4A2E" stroke="#23202B" stroke-width="4"/>';
+      out += '<rect x="240" y="350" width="100" height="50" fill="#F2B6C6" stroke="#23202B" stroke-width="4"/><rect x="240" y="350" width="100" height="14" fill="#FFFFFF" stroke="#23202B" stroke-width="3"/>' +
+        '<rect x="286" y="326" width="8" height="24" fill="#FFE98A" stroke="#23202B" stroke-width="2"/><circle cx="290" cy="' + (318 - [0, 2, -1][k]) + '" r="7" fill="#FFB347"/>';
+      out += zen(560, 130, 0.62, [-2, 2, 0][k]) + T(880, 170, '?', 90, '#FFE98A', 'middle', 'Patua One, serif', 'opacity="0.8"');
+      out += U('book', 830, 360, 90, 123);
+      out += T(875, 506, 'counting...', 16, '#EDE6D6', 'middle', 'Special Elite, monospace');
       return out;
     }
   });

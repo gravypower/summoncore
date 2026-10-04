@@ -2,7 +2,7 @@
 -- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.
 local ADDON, ST = ...
 ST.introEnding = 3.20
-ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50, 24.70, 32.00 }
+ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.30, 26.70, 25.50, 24.70, 27.00, 27.70, 26.50 }
 ST.introCues = {
     [1] = {
         { t = 0.55, text = "THE COSMIC INDEX OF SUMMONABLE PERSONS" },
@@ -67,11 +67,22 @@ ST.introCues = {
         { t = 22.75, text = "SEVERAL PLACES ON HIS LIST" },
     },
     [12] = {
-        { t = 2.02, text = "BY REGISTERED LETTER" },
+        { t = 2.03, text = "BY REGISTERED LETTER" },
         { t = 7.26, text = "SEVEN DAYS. NO RITUAL COULD FIND HIM." },
-        { t = 19.16, text = "ON LEAVE" },
-        { t = 21.85, text = "DOING NOTHING AT ALL" },
-        { t = 30.10, text = "ACHOO. AGAIN." },
+        { t = 19.15, text = "ON LEAVE" },
+        { t = 21.87, text = "DOING NOTHING AT ALL" },
+    },
+    [13] = {
+        { t = 1.53, text = "THE GROUP WON" },
+        { t = 4.38, text = "NOBODY MORE SURPRISED" },
+        { t = 15.75, text = "DESPITE THE HEAD START" },
+        { t = 23.59, text = "CHECKED THREE TIMES" },
+    },
+    [14] = {
+        { t = 0.38, text = "A VICTORY FOR PERSISTENCE" },
+        { t = 15.24, text = "A SMALL CAKE" },
+        { t = 16.60, text = "WHICH HE DID NOT TRUST" },
+        { t = 24.43, text = "COUNTING THE NEXT ONE" },
     },
 }
 -- introSentences: when each sentence of the narration starts, for the subtitles.
@@ -138,11 +149,23 @@ ST.introSentences = {
         { t = 16.68, text = [=[He had won the dice when it mattered, and he had been summoned, entirely by accident, to several of the places on his list.]=] },
     },
     [12] = {
-        { t = 0.40, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice.]=] },
+        { t = 0.41, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice.]=] },
         { t = 7.14, text = [=[For seven days, no ritual could find him.]=] },
         { t = 11.14, text = [=[The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave.]=] },
-        { t = 20.77, text = [=[Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount.]=] },
-        { t = 27.20, text = [=[On the eighth day, somewhere around the letter Z, the clerk sneezed.]=] },
+        { t = 20.78, text = [=[Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount.]=] },
+    },
+    [13] = {
+        { t = 0.41, text = [=[The following week, the group won.]=] },
+        { t = 3.79, text = [=[Nobody was more surprised than the group.]=] },
+        { t = 7.79, text = [=[The Index counted the summons, and the places, and the refusals, and found that the party had finished ahead of Zennit, despite his head start, and despite a run of dice that had, until then, been entirely reliable.]=] },
+        { t = 21.87, text = [=[The Index checked the sum three times.]=] },
+        { t = 25.84, text = [=[It was not wrong.]=] },
+    },
+    [14] = {
+        { t = 0.40, text = [=[A victory for persistence, as the rules had promised.]=] },
+        { t = 5.04, text = [=[The party celebrated in the traditional manner, by summoning Zennit to the celebration.]=] },
+        { t = 11.13, text = [=[He arrived, as he always did, slightly confused, and was handed a small cake, which he did not trust.]=] },
+        { t = 18.53, text = [=[The Index recorded the week as a narrow win for hope over paperwork, and began, quietly, to count the next one.]=] },
     },
 }
 -- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).
@@ -206,11 +229,23 @@ ST.introHighlights = {
         { t = 22.85, x = 500, y = 50, w = 240, h = 400 },
     },
     [12] = {
-        { t = 2.12, x = 24, y = 110, w = 176, h = 150 },
+        { t = 2.13, x = 24, y = 110, w = 176, h = 150 },
         { t = 7.36, x = 296, y = 26, w = 392, h = 60 },
         { t = 13.36, x = 340, y = 140, w = 170, h = 66 },
-        { t = 19.26, x = 556, y = 104, w = 182, h = 84 },
-        { t = 21.95, x = 766, y = 200, w = 170, h = 280 },
-        { t = 30.20, x = 16, y = 330, w = 200, h = 210 },
+        { t = 19.25, x = 556, y = 104, w = 182, h = 84 },
+        { t = 21.97, x = 766, y = 200, w = 170, h = 280 },
+    },
+    [13] = {
+        { t = 1.63, x = 540, y = 120, w = 330, h = 250 },
+        { t = 13.52, x = 40, y = 60, w = 440, h = 270 },
+        { t = 15.85, x = 262, y = 140, w = 220, h = 170 },
+        { t = 17.45, x = 50, y = 365, w = 150, h = 100 },
+    },
+    [14] = {
+        { t = 0.48, x = 176, y = 22, w = 608, h = 86 },
+        { t = 6.67, x = 90, y = 140, w = 360, h = 230 },
+        { t = 15.34, x = 232, y = 306, w = 118, h = 100 },
+        { t = 16.70, x = 550, y = 140, w = 250, h = 350 },
+        { t = 24.53, x = 822, y = 350, w = 106, h = 160 },
     },
 }
