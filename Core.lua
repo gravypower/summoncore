@@ -35,23 +35,69 @@ end
 -- it keeps the debug tools and unreached chapters out of the way; it is not security.
 ST.ADMIN_TAG = "Gravypower#1577"
 
+-- This account's BattleTag, or nil if the game does not give it (ST.bnGetInfo is a seam for the self-test).
 function ST.BattleTag()
-    if not BNGetInfo then return nil end
-    local ok, _, tag = pcall(BNGetInfo)
+    local get = ST.bnGetInfo or BNGetInfo
+    if not get then return nil end
+    local ok, _, tag = pcall(get)
     if ok and type(tag) == "string" and not ST.isSecret(tag) then return tag end
 end
 
+-- Do two BattleTags name the same account? Case and stray spaces do not matter; a missing tag matches nothing.
+function ST.TagMatches(tag, expected)
+    if type(tag) ~= "string" or type(expected) ~= "string" then return false end
+    tag, expected = tag:match("^%s*(.-)%s*$"), expected:match("^%s*(.-)%s*$")
+    return tag ~= "" and tag:lower() == expected:lower()
+end
+
 function ST.IsAdmin()
-    local tag = ST.BattleTag()
-    return tag ~= nil and tag:lower() == ST.ADMIN_TAG:lower()
+    return ST.TagMatches(ST.BattleTag(), ST.ADMIN_TAG)
 end
 
 -- Zennit's own Battle.net account: it is Zennit whichever character he is playing.
 ST.ZENNIT_TAG = "Zennit#11523"
 
 function ST.IsZennitAccount()
+    return ST.TagMatches(ST.BattleTag(), ST.ZENNIT_TAG)
+end
+
+-- Checks the BattleTag matching with sample tags, then through the ST.bnGetInfo seam as the game would report them.
+-- Returns true or false and a short description.
+function ST.TagTest()
+    local cases = {
+        { "Gravypower#1577", ST.ADMIN_TAG, true }, { "  gravypower#1577 ", ST.ADMIN_TAG, true },
+        { "GRAVYPOWER#1577", ST.ADMIN_TAG, true }, { "Gravypower#1578", ST.ADMIN_TAG, false },
+        { "Gravypower", ST.ADMIN_TAG, false }, { "Zennit#11523", ST.ZENNIT_TAG, true },
+        { "zennit#11523", ST.ZENNIT_TAG, true }, { "Zennit#1152", ST.ZENNIT_TAG, false },
+        { "Zennit#11523", ST.ADMIN_TAG, false }, { "", ST.ADMIN_TAG, false }, { nil, ST.ADMIN_TAG, false },
+        { 5, ST.ADMIN_TAG, false },
+    }
+    for i, c in ipairs(cases) do
+        if ST.TagMatches(c[1], c[2]) ~= c[3] then return false, "sample " .. i .. " matched wrongly" end
+    end
+    -- as the game would report them: id, tag, ...
+    local saved = ST.bnGetInfo
+    local function report(tag) return function() return 1, tag end end
+    local out
+    ST.bnGetInfo = report("Gravypower#1577")
+    if not (ST.IsAdmin() and not ST.IsZennitAccount()) then out = "the admin account is not recognised" end
+    ST.bnGetInfo = report("Zennit#11523")
+    if not out and not (ST.IsZennitAccount() and not ST.IsAdmin()) then out = "Zennit's account is not recognised" end
+    ST.bnGetInfo = report("Someone#1")
+    if not out and (ST.IsAdmin() or ST.IsZennitAccount()) then out = "a stranger is recognised" end
+    ST.bnGetInfo = function() error("no Battle.net") end
+    if not out and (ST.BattleTag() ~= nil or ST.IsAdmin()) then out = "a failing lookup is not handled" end
+    ST.bnGetInfo = saved
+    if out then return false, out end
+    return true, string.format("%d samples and 4 account lookups behave. Live: %s", #cases, ST.TagReport())
+end
+
+-- One line saying what the game reports for this account and what the addon makes of it.
+function ST.TagReport()
     local tag = ST.BattleTag()
-    return tag ~= nil and tag:lower() == ST.ZENNIT_TAG:lower()
+    if not tag then return "BattleTag: the game does not report one (admin: no, Zennit's account: no)" end
+    return string.format("BattleTag %s: admin %s, Zennit's account %s", tag, ST.IsAdmin() and "yes" or "no",
+        ST.IsZennitAccount() and "yes" or "no")
 end
 
 ST.RITUAL_ID = 698 -- Ritual of Summoning (classic ID; confirm with /st test)
@@ -281,8 +327,15 @@ end
 
 -- Says whether this account is the admin, and what the game reports as its BattleTag.
 function commands.admin()
-    local tag = ST.BattleTag()
-    print_(ST.IsAdmin() and ("admin: yes (" .. tag .. ")") or ("admin: no (this account's BattleTag reads " .. tostring(tag) .. ")"))
+    print_(ST.TagReport())
+end
+
+-- /st reset - wipes this client's summons, badges and story progress (asks first).
+-- /st reset all - the admin also asks every other Summon Core user in the party, raid and guild to do the same.
+function commands.reset(rest)
+    local everyone = rest == "all"
+    if everyone and not ST.IsAdmin() then return print_("that is an admin tool") end
+    ST.Reset.Ask(everyone)
 end
 
 function commands.gag()
@@ -314,6 +367,8 @@ local HELP = {
     "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
     "/st clip [category|file] - list or play voice clips from Media/clips",
     "/st zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
+    "/st admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
+    "/st reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/st week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
     "/st respond [test] -Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/st gag - preview the Zennit gag",

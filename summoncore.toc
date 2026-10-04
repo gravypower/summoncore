@@ -18,6 +18,7 @@ Detector.lua
 Gag.lua
 Respond.lua
 Week.lua
+Reset.lua
 Hub.lua
 Comic.lua
 IntroCues.lua

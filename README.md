@@ -241,3 +241,15 @@ matching buttons in the window) and every chapter of the story not yet reached b
 account only (`ST.ADMIN_TAG` in `Core.lua`). `/st admin` says whether this account is the admin. Zennit's own account
 (`ST.ZENNIT_TAG`) is treated as Zennit whichever character he plays. The check runs on each player's own computer, so it keeps
 things out of the way but is not security.
+
+### Tools tab, BattleTags and reset
+
+The Tools tab now has a button for every command that has no tab of its own: week and season, Battle.net check, undo the last
+summon, reset, and (admin only) the sync self-test, a test summon, the BattleTag tests and the debug switches.
+`/st admin` (or the Battle.net check button) shows the BattleTag the game reports and whether it is the admin's or Zennit's; the
+admin's **Run tag tests** button, and the last two lines of `/st synctest`, check the matching with sample tags.
+
+`/st reset` (or **Reset my data...**) wipes this client's summons, badges and, because the season and story are worked out from
+the log, the story too. It asks first. The admin's `/st reset all` also asks everyone else running Summon Core, in the party, raid
+and guild, to do the same: each of them gets a prompt and nothing changes on their client until they agree. A reset leaves a mark,
+and sync refuses anything older than it, so a client that said no cannot put the old log back.

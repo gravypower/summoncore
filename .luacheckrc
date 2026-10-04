@@ -8,6 +8,7 @@ only = { "0", "1" }
 -- Globals this addon defines.
 globals = {
     "SummonTrackerDB",
+    "StaticPopupDialogs",
     "SlashCmdList",
     "SLASH_SUMMONCORE1",
     "SLASH_SUMMONCORE2",
@@ -20,5 +21,5 @@ read_globals = {
     "GetTime", "GetUnitName", "GetZoneText", "IsInGroup", "IsInGuild", "IsInInstance", "IsInRaid",
     "PlaySound", "PlaySoundFile", "RANDOM_ROLL_RESULT", "RandomRoll", "StopSound", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo",
     "UnitExists", "UnitFullName", "UnitGUID", "UnitHealth", "UnitInRange", "UnitIsConnected", "UnitName",
-    "BNGetInfo", "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert",
+    "BNGetInfo", "StaticPopup_Show", "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert",
 }

@@ -358,7 +358,7 @@ local function buildSync(f)
 end
 
 local function buildTools(f)
-    local out = bodyText(f, 16, -262, 720, 150)
+    local out = bodyText(f, 16, -272, 720, 150)
     local function show(text) out:SetText(text) end
 
     -- left column
@@ -430,6 +430,46 @@ local function buildTools(f)
         local lines = {}
         for _, c in ipairs(cats) do lines[#lines + 1] = string.format("%s: %d", c[1], c[2]) end
         show("Voice clips: " .. table.concat(lines, ",  "))
+    end)
+
+    -- the weekly contest and the Battle.net accounts
+    button(f, "Week and season", 210, -198, 170, function()
+        local W = ST.Week
+        local season = W.Season()
+        local immune, untilT = W.Immune(time())
+        show(table.concat({
+            "This week: " .. W.Describe(W.Score(W.Start())),
+            "Last week: " .. W.Describe(W.Score(W.Start() - 7 * 86400)),
+            string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
+                season.group, W.WINS, #season.finales),
+            immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
+        }, "\n"))
+    end)
+    button(f, "Battle.net check", 404, -198, 200, function() show(ST.TagReport()) end)
+    dbg[#dbg + 1] = button(f, "Run tag tests", 614, -198, 130, function()
+        local ok, detail = ST.TagTest()
+        show((ok and "|cff33ff66PASS|r " or "|cffff4444FAIL|r ") .. detail)
+    end)
+
+    -- your data
+    button(f, "Undo last summon", 16, -228, 170, function()
+        local last = ST.Store.RemoveLast()
+        show(last and string.format("Removed %s -> %s (badges already earned are kept).", last.ev.caster, last.ev.target) or
+            "Nothing to undo.")
+        Hub.Refresh()
+    end)
+    button(f, "Reset my data...", 210, -228, 170, function() ST.Reset.Ask(false) end)
+    dbg[#dbg + 1] = button(f, "Reset for everyone...", 404, -228, 200, function() ST.Reset.Ask(true) end)
+
+    -- more admin tools
+    dbg[#dbg + 1] = button(f, "Sync self-test", 614, -34, 130, function()
+        ST.SyncTest.Run()
+        show("Self-test results are in the chat window.")
+    end)
+    dbg[#dbg + 1] = button(f, "Add test summon", 614, -64, 130, function()
+        local ev = ST.AddFake("Tester", {})
+        show(string.format("Test summon saved: %s in %s (+%d, %s). It stays on this client.", ev.target, ev.subzone ~= "" and ev.subzone or "nowhere", ev.points, ev.kind))
+        Hub.Refresh()
     end)
     return function()
         local admin = ST.IsAdmin()

@@ -583,6 +583,37 @@ add("the season: first to five weekly wins takes the finale, then the count star
         string.format("%d chapters, %d finale(s), season z%d g%d", #c, #season.finales, season.zennit, season.group)
 end)
 
+add("BattleTags: the admin and Zennit's account are told apart, case and spaces ignored", function()
+    return ST.TagTest()
+end)
+
+add("reset: wipes the log, refuses older events afterwards, and a request only asks", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
+    local id1 = cast(a, 1, false)
+    cast(a, 2, false)
+    settle({ a, b })
+    local had = 0
+    for _ in pairs(b.db.events) do had = had + 1 end
+    local stamp = BASE + 50
+    local removed = with(b, function() return ST.Reset.Apply(stamp) end)
+    local left = 0
+    for _ in pairs(b.db.events) do left = left + 1 end
+    local _, old = Sync.Decode(Sync.Encode(id1, a.db.events[id1]))
+    local late = with(b, function() return Sync.Merge(id1, old, "Alpha", false) end)
+    local asked, from, forStamp
+    local realAsk = Sync.onReset
+    Sync.onReset = function(sender, s) asked, from, forStamp = true, sender, s end
+    local ask = with(a, function() return Sync.OnMessage("1~X~" .. (BASE + 60), "PARTY", "Beta") end)
+    local stale = with(b, function() return Sync.OnMessage("1~X~" .. stamp, "PARTY", "Alpha") end)
+    local bad = with(a, function() return Sync.OnMessage("1~X~soon", "PARTY", "Beta") end)
+    Sync.onReset = realAsk
+    local keptOwn = 0
+    for _ in pairs(a.db.events) do keptOwn = keptOwn + 1 end
+    return had == 2 and removed == 2 and left == 0 and late == "rejected:reset" and ask == "asked" and asked and from == "Beta"
+        and forStamp == BASE + 60 and stale == "kept" and bad == "bad" and keptOwn == 2,
+        string.format("had %d removed %d left %d, late=%s ask=%s stale=%s bad=%s, requester kept %d", had, removed, left, late, ask, stale, bad, keptOwn)
+end)
+
 add("only Zennit can answer for himself, and a newer answer wins", function()
     local a, z = newClient("Alpha"), newClient("Zennit")
     local id = cast(a, 900, false, { target = "Zennit" })

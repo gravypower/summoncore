@@ -161,6 +161,8 @@ function Sync.Merge(id, ev, sender, live, opts)
     opts = opts or {}
     local store = ST.Store
     if live and ev.caster ~= sender then return "rejected:sender" end
+    -- anything from before the last reset stays gone, even if another client still holds it
+    if ST.db.resetAt and ev.time <= ST.db.resetAt then return "rejected:reset" end
     local cur = store.Get(id)
     if ev.caster == Sync.myName() then
         -- Nobody can write entries against the receiver. Our own copy is authoritative.
@@ -237,6 +239,11 @@ function Sync.SendResponse(id, resp)
     local body = string.format("%s|%s|%d|%d|%d%s", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time,
         resp.listed and "|1" or "")
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
+end
+
+-- Asks everyone to wipe their summons and the story as of `stamp` (each user is asked before it happens).
+function Sync.SendReset(stamp)
+    for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "X", tostring(stamp)) end
 end
 
 -- Dice: Zennit's roll goes to the summoner, who rolls back; both by whisper.
@@ -348,6 +355,14 @@ function Sync.OnMessage(text, channel, sender)
         ST.Store.SetResponse(rid, resp)
         if Sync.onResponse then Sync.onResponse(rid, ev, resp) end
         return "applied"
+
+    elseif typ == "X" then
+        -- a request to reset: nothing happens until this user agrees
+        local stamp = tonumber(body:match("^(%d+)$"))
+        if not stamp or stamp > time() + 86400 then return "bad" end
+        if stamp <= (ST.db.resetAt or 0) then return "kept" end
+        if Sync.onReset then Sync.onReset(sender, stamp) end
+        return "asked"
 
     elseif typ == "D" then
         -- Zennit suggests dice for a summon of him, and has rolled; we are the summoner
