@@ -1,4 +1,4 @@
--- Intro: /st intro plays "Zennit and the Index", an illustrated intro. Each scene is a 3-frame flipbook
+-- Intro: /sc intro plays "Zennit and the Index", an illustrated intro. Each scene is a 3-frame flipbook
 -- (Media\intro_<n>, a 2048x1024 sheet of 1024x512 cells) flipped about six times a second, narrated, with a
 -- quiet synth music bed. Key phrases are typed out over the picture, in sync with the narration, with
 -- beeps and clicks (the full text is available behind the Text button). Rebuild the art with
@@ -46,10 +46,10 @@ local scenes = {
     { label = "The week", dur = 14.40 + PAUSE, text = [=[This is the story of his week, and every week after that. If the form is ever found, you will be the first to know. Or the last. The Index is unclear.]=] },
     { label = "The rules", dur = 26.70 + PAUSE, text = [=[The rules, such as they are. Each week, the group earns points by summoning Zennit, with more points for places that are remote, or dangerous, or frankly unreasonable. The Index files ten summons a week. Anything more, it files under enthusiasm. Zennit, for his part, holds a secret list, which he will not discuss. A summons to a place on it earns him the points as well. If the group has more points at the end of the week, the Index records a victory for persistence.]=] },
     { label = "The options", dur = 25.40 + PAUSE, text = [=[If Zennit is not behind when the week ends, he wins the week, and cannot be summoned for the seven days that follow. He may refuse a summons. He may demand fifty silver, in cash, with no receipt. Or he may suggest dice, three times a week, though each helper may lean on the summoner's side. Once five summons are filed, he may also close the Index until Monday. The Ritual, which has always wanted closure, approves. The Index accepts most things.]=] },
-    -- chapter 2, the week Zennit wins: played on its own with /st intro victory (or /st intro 11)
+    -- chapter 2, the week Zennit wins: played on its own with /sc intro victory (or /sc intro 11)
     { chapter = 2, label = "The count", dur = 24.00 + PAUSE, text = [=[At the end of the week, the Index counted. It counted the summons, and the places, and the refusals, and the dice, and then it counted them again, because the total was not the one it had expected. Zennit had won. He had won the dice when it mattered, and he had been summoned, entirely by accident, to several of the places on his list.]=] },
     { chapter = 2, label = "Leave", dur = 28.00 + PAUSE, text = [=[The Index informed Zennit by registered letter, which he did not trust, and which he read twice. For seven days, no ritual could find him. The party gathered in a circle and said his name, and the Index replied that the Licensed Summoning Liaison was, regrettably, on leave. Zennit spent the week doing nothing at all, which he had always suspected to be the correct amount.]=] },
-    -- chapter 3, the week the group wins: /st intro group (or /st intro 13)
+    -- chapter 3, the week the group wins: /sc intro group (or /sc intro 13)
     { chapter = 3, label = "The group wins", dur = 27.00 + PAUSE, text = [=[The following week, the group won. Nobody was more surprised than the group. The Index counted the summons, and the places, and the refusals, and found that the party had finished ahead of Zennit, despite his head start, and despite a run of dice that had, until then, been entirely reliable. The Index checked the sum three times. It was not wrong.]=] },
     { chapter = 3, label = "The cake", dur = 26.00 + PAUSE, text = [=[A victory for persistence, as the rules had promised. The party celebrated in the traditional manner, by summoning Zennit to the celebration. He arrived, as he always did, slightly confused, and was handed a small cake, which he did not trust. The Index recorded the week as a narrow win for hope over paperwork, and began, quietly, to count the next one.]=] },
     -- chapter 4, Zennit's 2nd win (z2): the key to the side door
@@ -564,7 +564,7 @@ local function build()
     layout()
 end
 
--- /st intro check: tries every narration and effect file and reports the ones the game cannot play.
+-- /sc intro check: tries every narration and effect file and reports the ones the game cannot play.
 function Intro.Check()
     local bad = 0
     local function try(name)
@@ -633,6 +633,6 @@ hint:RegisterEvent("PLAYER_LOGIN")
 hint:SetScript("OnEvent", function()
     if ST.db and not ST.db.settings.introSeen then
         ST.db.settings.introSeen = true
-        ST.print("New here? Type |cffffd100/st intro|r for the story so far.")
+        ST.print("New here? Type |cffffd100/sc intro|r for the story so far.")
     end
 end)

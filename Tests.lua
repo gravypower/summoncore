@@ -1,4 +1,4 @@
--- Diagnostics harness: /st test. One table entry per API the plan depends on.
+-- Diagnostics harness: /sc test. One table entry per API the plan depends on.
 -- Each test returns status ("pass" | "fail" | "error" | "info"), detail text.
 local ADDON, ST = ...
 local safe = ST.safe
@@ -290,7 +290,7 @@ ST.tests = {
     { name = "Addon messages", run = function()
         local lines = lastLines(ST.msgLog, 12)
         if #lines == 0 then
-            return "info", "Nothing sent yet. Press 'Ping' (party+guild) or /st test ping <name> for whisper."
+            return "info", "Nothing sent yet. Press 'Ping' (party+guild) or /sc test ping <name> for whisper."
         end
         local gotOther = false
         for _, l in ipairs(lines) do
@@ -310,7 +310,7 @@ ST.tests = {
             h.token = string.format("%d-%d", time(), math.random(1000, 9999))
             h.writtenAt = date("%Y-%m-%d %H:%M:%S")
         end
-        return "info", "token " .. h.token .. " written. /reload, then reopen /st test. (/st test resetsave to retest)"
+        return "info", "token " .. h.token .. " written. /reload, then reopen /sc test. (/sc test resetsave to retest)"
     end },
 
     { name = "Name resolution", run = function()

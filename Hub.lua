@@ -1,5 +1,5 @@
 -- Hub: one window for everything the slash commands do. Tabs: Summary, Log, Answer, Tally, Badges, Story, Sync, Tools.
--- The slash commands still work; /st with no arguments opens this window. Zennit's client gets the gag
+-- The slash commands still work; /sc with no arguments opens this window. Zennit's client gets the gag
 -- instead of the Summary, Tally and Badges tabs, the same as before. Drawn in the Neon Index look (Theme.lua):
 -- a title strip, the tabs, the season race on every tab, and a command-prompt status line along the bottom.
 local ADDON, ST = ...

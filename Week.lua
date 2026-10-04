@@ -265,7 +265,7 @@ function Week.Check()
     local key = chapter and chapter.start == last.start and chapter.key
     local story = ""
     if key then
-        story = ST.Intro.HasChapter(key) and (" The story: |cffffd100/st intro " .. key .. "|r") or " (That chapter of the story is not written yet.)"
+        story = ST.Intro.HasChapter(key) and (" The story: |cffffd100/sc intro " .. key .. "|r") or " (That chapter of the story is not written yet.)"
         if chapter.n >= Week.WINS then
             story = story .. " That was the finale. The season starts again."
         end

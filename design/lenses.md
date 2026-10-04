@@ -205,7 +205,7 @@ After acting, what do they need to know, and does the game tell them clearly and
 
 | Moment | They want to know | They see |
 |---|---|---|
-| Deciding to summon Zennit | Worth it now? Dice left, filed, will helpers matter? | Nothing, unless they open `/st` |
+| Deciding to summon Zennit | Worth it now? Dice left, filed, will helpers matter? | Nothing, unless they open `/sc` |
 | The ritual begins (caster) | Same | A voice clip |
 | The summon is logged | Did that count? | "Summon logged: Zennit in X (+5, dungeon)": tally points, not the race |
 | Zennit's popup | How close is his week off? | The summon, the cost of refusing, dice left; no week score |
@@ -215,7 +215,7 @@ After acting, what do they need to know, and does the game tell them clearly and
 
 **Findings**
 1. **Progress is only visible where nobody is looking.** The race changes when a summon of Zennit is logged and when he
-   answers; at both moments players are in the world, not in `/st`.
+   answers; at both moments players are in the world, not in `/sc`.
 2. **Feedback arrives too late to help decide.** Dice left and the helper bonus should decide whether and how to summon
    him now; the summoner only learns the bonus from the dice prompt, after the ritual.
 3. **Totals, not distance to the goal.** "GROUP 9 / ZENNIT 8" makes you subtract; "GROUP LEADS BY 1" tells you whether to

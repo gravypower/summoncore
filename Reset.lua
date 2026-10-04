@@ -1,5 +1,5 @@
 -- Reset: wipes the summons, the badges and, with them, the story (the season is worked out from the log).
--- It asks first. The admin can also ask everyone else to reset (/st reset all): each user is shown a prompt and
+-- It asks first. The admin can also ask everyone else to reset (/sc reset all): each user is shown a prompt and
 -- nothing is changed on their client until they agree. A reset leaves a mark (db.resetAt); anything older than it
 -- is refused by sync, so another client still holding the old log cannot put it back.
 local ADDON, ST = ...

@@ -49,7 +49,7 @@ pauses, and falling intonation at the end of each sentence.
    writes `IntroCues.lua`), then `tools/intro/render_intro.ps1 -Style lines -SceneList "9,10"` and the same for
    `-Style storybook`. **Pass the scene list as text**: through `-File`, `9,10` would be flattened into 910.
 6. Bump the version in `summoncore.toc` and `Core.lua`, update the README, and tell the user to restart WoW fully
-   (new media files are not picked up by `/reload`) and run `/st intro check` then `/st intro`.
+   (new media files are not picked up by `/reload`) and run `/sc intro check` then `/sc intro`.
 
 ## Honest limits
 
