@@ -23,7 +23,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
-| The Player | One friend group, and one of them (Zennit) is the target | Findings in; waiting on answers about the group |
+| The Player | One friend group, and one of them (Zennit) is the target | Answered; changes proposed |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
 
 ## Entries
@@ -269,16 +269,35 @@ Unlike the other lenses, this one is about real people, so the code can only sho
 3. **Zennit answers every summon himself.** Up to 10 popups a week: the best part of his week, or a chore?
 4. **The designer is one of the players.** Watch for features that exist because *we* find them fun.
 
-**Questions about the group** (answers go here)
-1. Who plays, and how many are warlocks?
-2. Who usually helps, and do they enjoy it or is it a favour?
-3. What does each of them like in WoW: achievements, banter, competing, the social side?
-4. What would annoy them: chat spam, popups, being the butt of the joke?
-5. What is Zennit like as a player: would he hoard dice, refuse everything for the bit, demand silver every time?
+**Questions about the group, answered**
 
-**Possible directions, once we know the group** (none chosen)
-- Helper recognition: name the helpers when their bonus decides a roll; badges for helping.
-- Points for helpers in the Tally (not the race), if the group is mostly non-warlocks.
+| Question | Answer | What it means |
+|---|---|---|
+| How many are warlocks? | Two or three | Most of the group plays as helpers, so that role matters a lot |
+| Do helpers enjoy it? | Yes | They don't need paying (points, badges); they are happy to be there |
+| What do they enjoy in WoW? | Banter, and doing things together (not achievements, not competing) | Badges and the friend-vs-friend Tally matter less than assumed; the group-vs-Zennit race and funny lines matter more. Helpers should be part of the story, not rewarded with badges |
+| What would annoy them? | Bookkeeping (not chat spam, not popups) | The "Week:" lines are fine. Hunt down anything that makes people tick boxes or remember to click |
+| What is Zennit like? | Not sure yet | Playtest |
+
+**Where the build asks for bookkeeping**
+- **The assistants prompt.** When detection is unsure, the summon is not saved until the caster ticks names and
+  clicks, with no timeout. Since the new rules, those names also set the dice bonus.
+- **Zennit's popup** never says that ignoring a summon is fine (an unanswered summon already counts as accepted).
+- **"They paid"** relies on Zennit remembering; if he forgets, the group never gets the points.
+
+**Proposed changes**
+
+| | Change | From |
+|---|---|---|
+| A | When the helpers' bonus decides a roll, name them: "Al and Cy's +10 tipped it: 58+10 beats 63." | Banter; helpers in the story |
+| B | The assistants prompt saves itself after 20 seconds with the detected helpers (a countdown on the button) | Bookkeeping |
+| C | Zennit's popup says that ignoring a summon counts as accepting | Bookkeeping |
+| — | "They paid": watch at the playtest first; it depends on how Zennit plays | Not sure yet |
+| — | Dropped: helper badges or points | The group is not achievement-driven |
+
+**A lesson about this lens:** I expected the answer to be "reward helpers". Asking showed the group doesn't care
+about rewards; it cares about banter and not doing chores. Assumptions about players are exactly what this lens
+exists to test.
 
 ## Decisions
 
