@@ -21,7 +21,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Essential Experience | Anchors the rest: what should a summon, an answer and a week feel like? | Week answered; summoner and Zennit still open |
 | Meaningful Choices | Zennit's four answers are the main decision in the game | Dice limited (3 a week); playtest |
 | Fairness | The rules are loaded for Zennit on purpose; is that fair, and does it need to be? | New race built; playtest |
-| Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Next (the limit of 5 is a first answer) |
+| Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Findings in; decision open; ask Zennit |
 | The Player | One friend group, and one of them (Zennit) is the target | |
 | Visible Progress / Feedback | The season band and answer colours in the hub | |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
@@ -129,6 +129,44 @@ the chapters already reached do not change.
 - Does Zennit save his dice for the big summons? (If he always rolls the first three, the choice is still not meaningful.)
 - Is five a week the right limit, for the group and for Zennit? That is the Lens of Griefing / Friendship, next.
 - Intro scenes 9 and 10 still narrate the draft rules; re-voice them once these settle.
+
+### 2026-10-04 · Lens of Griefing / Friendship: Zennit's power to close the week
+
+**The premise is griefing by design:** the whole group targets one friend. That can't be removed. The questions are
+whether Zennit is still having fun, and whether he can say "enough". The limit of 5 a week bounds it, but the group
+sets the pace, not him.
+
+**Our idea:** Zennit has the power to cut off how many summons count in a week.
+
+**The lens turned around:** could Zennit use that power to spoil the group's fun? His obvious move is to close the
+week the moment he is ahead. The group's chance to win a week (30,000 simulated weeks each; same assumptions as the
+Fairness entry):
+
+| Version of the power | Normal week | Trying week |
+|---|---|---|
+| A. No power (built now) | 28% | 63% |
+| B. He closes the week the moment he is ahead | 13% | 16% |
+| C. B, but the Index takes one "last call" summon after he closes | 22% | 29% |
+| D. He sets the week's limit in advance, before the first summon (his best is 2) | 19% | 24% |
+| E. D, plus 2 points to the group for each slot under 5 | 28-100% | 43-100% |
+| **F. He closes whenever he likes, but each slot he cuts off is filed as 5 points to the group** | **27%** | **63%** |
+
+**Findings**
+- A free "close" button (B) wipes out the last decision: trying drops from 63% to 16%. **The power that protects Zennit
+  from griefing would let him grief the group.**
+- Choosing the limit in advance (D) is less abusable, because he chooses blind. But a small limit makes the week a
+  coin toss: with fewer summons, effort has less room to show. That is the Lens of Skill vs. Chance arriving uninvited.
+- **Separate relief from scoring.** In F, closing buys him peace, not a win. Each cut-off slot is filed at 5 points, about
+  one well-organised dungeon summon, so closing is neutral for the race (63% either way). He closes when he has had
+  enough, or when the week is already decided.
+
+**Recommendation:** F. In the game's voice: "Zennit has closed the Index for the week. The 3 forms left were stamped
+APPROVED in his absence: +15 to the group."
+
+**Open**
+- Choose: F, or another version.
+- **Ask Zennit.** The Lens of Friendship can't be answered from the code. How does five summons a week feel to him? Would
+  he use a close button, and would paying for it feel fair or feel like a punishment? His answer goes here.
 
 ## Decisions
 
