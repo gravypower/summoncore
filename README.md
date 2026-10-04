@@ -163,8 +163,8 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 
 - `wag`: used for the Zennit gag instead of the built-in sound.
 - `zenit_land`: played on Zennit's client when a friend's live summon of him arrives.
-- Other categories (refuse, win, ritual, narrator stings) are loaded and playable with `/st clip`, but nothing plays
-  them yet. No clips are recorded so far.
+- `zenit_refuse`: when Zennit refuses a summon (his client and the summoner's). `zenit_win`: when he wins the dice. `ritual`: as a ritual begins on your client. `narrator_weekopen`: when a finished week is announced.
+  Clips are silent until recorded; none are so far.
 
 `Media/clips/*.ogg` is git-ignored on purpose: some lines are meant to surprise Zennit, and the repo is on GitHub. Add
 the files to the release zip by hand, or remove that line from `.gitignore` if you do not mind.

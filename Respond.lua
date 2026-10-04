@@ -114,6 +114,16 @@ end
 ----------------------------------------------------------------------
 local refreshSurfaces
 
+-- A recorded line for how Zennit answered (a refusal, or winning the dice); silent when no clip is recorded.
+local function playAnswerClip(resp)
+    if not resp then return end
+    if resp.result == "refused" or resp.result == "excused" then
+        ST.Clips.Play("zenit_refuse")
+    elseif resp.result == "won" then
+        ST.Clips.Play("zenit_win")
+    end
+end
+
 -- Records Zennit's decision on this client and tells everyone (test summons stay local).
 function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
@@ -124,6 +134,7 @@ function Respond.Decide(id, result, zroll, sroll)
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
+    playAnswerClip(resp)
     refreshSurfaces(id, "done")
     if ST.Hub then ST.Hub.Refresh() end
     return resp
@@ -251,6 +262,7 @@ end
 -- Sync calls this when Zennit's answer arrives. Tell the chat, and finish the dice prompt if we have one.
 function Respond.OnResponse(id, ev, resp)
     local line = Respond.Announce(ev, resp)
+    playAnswerClip(resp)
     if line then ST.print(line) end
     if ST.Hub then ST.Hub.Refresh() end
     if diceDlg and diceCurrent and diceCurrent.id == id then

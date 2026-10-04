@@ -142,6 +142,7 @@ function Week.Check()
     local last = Week.Score(Week.Start() - LENGTH)
     if not last.winner or ST.db.settings.weekSeen == last.start then return end
     ST.db.settings.weekSeen = last.start
+    ST.Clips.Play("narrator_weekopen")
     local season = Week.Season()
     local chapter = season.chapters[#season.chapters]
     local key = chapter and chapter.start == last.start and chapter.key

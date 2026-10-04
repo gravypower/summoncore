@@ -766,6 +766,24 @@ add("scoring: cities, far-flung maps and dungeon entrances score by kind, and a 
     return ok, string.format("%s %s %s %s", tostring(city), tostring(remote), tostring(dungeon), tostring(wc))
 end)
 
+add("voice clips: a refusal and a dice win each play their own category, other answers are silent", function()
+    local a = newClient("Alpha")
+    local id = cast(a, 950, true, { target = "Zennit" })
+    local calls = {}
+    local realPlay = ST.Clips.Play
+    ST.Clips.Play = function(category) calls[#calls + 1] = category end
+    local ok, err = pcall(function()
+        for _, result in ipairs({ "refused", "won", "accepted", "excused" }) do
+            with(a, function()
+                ST.Respond.OnResponse(id, a.db.events[id], { result = result, zroll = 50, sroll = 20, time = BASE + 9 })
+            end)
+        end
+    end)
+    ST.Clips.Play = realPlay
+    if not ok then return false, tostring(err) end
+    return table.concat(calls, ",") == "zenit_refuse,zenit_win,zenit_refuse", table.concat(calls, ",")
+end)
+
 add("dice: Zennit rolls, the summoner rolls back, higher wins and a tie goes to Zennit", function()
     if ST.Respond.Resolve(64, 31) ~= "won" or ST.Respond.Resolve(20, 80) ~= "lost" or ST.Respond.Resolve(50, 50) ~= "won"
         or ST.Respond.Resolve(45, 50) ~= "won" or ST.Respond.Resolve(30, 50) ~= "lost" then -- his +10 edge

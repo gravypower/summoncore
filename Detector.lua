@@ -114,6 +114,7 @@ local function startPending(target)
         snapshotHelpers()
         if ticks * TICK > PENDING_TTL then clearPending() end
     end)
+    ST.Clips.Play("ritual") -- a recorded line as the ritual begins
     dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))
 end
