@@ -18,31 +18,31 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 
 | Command | What it does |
 |---|---|
-| `/st` | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
-| `/st help` | List the commands in chat |
-| `/st panel` | Open the window on the Summary tab |
-| `/st log [n]` | Recent summons |
-| `/st tally` | Cast, received and assisted counts and points per player |
-| `/st badges` | Badge list |
-| `/st where` | Current map ID, subzone and how it scores |
-| `/st undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
-| `/st admin` | What the game reports as this account's BattleTag, and whether it is the admin's or Zennit's |
-| `/st reset [all]` | Wipe this client's summons, badges and story (it asks first). `all` is admin only: it asks everyone else to do the same |
-| `/st export`, `/st import` | Import / Export window (copy-paste strings of the summon log) |
-| `/st sync` | Send a HELLO to party and guild, show sync status |
-| `/st synctest` | Run the sync self-test with simulated clients (scratch data only) |
-| `/st comic [size]` | Large-image test viewer (generate the textures first, see below) |
-| `/st test` | Diagnostics panel; `/st test ping <name>` adds a whisper ping |
-| `/st debug` | Toggle detector messages |
-| `/st fake <target> [h1 h2]` | Add a test summon (never broadcast) |
-| `/st fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/st intro [scene\|z1..z5\|g1..g5\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes); a scene number starts there, a chapter key plays that chapter, `check` tests the sound files |
-| `/st week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
-| `/st clip [category|file]` | List or play voice clips from `Media/clips` |
-| `/st zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Answer tab |
-| `/st respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
-| `/st gag` | Preview the Zennit gag |
-| `/st zenit` | Toggle Zennit test mode on this character |
+| `/sc` (also `/summoncore`) | Open the Summon Core window: Summary, Log, Answer, Tally, Badges, Story, Sync and Tools tabs; Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
+| `/sc help` | List the commands in chat |
+| `/sc panel` | Open the window on the Summary tab |
+| `/sc log [n]` | Recent summons |
+| `/sc tally` | Cast, received and assisted counts and points per player |
+| `/sc badges` | Badge list |
+| `/sc where` | Current map ID, subzone and how it scores |
+| `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
+| `/sc admin` | What the game reports as this account's BattleTag, and whether it is the admin's or Zennit's |
+| `/sc reset [all]` | Wipe this client's summons, badges and story (it asks first). `all` is admin only: it asks everyone else to do the same |
+| `/sc export`, `/sc import` | Import / Export window (copy-paste strings of the summon log) |
+| `/sc sync` | Send a HELLO to party and guild, show sync status |
+| `/sc synctest` | Run the sync self-test with simulated clients (scratch data only) |
+| `/sc comic [size]` | Large-image test viewer (generate the textures first, see below) |
+| `/sc test` | Diagnostics panel; `/sc test ping <name>` adds a whisper ping |
+| `/sc debug` | Toggle detector messages |
+| `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
+| `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
+| `/sc intro [scene\|z1..z5\|g1..g5\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes); a scene number starts there, a chapter key plays that chapter, `check` tests the sound files |
+| `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
+| `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
+| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Answer tab |
+| `/sc respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
+| `/sc gag` | Preview the Zennit gag |
+| `/sc zenit` | Toggle Zennit test mode on this character |
 
 ## How it works
 
@@ -57,12 +57,12 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Theme.lua` | Theme | The "Neon Index" look: windows, buttons, tabs, text boxes and scroll areas, all drawn from flat colours |
 | `Respond.lua` | Respond | Zennit's answer to a summon of him (accept, refuse, 50 silver, dice) |
 | `Week.lua` | Week | The weekly contest, his week off, and the season; all derived from the log |
-| `Reset.lua` | Reset | `/st reset`: wipe this client, and the admin's request to everyone else |
+| `Reset.lua` | Reset | `/sc reset`: wipe this client, and the admin's request to everyone else |
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
 | `Hub.lua`, `Gag.lua` | UI | The one-window hub (tabs for the summary, log, answer, tally, badges, story, sync and tools), and the Zennit access-denied gag |
-| `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the self-test (`/st synctest`, admin only) |
+| `Tests.lua`, `SyncTest.lua` | | Live-client diagnostics and the self-test (`/sc synctest`, admin only) |
 
 Only the caster's client needs to see a summon; everyone else is credited from the caster's snapshot.
 
@@ -95,7 +95,7 @@ Placeholder values, meant to be argued about. Edit the tables at the top of `Sco
 | remote | 10 | `mapKinds` (ten far-flung zones, such as Silithus and Winterspring) or `subzoneKinds` |
 
 A dungeon entrance sits inside an ordinary outdoor map, so it is matched by subzone. Stand at the spot and
-run `/st where` to read the exact string. Points go to the caster only.
+run `/sc where` to read the exact string. Points go to the caster only.
 
 Badges: First Summon, Ten Summons, Fifty Summons, Dungeon Doorman, Far Flung, Well Travelled (five
 distinct maps).
@@ -126,7 +126,7 @@ Merge rules:
 
 ### Export and import
 
-`/st export` opens a window with the whole log as a string (compressed and base64-encoded, starting `!ST1!`);
+`/sc export` opens a window with the whole log as a string (compressed and base64-encoded, starting `!ST1!`);
 `Export mine` limits it to summons you cast. To import, paste a string, press **Preview** to see how many are
 new, would replace an existing copy, are already known or are rejected, then press **Import**. Imports use
 the same merge rules as sync, with one difference: because you are doing it yourself, your own events missing
@@ -135,14 +135,14 @@ newer-version strings are refused. This is the manual fallback if addon messages
 
 ### Intro
 
-`/st intro` plays "Zennit and the Index": 32 scenes (scenes 1-10 are chapter 1; the rest are the season's chapters, see
+`/sc intro` plays "Zennit and the Index": 32 scenes (scenes 1-10 are chapter 1; the rest are the season's chapters, see
 [The season](#the-season)) of 3-frame flipbook art (about six flips a second), narrated, with
 a quiet synth music bed. The whole narration is typed out, a sentence at a time and in step with the
 voice, in a green-on-black terminal box under the picture, with a chirp and key clicks at each sentence. While the narrator mentions something (the three kinds of ritual, the book, the form, Zennit), a pulsing box lights up that part of the picture. The **Text**
 button cycles: `full` (that box), `key` (only the punchlines, flashed over the picture) and `off`. Controls: previous/next scene, play/pause, restart, a Size button (small, medium,
 large), a Look button
-(`lines`: neon line drawing on black, the default; `storybook`: the original colours), and toggles for Sound and Music. `/st intro 3` starts at
-scene 3. `/st intro check` tries every intro sound
+(`lines`: neon line drawing on black, the default; `storybook`: the original colours), and toggles for Sound and Music. `/sc intro 3` starts at
+scene 3. `/sc intro check` tries every intro sound
 file and lists the ones the game cannot play (after adding or replacing media, restart WoW: `/reload` does not pick
 up new files). The art lives in `Media/intro_l<n>.blp` (lines) and `intro_<n>.blp` (storybook), one per scene: 2048x1024 sheets, DXT1, about 1.3 MB each.
 `tools/intro/render_intro.ps1` rebuilds them from `tools/intro/source.html` using headless Edge or Chrome
@@ -170,7 +170,7 @@ mutes the narration.
 Drop `.ogg` takes into `Media/clips/`, named `<category>_<NN>_<who>.ogg`: `wag_01_aaron`, `zenit_land_02_sam`,
 `zenit_refuse_03_sam`, `ritual_02_lewis`, `narrator_weekopen_01_lewis`. AddOns cannot list a folder, so run
 `powershell -ExecutionPolicy Bypass -File tools\build_clip_manifest.ps1` (it writes `ClipList.lua` and warns about
-badly named files), then `/reload`. `/st clip` lists the categories; `/st clip wag` or a file name plays one. The
+badly named files), then `/reload`. `/sc clip` lists the categories; `/sc clip wag` or a file name plays one. The
 addon picks a random clip per category and avoids repeating the last one. Plays on the Dialog sound channel.
 
 - `wag`: used for the Zennit gag instead of the built-in sound.
@@ -195,10 +195,10 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
 own client can answer for him, a newer answer replaces an older one (owes, then paid), and the dice use two more
 messages (`D`: his roll to the summoner, `S`: the roll back). Points, tallies and badges only count summons that
-land. The same choices are in the hub window's **Answer** tab (`/st`, then Answer): the summons waiting for his answer with Previous/Next, the four choices drawn in the window, and a list of the ones he has already answered. `/st respond` reopens the dialog for the latest summon that is still waiting; `/st respond test` (or the
+land. The same choices are in the hub window's **Answer** tab (`/sc`, then Answer): the summons waiting for his answer with Previous/Next, the four choices drawn in the window, and a list of the ones he has already answered. `/sc respond` reopens the dialog for the latest summon that is still waiting; `/sc respond test` (or the
 Tools tab's "Test a summoning") tries it on a pretend summon from "Tester", with a pretend summoner rolling back.
 
-Test summons (`/st fake`, the buttons that add them, and `respond test`) are marked and stay on that client: they
+Test summons (`/sc fake`, the buttons that add them, and `respond test`) are marked and stay on that client: they
 are not counted for sync, not sent in batches and not exported.
 
 ### Zennit mode
@@ -215,7 +215,7 @@ each time. The bundled placeholder, `Media/gag_wag_sheet.tga` (1024x512, 8 frame
 
 ### Large images
 
-`/st comic` shows generated test textures at 256 to 2048 px, at several on-screen sizes or tiled 2x2, and
+`/sc comic` shows generated test textures at 256 to 2048 px, at several on-screen sizes or tiled 2x2, and
 reports texels per screen pixel. The textures are git-ignored; create them with
 `powershell -ExecutionPolicy Bypass -File tools\make_test_patterns.ps1` (about 16 MB in `Media/`). Addon
 textures must be `.tga` or `.blp` with power-of-two sides.
@@ -224,13 +224,13 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 
 | Area | State |
 |---|---|
-| Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zennit gag | Verified in the live client (solo, with `/st fake`) |
-| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/st synctest`, 23/23 in the live client on 2026-10-04). Tests added since, for answer resync, deletions, resets, closed weeks, Zennit's alts, test summons and raid candidates, have not been run in the live client yet |
+| Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zennit gag | Verified in the live client (solo, with `/sc fake`) |
+| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/sc synctest`, 23/23 in the live client on 2026-10-04). Tests added since, for answer resync, deletions, resets, closed weeks, Zennit's alts, test summons and raid candidates, have not been run in the live client yet |
 | Real Ritual of Summoning detection | Verified in the live client (with Poogs). A target who declines in game and summons by a warlock without the addon are not handled; raid helpers in other subgroups are checked now but not yet tried in a raid |
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
-| Intro art and sound loading | Not tested after a full restart (`/st intro check`) |
-| A real Monday rollover of the week and season, and `/st reset all` reaching friends | Not tested |
+| Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
+| A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
 | Scoring tables | No place is marked `remote`, so the Far Flung badge cannot be earned yet; the Deadmines entrance subzone string is a guess |
 | Gag and voice clips | Not recorded yet; the gag is still the placeholder sheet |
 | Release | None published yet (no git tags); clips are git-ignored, so a release zip has none |
@@ -242,9 +242,9 @@ other units (`UnitInRange`, `UnitHealth`) were confirmed, so the addon does not 
 
 CI (`.github/workflows/ci.yml`) runs luacheck, installed through luarocks, on every push; `.luacheckrc` currently
 reports only syntax errors and undefined or accidental globals. There is no Lua on the CI image to run the self-test,
-so `/st synctest` is run in the game. Pushing a tag such as `v0.18.0` (it must match `## Version` in the TOC)
+so `/sc synctest` is run in the game. Pushing a tag such as `v0.18.0` (it must match `## Version` in the TOC)
 runs `release.yml`, which zips the addon (without `tools/`) and publishes a GitHub release. Test textures
-from `tools/` are git-ignored, so release zips do not include them and `/st comic` shows green squares there.
+from `tools/` are git-ignored, so release zips do not include them and `/sc comic` shows green squares there.
 
 ## Parked for later
 
@@ -255,7 +255,7 @@ catching summons by warlocks who do not run the addon (the target's client could
 
 Weeks run Monday to Monday (UTC) and are worked out from the event log, so every client agrees. If Zennit's score is at
 least the group's at the end of the week, **Zennit wins the week** and the next seven days are his: summoning him gets a
-warning, and `/st week victory` (also offered at login) plays chapter 2 of the story.
+warning, and `/sc week victory` (also offered at login) plays chapter 2 of the story.
 
 From the week of **Monday 5 October 2026** the group has to beat Zennit at his own answers (the reasoning, with the
 numbers behind it, is in `design/lenses.md`):
@@ -286,16 +286,16 @@ narrate these rules; if they change, re-voice those two scenes (`.claude/skills/
 
 The weekly wins add up to a race: the first side (Zennit or the group) to **5 weekly wins** takes the finale, then the
 count starts again. It is worked out from the log, so every client agrees. Each win plays its own chapter of the story:
-`z1` to `z5` for Zennit's wins and `g1` to `g5` for the group's, so `/st intro z2` or `/st week g3` replays one. A chapter only plays once the season has reached it (the admin can play any).
+`z1` to `z5` for Zennit's wins and `g1` to `g5` for the group's, so `/sc intro z2` or `/sc week g3` replays one. A chapter only plays once the season has reached it (the admin can play any).
 All ten chapters are written (scenes 11 to 32). Zennit's track ends with him becoming the clerk of the Index,
 the group's with Form 27B/6 turning out to be the receipt for the fifty silver, the Ritual getting its closure and Zennit
-being freed. `/st week` shows the standing.
+being freed. `/sc week` shows the standing.
 
 ### Admin and Zennit's account
 
-The debug tools (`/st test`, `fake`, `fakeprompt`, `comic`, `synctest`, `debug`, `gag`, `zennit` test mode, `respond test`, and the
+The debug tools (`/sc test`, `fake`, `fakeprompt`, `comic`, `synctest`, `debug`, `gag`, `zennit` test mode, `respond test`, and the
 matching buttons in the window) and every chapter of the story not yet reached by the season are for the admin's Battle.net
-account only (`ST.ADMIN_TAG` in `Core.lua`). `/st admin` says whether this account is the admin. Zennit's own account
+account only (`ST.ADMIN_TAG` in `Core.lua`). `/sc admin` says whether this account is the admin. Zennit's own account
 (`ST.ZENNIT_TAG`) is treated as Zennit whichever character he plays. The check runs on each player's own computer, so it keeps
 things out of the way but is not security.
 
@@ -303,11 +303,11 @@ things out of the way but is not security.
 
 The Tools tab now has a button for every command that has no tab of its own: week and season, Battle.net check, undo the last
 summon, reset, and (admin only) the sync self-test, a test summon, the BattleTag tests and the debug switches.
-`/st admin` (or the Battle.net check button) shows the BattleTag the game reports and whether it is the admin's or Zennit's; the
-admin's **Run tag tests** button, and the last two lines of `/st synctest`, check the matching with sample tags.
+`/sc admin` (or the Battle.net check button) shows the BattleTag the game reports and whether it is the admin's or Zennit's; the
+admin's **Run tag tests** button, and the last two lines of `/sc synctest`, check the matching with sample tags.
 
-`/st reset` (or **Reset my data...**) wipes this client's summons, badges and, because the season and story are worked out from
-the log, the story too. It asks first. The admin's `/st reset all` also asks everyone else running Summon Core, in the party, raid
+`/sc reset` (or **Reset my data...**) wipes this client's summons, badges and, because the season and story are worked out from
+the log, the story too. It asks first. The admin's `/sc reset all` also asks everyone else running Summon Core, in the party, raid
 and guild, to do the same: each of them gets a prompt and nothing changes on their client until they agree. A reset leaves a mark,
 and sync refuses anything older than it, so a client that said no cannot put the old log back.
 

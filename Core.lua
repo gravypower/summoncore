@@ -100,7 +100,7 @@ function ST.TagReport()
         ST.IsZennitAccount() and "yes" or "no")
 end
 
-ST.RITUAL_ID = 698 -- Ritual of Summoning (classic ID; confirm with /st test)
+ST.RITUAL_ID = 698 -- Ritual of Summoning (classic ID; confirm with /sc test)
 
 -- Spell name for an ID, or nil if unknown, secret or the lookup fails.
 function ST.SpellName(id)
@@ -140,7 +140,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         ST.previousToken = ST.db.harness.token
     elseif event == "PLAYER_LOGIN" then
         if ST.OnLogin then ST.OnLogin() end
-        print_("loaded v" .. ST.version .. ". /st for commands.")
+        print_("loaded v" .. ST.version .. ". /sc for commands.")
     end
 end)
 
@@ -176,10 +176,10 @@ function ST.AddFake(target, assistants)
     return ev, badges
 end
 
--- Solo testing: /st fake <target> [helper1 helper2]
+-- Solo testing: /sc fake <target> [helper1 helper2]
 function commands.fake(rest)
     local w = words(rest)
-    if not w[1] then return print_("usage: /st fake <target> [helper1 helper2]") end
+    if not w[1] then return print_("usage: /sc fake <target> [helper1 helper2]") end
     local assistants = {}
     for i = 2, math.min(#w, 3) do assistants[#assistants + 1] = w[i] end
     local ev, badges = ST.AddFake(w[1], assistants)
@@ -187,10 +187,10 @@ function commands.fake(rest)
     for _, name in ipairs(badges) do print_("|cffffd100Badge earned:|r " .. name) end
 end
 
--- Opens the assistants prompt without a party: /st fakeprompt <target> <member> <member> ...
+-- Opens the assistants prompt without a party: /sc fakeprompt <target> <member> <member> ...
 function commands.fakeprompt(rest)
     local w = words(rest)
-    if #w < 2 then return print_("usage: /st fakeprompt <target> <member> [member ...]") end
+    if #w < 2 then return print_("usage: /sc fakeprompt <target> <member> [member ...]") end
     local target = table.remove(w, 1)
     ST.Prompt.Ask(target, w, {}, function(names, confirmed)
         print_(string.format("prompt result: %s, confirmed=%s", #names > 0 and table.concat(names, ", ") or "none",
@@ -222,7 +222,7 @@ function commands.zenit(rest)
     local sub, arg = (rest or ""):match("^(%S*)%s*(.-)$")
     if sub ~= "list" and not ST.IsAdmin() then return print_("that is an admin tool") end
     if sub == "list" then
-        -- his secret list: /st zennit list [add <place> | remove <n> | clear]
+        -- his secret list: /sc zennit list [add <place> | remove <n> | clear]
         local R = ST.Respond
         local verb, what = arg:match("^(%S*)%s*(.-)$")
         if verb == "add" then print_(R.ListAdd(what) and ("added '" .. what .. "'") or "add what?")
@@ -296,7 +296,7 @@ function commands.clip(rest)
             return print_("no voice clips yet: put .ogg files named <category>_<NN>_<who> in Media/clips, run tools/build_clip_manifest.ps1, then /reload")
         end
         for _, c in ipairs(cats) do print_(string.format("%s: %d clip%s", c[1], c[2], c[2] == 1 and "" or "s")) end
-        return print_("/st clip <category or file name> plays one")
+        return print_("/sc clip <category or file name> plays one")
     end
     local file = ST.Clips.Play(rest)
     print_(file and ("played " .. file) or ("nothing to play for '" .. rest .. "'"))
@@ -313,7 +313,7 @@ function commands.week(rest)
     print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
         season.group, W.WINS, #season.finales))
     local immune, untilT = W.Immune(time())
-    if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /st week victory plays the story.") end
+    if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
 
 function commands.respond(rest)
@@ -330,8 +330,8 @@ function commands.admin()
     print_(ST.TagReport())
 end
 
--- /st reset - wipes this client's summons, badges and story progress (asks first).
--- /st reset all - the admin also asks every other Summon Core user in the party, raid and guild to do the same.
+-- /sc reset - wipes this client's summons, badges and story progress (asks first).
+-- /sc reset all - the admin also asks every other Summon Core user in the party, raid and guild to do the same.
 function commands.reset(rest)
     local everyone = rest == "all"
     if everyone and not ST.IsAdmin() then return print_("that is an admin tool") end
@@ -356,24 +356,24 @@ function commands.debug()
 end
 
 local HELP = {
-    "/st - open the Summon Core window (everything below is also in it)    /st help - this list",
-    "/st test - diagnostics panel (/st test ping <name>)",
-    "/st log [n] - recent summons    /st tally - counts and points    /st badges",
-    "/st panel - open the window on the Summary tab    /st zenit - toggle Zennit test mode",
-    "/st where - current map, subzone and how it scores",
-    "/st fake <target> [h1 h2] - add a test summon    /st fakeprompt <target> <members...>",
-    "/st sync - say hello to party/guild and show sync status    /st synctest - run the merge self-test",
-    "/st export / /st import - copy-paste strings of the summon log",
-    "/st intro [scene] - play the illustrated intro (/st intro check tests its sound files)",
-    "/st clip [category|file] - list or play voice clips from Media/clips",
-    "/st zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
-    "/st admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
-    "/st reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
-    "/st week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
-    "/st respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
-    "/st gag - preview the Zennit gag",
-    "/st comic [256|512|1024|2048] - large-image test pattern viewer",
-    "/st undo - remove the latest summon    /st debug - toggle detector messages",
+    "/sc - open the Summon Core window (everything below is also in it)    /sc help - this list",
+    "/sc test - diagnostics panel (/sc test ping <name>)",
+    "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
+    "/sc panel - open the window on the Summary tab    /sc zenit - toggle Zennit test mode",
+    "/sc where - current map, subzone and how it scores",
+    "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
+    "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",
+    "/sc export / /sc import - copy-paste strings of the summon log",
+    "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files)",
+    "/sc clip [category|file] - list or play voice clips from Media/clips",
+    "/sc zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
+    "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
+    "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
+    "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
+    "/sc gag - preview the Zennit gag",
+    "/sc comic [256|512|1024|2048] - large-image test pattern viewer",
+    "/sc undo - remove the latest summon    /sc debug - toggle detector messages",
 }
 
 -- Debug and test tools are for the admin's account only.
@@ -385,7 +385,7 @@ for _, name in ipairs({ "test", "fake", "fakeprompt", "comic", "synctest", "debu
     end
 end
 
-SLASH_SUMMONCORE1 = "/st"
+SLASH_SUMMONCORE1 = "/sc"
 SLASH_SUMMONCORE2 = "/summoncore"
 SlashCmdList["SUMMONCORE"] = function(input)
     local cmd, rest = (input or ""):match("^(%S*)%s*(.-)$")

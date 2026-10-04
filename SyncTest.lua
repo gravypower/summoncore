@@ -1,4 +1,4 @@
--- /st synctest: exercises Sync encoding, merge rules and the HELLO/REQUEST/BATCH exchange with
+-- /sc synctest: exercises Sync encoding, merge rules and the HELLO/REQUEST/BATCH exchange with
 -- fake events and simulated clients. Real data is never touched: each client gets a scratch DB.
 local ADDON, ST = ...
 local Sync, Store = ST.Sync, ST.Store

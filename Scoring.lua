@@ -7,7 +7,7 @@ Scoring.kindPoints = { city = 1, zone = 3, dungeon = 5, remote = 10 }
 Scoring.defaultKind = "zone"
 
 -- Keyed by uiMapID. Unlisted maps score as the default kind.
--- Capital cities (classic uiMapIDs; confirm in game with /st where).
+-- Capital cities (classic uiMapIDs; confirm in game with /sc where).
 Scoring.mapKinds = {
     [1453] = "city", -- Stormwind
     [1455] = "city", -- Ironforge
@@ -18,7 +18,7 @@ Scoring.mapKinds = {
 }
 
 -- Far-flung places: a long way from anywhere a friend would be, so a summon there is worth the most.
--- Classic uiMapIDs written from memory: confirm each with /st where before trusting it.
+-- Classic uiMapIDs written from memory: confirm each with /sc where before trusting it.
 local remote = {
     [1451] = "Silithus", [1452] = "Winterspring", [1447] = "Azshara", [1448] = "Felwood",
     [1449] = "Un'Goro Crater", [1423] = "Eastern Plaguelands", [1428] = "Burning Steppes",
@@ -28,10 +28,10 @@ for id in pairs(remote) do Scoring.mapKinds[id] = "remote" end
 Scoring.remoteNames = remote -- for reference and the self-test
 
 -- A dungeon entrance sits in an ordinary outdoor map, so it is matched by subzone text
--- (lowercase). Stand at the spot and run /st where to learn the exact string, then add it.
+-- (lowercase). Stand at the spot and run /sc where to learn the exact string, then add it.
 Scoring.subzoneKinds = {
     ["the deadmines"] = "dungeon",
-    -- Outdoor dungeon entrances, from memory (unverified): confirm each with /st where and fix the text here.
+    -- Outdoor dungeon entrances, from memory (unverified): confirm each with /sc where and fix the text here.
     ["wailing caverns"] = "dungeon",
     ["shadowfang keep"] = "dungeon",
     ["blackfathom deeps"] = "dungeon",

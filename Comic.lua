@@ -1,4 +1,4 @@
--- Comic: /st comic shows generated test textures at different sizes, to find out how large and how
+-- Comic: /sc comic shows generated test textures at different sizes, to find out how large and how
 -- sharp images can get in this client. Textures come from tools\make_test_patterns.ps1.
 local ADDON, ST = ...
 local Comic = {}

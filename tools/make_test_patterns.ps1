@@ -1,4 +1,4 @@
-# Generates the /st comic test textures: Media\comic_test_<size>.tga (24-bit uncompressed TGA,
+# Generates the /sc comic test textures: Media\comic_test_<size>.tga (24-bit uncompressed TGA,
 # power-of-two squares). Output is git-ignored; rerun this script to recreate it.
 #   powershell -ExecutionPolicy Bypass -File tools\make_test_patterns.ps1
 $ErrorActionPreference = "Stop"
