@@ -24,7 +24,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Griefing / Friendship | A game about teasing a friend has to stay fun for the friend | Built: 5 to 10 a week, he closes; ask Zennit in playtest |
 | Visible Progress / Feedback | The season band and answer colours in the hub | Built 1 to 4; the tracker waits for a playtest |
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
-| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | |
+| The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
 
 ## Entries
 
@@ -311,6 +311,103 @@ Unlike the other lenses, this one is about real people, so the code can only sho
 about rewards; it cares about banter and not doing chores. Assumptions about players are exactly what this lens
 exists to test.
 
+### 2026-10-04 · Lens of the Interest Curve: a season
+
+**The questions (paraphrased):** is there a hook to start? Does interest rise and fall with rests between the peaks,
+rather than staying flat or peaking early? Is there a climax, and does it come last? Is the ending worth reaching? The
+lens applies at every scale, so: a summon, a week, a season, and the story across seasons.
+
+**The curve as built** (`Week.lua`, `Intro.lua`, `Hub.lua`; the season numbers are from 100,000 simulated seasons
+using the Fairness entry's chance of the group winning a week: 15% quiet, 28% normal, 64% trying; he wins the rest)
+
+| Scale | What the curve does | Verdict |
+|---|---|---|
+| A summon | Briefing, the ritual, his popup, his roll, the group's roll back, "Week: …" | A real peak at the dice; good |
+| A week | Flat from Monday to Sunday (counters tick), then the result about a minute after the next login | **No climax inside the week** |
+| A season | The race to five wins: 5 to 10 weeks, one chapter per win | Depends on how hard the group tries (below) |
+| The story | The intro (3.6 minutes), then about a minute per chapter, 10 chapters in all | **Runs out after the first finale** |
+
+**Findings**
+
+1. **The hook is the intro; the first reward is a week away.** A new player gets 3.6 minutes of narration, then nothing
+   from the story until the first week closes. In between the only feedback is numbers.
+2. **The climax depends on the group's effort, not on the design.** A season ends 5 to 0 or 5 to 1 (a blowout) in
+   **77%** of seasons when the group is quiet (15% a week), **47%** at normal effort (28%), and still **23%** at 45%.
+   A close finish (the loser has 3 or more wins) is at best **53%**. Almost nothing makes a late lead change: 0.5 a
+   season at normal effort.
+3. **Zennit's side gets the rising action; the group's barely gets seen.** At normal effort the group wins 1.9 weeks a
+   season and sees chapter g3 or later in **31%** of seasons; Zennit's trunk runs the full five in nearly all of them
+   (4.9 chapters). So the best group chapters (the Ritual naming its price, the receipt, the freeing) are rarely played.
+4. **The week off is a story beat with no mechanics.** The ending of chapter 2 says no ritual can find him, but
+   `Week.Immune` only drives a warning: summons during it still count, and he still answers. A win for Zennit changes
+   nothing in the next week, so his victories do not feel like one. (A season is 6.7 weeks for an active group; with a
+   quarter of the weeks quiet, 9.)
+5. **The story ends once.** All 10 chapters are written and the tree shows every reached chapter lit, so season 2
+   replays season 1. "The Index today" now follows the season, but it is one scene, not new rising action.
+6. **A result can be announced and then flip.** The Monday announcement uses the week's score, which is frozen only
+   two days after the week ends, and Zennit can still answer into the week until then. A late answer can reverse a win
+   after the chat line and the chapter have been given out.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Catch-up**: the side two wins behind gets a small edge for the weeks it trails (for example, the group's helpers add more when Zennit leads by 2 or more; his head start or his dice shrink when the group leads by 2 or more). In the simulation, a 10 point shift in the weekly chance cuts blowouts from 47% to 35% and raises close seasons from 29% to 39% at normal effort; 20 points gives 25% and 49% | 2 | Rules, a README paragraph, a few numbers to playtest |
+| B | **A beat inside the week**: a line of story at the moments that already exist: the first summon of him, the fifth filed (he may close), the lead changing hands, him closing, the last hour | 1, 4 | Wording only (no art, no voice) |
+| C | **The week off is a week off**: while Zennit is on leave, summons of him are filed under "enthusiasm" and do not count, so winning is a pause and the story beat is real | 4 | A rule change; the group then wins nothing that week |
+| D | **A match-point week**: when either side is one win from its finale, the week is announced as the deciding one (the Ledger already says it) and plays under one extra rule, such as a fourth die for him | 2 | A rule; needs the dice simulation |
+| E | **Season 2 is new**: new chapters, or the old ones return changed (the Ledger's idea, per chapter) | 5 | Writing, art, voice: the largest |
+| F | **Hold the announcement until the week is frozen**, or word it as provisional | 6 | Pacing: the payoff arrives two days later |
+
+**Our answer:** build **C**, and keep the gags going: the week off is filler, not a rule that silences the joke, so his
+popup, the dice, the warnings and the gag all carry on. A close finish is the goal, so **A** (catch-up) is next.
+
+**Built: C.** Under the new rules, after a week Zennit wins, summons of him are filed as **filler**: logged, answered and
+gagged as usual (the briefing and the warning say so), but the race ignores them, **nobody wins the week** and no chapter
+unlocks. The week after is a normal one. A first simulation of the cost: with no week off a season is about 6.7 weeks at
+normal effort (28% a week); with a rest after each of his wins it is **10.7**, and at 45% it goes from 7.5 to 11
+(simulated, 100,000 seasons each). That is long: C and the season's five wins need to be looked at together (see below).
+
+**Built: A, catch-up.** The lever is Zennit's edge on the dice, because it is the one dial that moves a week smoothly (his
+head start does not: 2 and 0 are the same, and 3 drops a normal week from 28% to 8%). From the weekly model that reproduces the
+Fairness table (15%, 28%, 64% at edge 10), his edge moves the group's chance like this:
+
+| His edge | -10 | 0 | 5 | **10 (now)** | 15 | 20 |
+|---|---|---|---|---|---|---|
+| Quiet week | 32% | 23% | 19% | **15%** | 12% | 9% |
+| Normal week | 50% | 39% | 33% | **27%** | 23% | 18% |
+| Trying week | 82% | 74% | 69% | **63%** | 58% | 52% |
+
+The rule: a lead of 2 weekly wins moves it by 5 for the side behind, and 3 or more by 10 (so it is +5 or +15, then +0 or
++20; never below 0, and a lead of 1 changes nothing). Simulated seasons (60,000 each):
+
+| | Quiet | Normal | Trying |
+|---|---|---|---|
+| Blowout (loser has 0 or 1 win): without / with | 78% / 69% | 49% / 39% | 32% / 23% |
+| Close finish (loser has 3 or more): without / with | 7% / 10% | 27% / 34% | 43% / 52% |
+| Weeks to a finale | 5.9 / 6.1 | 6.7 / 6.9 | 7.2 / 7.5 |
+
+It is gentle on purpose: it narrows the lopsided seasons without deciding them, and the group's effort still matters most.
+A stronger version (steps of 5 at a lead of 1 and 10 from 2) gets normal-effort blowouts to 33% and close finishes to 41%,
+but it penalises the side for leading by one win, which feels like punishment. Not chosen; `Week.RULES.catchup` is one line.
+It shows in the briefing, the "Week:" line, his popup, the dice prompts and "The Index today", in the Index's voice:
+"The Index, which takes no sides, has cut his edge on the dice to +5 this week."
+
+**Found while building:** the week off had no effect on the score at all (only `Week.Warn` and `Week.Briefing` mentioned it),
+so a win for Zennit left the group's next week unchanged. And a new week off must not become a free win for him: with
+no summons counted his head start of 2 would beat 0, so a week off has no winner at all.
+
+**To decide before building**
+- Is a close finish the goal, or is a lopsided season fine when the group simply tries harder (or less hard)?
+- Does a win for Zennit have to *cost* the group something, or is the story enough?
+- How long should a season last? With C, about 11 weeks (nearly three months) at normal effort. Options: fewer wins to a
+  finale (4), or letting the group win during his week off (no).
+
+**To watch in playtests**
+- How many weeks does a first season really take, and how many are quiet?
+- Does anyone replay a chapter, or ask what comes next?
+- Do the "Week:" lines build any excitement during the week, or is it only the Monday result?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -321,3 +418,5 @@ exists to test.
 | 2026-10-04 | 5 to 10 summons of him count a week; he can close the Index for free once 5 are filed | Griefing / Friendship | He gets a way out; closing can't lock in a lead before the fair minimum |
 | 2026-10-04 | Show where the week stands when it changes: briefing at the ritual, a chat line after summons and answers, in his popup, and the lead in the band | Visible Progress, Feedback | Progress was only in the hub, and the facts that decide how to summon him came too late |
 | 2026-10-04 | Helpers named when their bonus wins a roll; the assistants prompt saves itself; Zennit told he can ignore a summon; no helper badges | The Player | The group likes banter and doing things together, and hates bookkeeping; rewards don't motivate them |
+| 2026-10-04 | His week off is real: summons of him are filler, the race skips the week, and the gags carry on | Interest Curve | His wins were a story beat with no effect; a pause makes them count without silencing the joke |
+| 2026-10-04 | Catch-up: Zennit's dice edge moves 5 (a lead of 2 wins) or 10 (3 or more) toward the side that is behind | Interest Curve | Blowouts were 49% of seasons at normal effort; the Index now leans on the scale, gently |

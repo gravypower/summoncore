@@ -995,6 +995,76 @@ add("closing the Index: allowed after five answered, it travels to everyone, and
     end)
 end)
 
+add("his week off is real: summons of him are filler, nobody wins it, and the week after is a normal one", function()
+    return newRules(function()
+        local a = newClient("Alpha")
+        local W = ST.Week
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local last = this - 7 * 86400
+            local function put(key, at, resp)
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone",
+                    response = resp }
+            end
+            put("won", last + 3600, { result = "won", zroll = 90, sroll = 10, time = last + 3700 }) -- he wins last week
+            out.last = W.Score(last)
+            for n = 1, 3 do put("off" .. n, this + 3600 * n, { result = "accepted", zroll = 0, sroll = 0, time = this + 3600 * n + 5 }) end
+            out.week = W.Score(this)
+            out.counts = W.Counts(a.db.events.off1)
+            out.said = ST.Respond.Announce(a.db.events.off1, a.db.events.off1.response):find("filler") ~= nil
+            out.season = W.Season()
+            out.next = W.IsOff(this + 7 * 86400) -- nobody won this week, so the next one is not off
+        end)
+        local l, w, season = out.last, out.week, out.season
+        local ok = l.winner == "zennit" and not l.off and w.off and w.winner == nil and w.counted == 0 and w.extra == 3
+            and w.group == 0 and not out.counts and out.said and season.zennit == 1 and season.group == 0
+            and #season.chapters == 1 and not out.next
+        return ok, string.format("last: %s; off week: %s, %d counted, %d filler, winner %s; season %d-%d; next week off: %s",
+            tostring(l.winner), tostring(w.off), w.counted, w.extra, tostring(w.winner), season.zennit, season.group,
+            tostring(out.next))
+    end)
+end)
+
+add("catch-up: the season's lead moves his dice edge toward the side that is behind, and never below zero", function()
+    return newRules(function()
+        local a = newClient("Alpha")
+        local W, R = ST.Week, ST.Respond
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            -- weeks are won two apart, so his weeks off (the week after each of his wins) do not swallow the next win
+            local function win(weeksAgo, side, key)
+                local at = this - weeksAgo * 7 * 86400 + 3600
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone",
+                    response = side == "zennit" and { result = "won", zroll = 90, sroll = 10, time = at + 5 }
+                        or { result = "accepted", zroll = 0, sroll = 0, time = at + 5 } }
+            end
+            out.level = select(2, W.Edge(this))
+            win(4, "zennit", "z1")
+            out.one = select(2, W.Edge(this))                  -- Zennit ahead by one win: nothing yet
+            win(6, "zennit", "z2")
+            out.two = { W.Edge(this) }                         -- ahead by two: his edge shrinks by 5
+            win(8, "zennit", "z3")
+            win(10, "zennit", "z4")
+            out.far = { W.Edge(this) }                         -- far ahead: shrinks by 10, to zero, not below
+            for k in pairs(a.db.events) do a.db.events[k] = nil end
+            for n = 1, 3 do win(2 * n + 2, "group", "g" .. n) end
+            out.group = { W.Edge(this) }                       -- the group ahead by three: his edge grows by 10
+            W.RULES.from = math.huge
+            out.old = { W.Edge(this) }                         -- old rules: no catch-up
+            W.RULES.from = 0
+        end)
+        -- the dice use it: 55+edge against 60 is won at +10 and lost at 0 (a tie is his)
+        local dice = R.Resolve(55, 60, 0, 10) == "won" and R.Resolve(55, 60, 0, 0) == "lost" and R.Resolve(60, 60, 0, 0) == "won"
+        local ok = out.level == 0 and out.one == 0 and out.two[1] == 5 and out.two[2] == -5 and out.far[1] == 0
+            and out.far[2] == -10 and out.group[1] == 20 and out.group[2] == 10 and out.old[1] == 10 and out.old[2] == 0 and dice
+        return ok, string.format("edge: level %s, ahead 1 %s, ahead 2 %s, far ahead %s, group ahead %s, old rules %s",
+            tostring(out.level), tostring(out.one), tostring(out.two[1]), tostring(out.far[1]), tostring(out.group[1]),
+            tostring(out.old[1]))
+    end)
+end)
+
 add("where the week stands: the lead, a tie, Zennit's wording, and the briefing as a ritual on him begins", function()
     return newRules(function()
         local W, a = ST.Week, newClient("Alpha")

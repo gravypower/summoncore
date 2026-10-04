@@ -54,10 +54,41 @@ end
 -- the latest answered, he may close the Index for the rest of the week (an answer with `closes` set). He has `dice`
 -- rolls a week; each helper (up to `helpersMax`) adds `helperBonus` to the summoner's roll. Weeks before `from` keep the
 -- rules they were played under, so the season and the chapters already reached do not change.
-Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3, helperBonus = 5, helpersMax = 2 }
+Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3, helperBonus = 5, helpersMax = 2,
+    -- Catch-up (design/lenses.md, the Interest Curve): when one side is this many wins ahead in the season, the Index
+    -- moves Zennit's edge on the dice by this much for the side that is behind, and the other way for the side ahead.
+    -- A lead of 1 changes nothing; a lead past the last step uses the last step.
+    catchup = { [2] = 5, [3] = 10 } }
 
 function Week.NewRules(start)
     return start >= Week.RULES.from
+end
+
+-- Is the week starting at `start` Zennit's week off? From the new rules on, a week off is real: he won the week before,
+-- so summons of him are filler (logged, answered and gagged as usual, but the race ignores them) and nobody wins the
+-- week: a win for Zennit is a pause, not a head start. The search back through the weeks ends at the first real summon
+-- or at a week whose winner is frozen.
+function Week.IsOff(start)
+    if not Week.NewRules(start) then return false end
+    local prev, first = start - LENGTH, nil
+    for _, ev in pairs(ST.db.events) do
+        if not ev.fake and (not first or ev.time < first) then first = ev.time end
+    end
+    if not first or prev < Week.Start(first) then return false end
+    local f = frozen() and frozen()[prev]
+    if f then return f == "zennit" end
+    return Week.Score(prev).winner == "zennit"
+end
+
+-- Why a summon of Zennit in the week starting at `start` does not count, and what the Index files it under. `you` words
+-- it for Zennit's own client.
+function Week.Why(start, you)
+    if Week.IsOff(start) then return you and "It is your week off" or "It is his week off", "filler" end
+    if Week.IsClosed(start) then
+        return you and "You have closed the Index for the week" or "He has closed the Index for the week", "enthusiasm"
+    end
+    return string.format(you and "It is past the %d summons of you that count this week" or
+        "It is past the %d summons of him that count this week", Week.RULES.cap), "enthusiasm"
 end
 
 -- The real summons of Zennit in the week starting at `start`, oldest first: { { id, ev }, ... }.
@@ -77,8 +108,10 @@ end
 
 -- The summons of Zennit filed toward the week starting at `start`: the list (oldest first), how many of them count
 -- (up to `cap`, or up to the one whose answer closed the Index), and whether he closed it.
-local function filed(start)
+local function filed(start, off)
     local list = summonsOfZennit(start)
+    if off == nil then off = Week.IsOff(start) end
+    if off then return list, 0, false end
     local limit, closed = Week.RULES.cap, false
     for i, s in ipairs(list) do
         if i > limit then break end
@@ -112,7 +145,7 @@ end
 function Week.Counts(ev)
     local start = Week.Start(ev.time)
     if not Week.NewRules(start) then return true end
-    if not isZennit(ev.target) then return false end
+    if not isZennit(ev.target) or Week.IsOff(start) then return false end
     local list, counted, closed = filed(start)
     local before = 0
     for i, s in ipairs(list) do
@@ -133,6 +166,24 @@ function Week.DiceLeft(start)
     return math.max(0, Week.RULES.dice - used)
 end
 
+-- Zennit's edge on the dice for the week starting at `start`: Respond.EDGE, moved by the season's lead (RULES.catchup).
+-- Zennit ahead by wins: the edge shrinks, so the group has a way back; the group ahead: it grows. It is worked out from
+-- the weeks before `start`, so it does not change during the week. Second value: how far it moved (negative: in the
+-- group's favour).
+function Week.Edge(start)
+    local base = ST.Respond.EDGE
+    if not Week.NewRules(start) then return base, 0 end
+    local season = Week.Season(start)
+    local lead = season.zennit - season.group -- Zennit's lead in weekly wins
+    local steps, top = Week.RULES.catchup, 0
+    for lead_ in pairs(steps) do top = math.max(top, lead_) end
+    local by = steps[math.min(math.abs(lead), top)] or 0
+    if lead == 0 or by == 0 then return base, 0 end
+    local moved = lead > 0 and -by or by
+    if base + moved < 0 then moved = -base end -- never a handicap for Zennit
+    return base + moved, moved
+end
+
 -- What the summoner adds to their dice roll for this summon: a bonus per helper (0 under the old rules).
 function Week.HelperBonus(ev)
     if not Week.NewRules(Week.Start(ev.time)) then return 0 end
@@ -146,7 +197,7 @@ end
 function Week.Score(start)
     local new = Week.NewRules(start)
     local r = { start = start, group = 0, zennit = new and Week.RULES.headstart or Week.HEADSTART, summons = 0,
-        over = time() >= start + LENGTH, new = new, counted = 0, extra = 0 }
+        over = time() >= start + LENGTH, new = new, counted = 0, extra = 0, off = new and Week.IsOff(start) }
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and ev.time >= start and ev.time < start + LENGTH then
             r.summons = r.summons + 1
@@ -157,7 +208,7 @@ function Week.Score(start)
         end
     end
     if new then
-        local list, counted, closed = filed(start)
+        local list, counted, closed = filed(start, r.off)
         r.closed = closed
         for i, s in ipairs(list) do
             if i <= counted then
@@ -169,7 +220,7 @@ function Week.Score(start)
             end
         end
     end
-    if r.summons > 0 then r.winner = r.zennit >= r.group and "zennit" or "group" end
+    if r.summons > 0 and not r.off then r.winner = r.zennit >= r.group and "zennit" or "group" end
     local f = frozen() and frozen()[start]
     if f then r.winner = f ~= "none" and f or nil end
     return r
@@ -214,6 +265,11 @@ end
 
 -- One line saying how the week is going, or how it ended.
 function Week.Describe(r)
+    if r.off then
+        return (r.over and "Zennit's week off: " or "Zennit's week off, ") .. (r.summons == 0 and "nobody summoned him" or
+            string.format("%d summon%s filed as filler", r.summons, r.summons == 1 and "" or "s")) ..
+            ", and the race skipped the week"
+    end
     if r.summons == 0 then return "no summons that week" end
     if not r.over then
         return "this week so far: " .. lines(r) .. (r.zennit >= r.group and ", Zennit is ahead" or ", the group is ahead")
@@ -257,6 +313,11 @@ function Week.Check()
     if not ST.db or not ST.db.settings then return end
     Week.Freeze()
     local last = Week.Score(Week.Start() - LENGTH)
+    if last.off and ST.db.settings.weekSeen ~= last.start then
+        ST.db.settings.weekSeen = last.start
+        ST.print("Zennit's week off is over. He is back on the list, and the Index has filed the week as filler.")
+        return
+    end
     if not last.winner or ST.db.settings.weekSeen == last.start then return end
     ST.db.settings.weekSeen = last.start
     ST.Clips.Play("narrator_weekopen")
@@ -302,8 +363,11 @@ function Week.StatusLine(start, you)
     start = start or Week.Start()
     if not Week.NewRules(start) then return nil end
     local r = Week.Score(start)
+    if r.off then return "Week: Zennit's week off, so summons of him are filler and nothing counts." end
     local parts = { leadText(r, you), string.format("%d of %d filed", r.counted, Week.RULES.cap),
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
+    local edge, moved = Week.Edge(start)
+    if moved ~= 0 and not r.closed then parts[#parts + 1] = string.format("his dice edge is +%d", edge) end
     return "Week: " .. table.concat(parts, ", ") .. "."
 end
 
@@ -314,6 +378,9 @@ function Week.Briefing(target)
     local now = time()
     local start = Week.Start(now)
     if not Week.NewRules(start) then return nil end
+    if Week.IsOff(start) then
+        return target .. " is on his week off. The Index will file this summon as filler: it will not count, and it is not hopeful."
+    end
     if Week.Immune(now) then return target .. " is on his week off. The Index will note the summons, and is not hopeful." end
     local r = Week.Score(start)
     if r.closed then return target .. " has closed the Index for the week: this summon will not count." end
@@ -321,15 +388,23 @@ function Week.Briefing(target)
         return target .. " has had all the summons that count this week: this one will not count."
     end
     local dice = Week.DiceLeft(start)
-    return string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
+    local edge, moved = Week.Edge(start)
+    local text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
         Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
         string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.RULES.helperBonus))
+    if moved ~= 0 and dice > 0 then
+        text = text .. string.format(" The Index, which takes no sides, has %s his edge on the dice to +%d this week.",
+            moved < 0 and "cut" or "raised", edge)
+    end
+    return text
 end
 
 -- The caster is told when they summon Zennit during his week off, or after he has closed the Index for the week.
 function Week.Warn(ev)
     if ev.fake or not isZennit(ev.target) then return end
-    if Week.Immune(ev.time) then
+    if Week.IsOff(Week.Start(ev.time)) then
+        ST.print(ev.target .. " is on his week off. The Index has filed the summons as filler, and is not hopeful: it does not count.")
+    elseif Week.Immune(ev.time) then
         ST.print(ev.target .. " is on his week off. The Index has noted the summons, and is not hopeful.")
     elseif not Week.Counts(ev) then
         ST.print(ev.target .. (Week.IsClosed(Week.Start(ev.time)) and " has closed the Index for the week" or
