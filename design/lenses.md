@@ -184,7 +184,7 @@ Zennit gets asked at the first playtest.
 - **Lesson:** a new constraint (the floor of 5) changed which fix was best. Re-run the lens when the design moves.
 
 **Built:** up to 10 summons of him count; once 5 are filed and the latest answered, he can close the Index for free
-(after his answer, or from the hub's Answer tab). It travels as a flag on his answer, so every client agrees; later
+(after his answer, or from the hub's Zennit tab). It travels as a flag on his answer, so every client agrees; later
 summons are filed under 'enthusiasm', and their casters are told. A changed answer keeps the Index closed.
 
 **Found while building:** an answer changed within the same second as the one before it (owes, then paid) never

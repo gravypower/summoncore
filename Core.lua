@@ -234,7 +234,17 @@ function commands.zenit(rest)
         return
     end
     ST.db.settings.zenitTest = not ST.db.settings.zenitTest
+    if ST.db.settings.zenitTest then ST.db.settings.partyTest = false end -- the two test modes exclude each other
     print_("Zennit test mode " .. (ST.db.settings.zenitTest and "on" or "off"))
+end
+
+-- Test switch: makes this character behave as an ordinary party member (even the admin, or Zennit's own account),
+-- so the party's gag on Zennit's tab can be tried solo.
+function commands.party()
+    if not ST.IsAdmin() then return print_("that is an admin tool") end
+    ST.db.settings.partyTest = not ST.db.settings.partyTest
+    if ST.db.settings.partyTest then ST.db.settings.zenitTest = false end
+    print_("party test mode " .. (ST.db.settings.partyTest and "on" or "off"))
 end
 commands.zennit = commands.zenit -- either spelling works
 
@@ -359,7 +369,7 @@ local HELP = {
     "/sc - open the Summon Core window (everything below is also in it)    /sc help - this list",
     "/sc test - diagnostics panel (/sc test ping <name>)",
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
-    "/sc panel - open the window on the Summary tab    /sc zenit - toggle Zennit test mode",
+    "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",
     "/sc where - current map, subzone and how it scores",
     "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
     "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",

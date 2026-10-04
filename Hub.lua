@@ -1,6 +1,7 @@
--- Hub: one window for everything the slash commands do. Tabs: Summary, Log, Answer, Tally, Badges, Story, Sync, Tools.
--- The slash commands still work; /sc with no arguments opens this window. Zennit's client gets the gag
--- instead of the Summary, Tally and Badges tabs, the same as before. Drawn in the Neon Index look (Theme.lua):
+-- Hub: one window for everything the slash commands do. Tabs: Party (Summary, Tally and Badges), Zennit (his answers),
+-- Log, Story, Sync, Tools. The slash commands still work; /sc with no arguments opens this window. Each of the first
+-- two tabs is closed to the other side: Zennit gets the "ah ah ah" gag on the Party tab, and the party gets a gag of
+-- its own on his. Drawn in the Neon Index look (Theme.lua):
 -- a title strip, the tabs, the season race on every tab, and a command-prompt status line along the bottom.
 local ADDON, ST = ...
 local Hub = {}
@@ -8,9 +9,11 @@ ST.Hub = Hub
 local T = ST.Theme
 
 local ROW_H = 20
-local ORDER = { "summary", "log", "answer", "tally", "badges", "story", "sync", "tools" }
-local LABELS = { summary = "SUMMARY", log = "LOG", answer = "ANSWER", tally = "TALLY", badges = "BADGES", story = "STORY", sync = "SYNC", tools = "TOOLS" }
-local GATED = { summary = true, tally = true, badges = true } -- hidden on Zennit's client
+local ORDER = { "party", "zennit", "log", "story", "sync", "tools" }
+local LABELS = { party = "PARTY", zennit = "ZENNIT", log = "LOG", story = "STORY", sync = "SYNC", tools = "TOOLS" }
+-- The old tab names still open the tab that now holds them (Hub.Open("tally") shows the Party tab's Tally section).
+local TAB_OF = { summary = "party", tally = "party", badges = "party", answer = "zennit" }
+local SECTION_OF = { summary = true, tally = true, badges = true }
 
 local window
 local tabs = {}      -- name -> { button, frame, refresh }
@@ -129,7 +132,7 @@ local function whereText()
 end
 
 local function buildSummary(f)
-    local text = bodyText(f, 16, -8, 740, 440)
+    local text = bodyText(f, 16, -8, 740, 410)
     return function()
         local me = ST.Store.me()
         local t = ST.Store.Tallies()[me] or { cast = 0, received = 0, assisted = 0, points = 0 }
@@ -190,10 +193,11 @@ local function buildLog(f)
         ST.AddFake(names[n], { names[n % #names + 1], names[(n + 1) % #names + 1] })
         Hub.Refresh()
     end)
-    local answer = bottomButton(f, "ANSWER A SUMMON", 296, 160, function() Hub.Open("answer") end, "primary")
+    local answer = bottomButton(f, "ANSWER A SUMMON", 296, 160, function() Hub.Open("zennit") end, "primary")
     return function()
         local admin = ST.IsAdmin()
         addTest:SetShown(admin) -- an admin tool
+        answer:SetShown(admin or ST.Gag.IsZennit()) -- his tab is closed to everyone else
         answer:ClearAllPoints()
         answer:SetPoint("BOTTOMLEFT", admin and 296 or 130, 4)
         refresh()
@@ -600,22 +604,33 @@ local function buildTools(f)
         end)
     end, true)
     tool(try, "PREVIEW ZENNIT GAG", function() ST.Gag.Play() end, true)
+    tool(try, "PREVIEW PARTY GAG", function() ST.Gag.PlayParty() end, true)
     tool(try, "INTRO SOUND CHECK", function() ST.Intro.Check() end, true)
 
     local switches = column(392, "SWITCHES")
+    local paints = {} -- every switch repaints after any click, because the two test modes turn each other off
     local function switch(name, get, set, adminOnly)
         local b
         local function paint() b:SetText(name .. ": " .. (get() and "ON" or "OFF")) end
         b = tool(switches, "", function()
             set(not get())
-            paint()
+            for _, repaint in ipairs(paints) do repaint() end
         end, adminOnly)
+        paints[#paints + 1] = paint
         paint()
     end
     switch("SOUNDS", function() return ST.db.settings.soundOn ~= false end,
         function(v) ST.db.settings.soundOn = v end)
     switch("ZENNIT TEST", function() return ST.db.settings.zenitTest == true end,
-        function(v) ST.db.settings.zenitTest = v end, true)
+        function(v)
+            ST.db.settings.zenitTest = v
+            if v then ST.db.settings.partyTest = false end
+        end, true)
+    switch("PARTY TEST", function() return ST.db.settings.partyTest == true end,
+        function(v)
+            ST.db.settings.partyTest = v
+            if v then ST.db.settings.zenitTest = false end
+        end, true)
     switch("DETECTOR MSGS", function() return ST.db.settings.debug == true end,
         function(v) ST.db.settings.debug = v end, true)
 
@@ -697,8 +712,34 @@ local function buildTools(f)
     end
 end
 
-local BUILDERS = { summary = buildSummary, log = buildLog, answer = buildAnswer, tally = buildTally, badges = buildBadges, story = buildStory,
-    sync = buildSync, tools = buildTools }
+-- The Party tab: the party's own pages (Summary, Tally, Badges) as sections under one row of small buttons.
+local SECTIONS = { { "summary", "SUMMARY", buildSummary }, { "tally", "TALLY", buildTally }, { "badges", "BADGES", buildBadges } }
+local party = {} -- party.select(name) shows one of the sections
+
+local function buildParty(f)
+    local sections, buttons = {}, {}
+    function party.select(name)
+        for _, s in ipairs(SECTIONS) do
+            local on = s[1] == name
+            sections[s[1]].frame:SetShown(on)
+            buttons[s[1]]:SetSelected(on)
+        end
+    end
+    for i, s in ipairs(SECTIONS) do
+        local sub = CreateFrame("Frame", nil, f)
+        sub:SetPoint("TOPLEFT", 0, -34)
+        sub:SetPoint("BOTTOMRIGHT")
+        sections[s[1]] = { frame = sub, refresh = s[3](sub) }
+        buttons[s[1]] = button(f, s[2], 4 + (i - 1) * 126, -4, 120, function() party.select(s[1]) end, "tab")
+    end
+    party.select("summary")
+    return function() -- the sections are small, so refresh them all (this also lets the self-check cover each one)
+        for _, s in ipairs(SECTIONS) do sections[s[1]].refresh() end
+    end
+end
+
+local BUILDERS = { party = buildParty, zennit = buildAnswer, log = buildLog, story = buildStory, sync = buildSync,
+    tools = buildTools }
 
 ----------------------------------------------------------------------
 -- The season band and the status line, shown on every tab
@@ -779,8 +820,23 @@ end
 ----------------------------------------------------------------------
 -- Window
 ----------------------------------------------------------------------
+-- Each of the first two tabs is closed to the other side, as a joke (not security): Zennit may not open the Party tab
+-- and the party may not open Zennit's. The admin may open both, to try them, unless a test mode is on: Zennit test
+-- mode closes the Party tab, party test mode closes Zennit's. Returns true after playing the gag that side gets.
+local function gagged(name)
+    if name == "party" and ST.Gag.IsZennit() then
+        ST.Gag.Play()
+        return true
+    end
+    if name == "zennit" and not ST.Gag.IsZennit() and (ST.Gag.IsPartyTest() or not ST.IsAdmin()) then
+        ST.Gag.PlayParty()
+        return true
+    end
+    return false
+end
+
 local function selectTab(name)
-    if GATED[name] and ST.Gag.Blocked() then return false end
+    if gagged(name) then return false end
     current = name
     for key, tab in pairs(tabs) do
         local on = key == name
@@ -802,11 +858,11 @@ local function build()
         content:SetPoint("TOPLEFT", 12, -98)
         content:SetPoint("BOTTOMRIGHT", -12, 34)
         content:Hide()
-        local tabButton = T.Button(window, i .. " " .. LABELS[name], 90, 24, function()
+        local tabButton = T.Button(window, i .. " " .. LABELS[name], 122, 24, function()
             if current ~= name then T.Beep() end
             selectTab(name)
         end, "tab")
-        tabButton:SetPoint("TOPLEFT", 12 + (i - 1) * 96, -34)
+        tabButton:SetPoint("TOPLEFT", 12 + (i - 1) * 128, -34)
         tabs[name] = { button = tabButton, frame = content, refresh = BUILDERS[name](content) }
     end
     window:SetScript("OnShow", function()
@@ -825,19 +881,20 @@ function Hub.Refresh()
     end
 end
 
--- Opens the window on a tab (default: the last one used, or Summary).
+-- Opens the window on a tab (default: the last one used, or the player's own: Party, or Zennit's for Zennit). The old
+-- names summary, tally and badges open the Party tab on that section, and answer opens Zennit's.
 function Hub.Open(name)
     if not window then build() end
-    if name and not tabs[name] then name = nil end
+    local tab = TAB_OF[name] or name
+    if tab and not tabs[tab] then tab = nil end
     local zenit = ST.Gag.IsZennit()
-    if name and GATED[name] and zenit then
-        ST.Gag.Play() -- Zennit asked for a hidden tab: the gag, then the log instead
-        name = "log"
+    tab = tab or current or (zenit and "zennit" or "party")
+    if gagged(tab) then -- the other side's tab: the gag, then this player's own tab instead
+        tab = zenit and "zennit" or "party"
     end
-    name = name or current or (zenit and "log" or "summary")
-    if zenit and GATED[name] then name = "log" end
+    if SECTION_OF[name] then party.select(name) end
     if not window:IsShown() then window:Show() end
-    selectTab(name)
+    selectTab(tab)
 end
 
 function Hub.Toggle()
