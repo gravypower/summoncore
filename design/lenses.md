@@ -26,6 +26,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | The Player | One friend group, and one of them (Zennit) is the target | Built A to C; Zennit and "They paid" wait for the playtest |
 | The Interest Curve | A season of five weekly wins, with story chapters as the rewards | Answered; C (his week off) and A (catch-up) built; playtest |
 | Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
+| Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -457,6 +458,63 @@ by giving the week one beat that comes from play.
 - Does the group learn to send cheap summons first? Does anyone say so out loud?
 - When the last-die line comes up, does the order of the summons change?
 - Do the helpers' +5 get noticed, or does the group still treat them as optional?
+
+### 2026-10-04 · Lens of Story, with the Lens of Emotion: does the group feel it?
+
+**The questions (paraphrased):** does the game tell a story, and does the story give the players' actions meaning (and the
+actions move the story)? What do I want players to feel, what do they feel, and at which moments? From the Player entry the
+target is **banter and doing things together, with no bookkeeping**, and Zennit has to enjoy being the target.
+
+**The feelings we want, and what the build gives at each moment** (`Detector.lua`, `Respond.lua`, `Week.lua`, `Intro.lua`)
+
+| Moment | Feeling we want | What the build gives |
+|---|---|---|
+| The ritual begins | Mischief, anticipation | A briefing in facts ("summon 3 of 10 this week, the group leads by 3") |
+| His popup | Dread, played for laughs; agency for him | Four buttons, his own wording, the gag: **works** |
+| The dice | Tension, shared | A real `/roll` the party sees in chat: **the best moment in play** |
+| The result | Triumph or a groan | "+5 points", the lead, the dice left |
+| End of a week | Suspense, then release | One chat line a minute after the next login |
+| A chapter | Warmth, curiosity | Narrated, drawn, typed out: **the strongest moment, and it is outside play** |
+| A finale | Catharsis, affection | Chapters 10 and 11 (75 and 72 seconds); both end with Zennit welcome at a very small cake |
+| His week off | Relief, a little missing him | A line at login |
+
+**Findings**
+1. **The story lives in a viewer; the play lives in chat, and the two do not talk.** A normal summon of Zennit prints five
+   lines (the briefing, "Summon logged", "Week:", his answer, "Week:") and none is in the Index's voice. The voice shows up
+   only in the warnings, the closure and the catch-up line. The group dislikes bookkeeping, and that is the tone of most of
+   what they read while playing.
+2. **Both endings are kind to Zennit.** If he wins he becomes the clerk, and if the group wins he is freed; each finale ends with
+   him invited and the party at his table. The group gets a story for losing a week (his chapters) and he gets one for
+   winning it (theirs). That meets the Griefing / Friendship entry; it is worth keeping.
+3. **The players are not in it.** The 32 scenes name only Zennit; the group is "the party". The personal material exists in
+   the log (who tipped a roll, who summoned him most, how many dice he won in a row) and surfaces only as a chat line that
+   scrolls away. That is the part a friend group would repeat to each other.
+4. **The story and the rules echo in places, not in others.** His list is the syllabus (z3), the fifty silver is the Ritual's
+   price (g4), the week off is real now (z1). But the cake, the carbon copy and the cellar have no counterpart in play, and
+   the silver Zennit asks for and marks paid ("They paid") never reaches chapter g5, where the group pays the Ritual.
+5. **It runs out.** A normal season shows about 6.7 of the 10 chapters (about 6 minutes of story over 11 weeks, 33 seconds a
+   week), and season 2 replays them; "The Index today" varies, but it is one scene.
+6. **We do not know what Zennit wants.** The z chapters give him agency, but which ending he would pick, and whether being the
+   clerk is the better one, is for the playtest.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **The Index remembers**: "The Index today" tells a moment or two from this season, named: the roll a helper pair tipped, who has summoned him most, a run of dice he won. Worked out from the log, so every client agrees | 3, 5 | Wording and one function; no art or voice |
+| B | **The Index's voice in the five lines**: the same facts, said as the Index would ("The Index has noted a summons to Deadmines; he has been told") | 1 | Wording; risk of more reading in chat |
+| C | **Silver reaches the story**: the silver paid to Zennit in a season is counted, and chapter g5 (or the Ledger) uses the number | 4 | A tally, and re-voicing scene 30 if the number is spoken |
+| D | **A season keepsake**: when a finale lands, record it with who was there (a list of past seasons in the Tools tab, and a line in chat) | 3, 5 | Small; stored in the log or settings |
+| E | **New chapters for season 2** | 5 | The largest: writing, art, voice |
+
+**To decide before building**
+- Which feeling matters most at the end of a season: the group's pride, affection for Zennit, or the joke?
+- Should the story name real players, or only describe what they did?
+
+**To watch in playtests**
+- Which lines does the group quote back to each other: the chapters, the chat, or the gags?
+- Does Zennit say which ending he wanted? Does the clerk ending feel like a prize to him?
+- Do people replay chapters, or skip them once heard?
 
 ## Decisions
 
