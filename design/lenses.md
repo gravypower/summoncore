@@ -28,7 +28,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Skill and Chance | Surfaced twice uninvited: the dice, the helpers' +5 and the catch-up edge are all luck dials | Answered; the last-die line built; playtest |
 | Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
 | Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; A, B, C and D built; playtest |
-| Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; the change waits for a decision (below) |
+| Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; A, C built and D worded (audio pending); B (the head start) left |
 
 ## Entries
 
@@ -681,9 +681,28 @@ at a time. The group's chance of winning a week: quiet (2 summons, no helpers), 
 | C | **A rules card**: `/sc rules` (and a Tools button) prints this week's rules with the live numbers: what counts, the cap and the close, his dice, his edge with its catch-up and whim, what a helper adds, the list's size, the week off. One source of truth, never stale | 3, 4 | A function that reads the same numbers the game does |
 | D | **Re-voice intro scenes 9 and 10** to the current rules | 3 | Wording, then re-recording: the largest |
 
+**Our answer:** build **A, C and D**. **B (drop the head start) is not chosen**, so the head start stays at 2 for now.
+
+**Built**
+- **A, the list is bounded** (`Respond.lua`). At most 5 entries, each at least 4 letters: adding a shorter one or a sixth is refused
+  with the reason (`/sc zennit list add`, and the Zennit tab prints it), and `Respond.OnList` only reads the first five entries of
+  four letters or more, so an older short entry stops matching. The Zennit tab dims entries that do not count.
+- **C, the rules card** (`Week.RulesCard`, `/sc rules`, the Tools tab's **The rules**). The race on one card with this week's live
+  numbers: what counts and the cap and the close, the points by place and his head start, his dice and edge (the base, the whim and
+  the catch-up already applied) and what a helper adds, his list, the catch-up steps, the season, and the week's whim or a week off.
+  It reads the same numbers the game uses, so it cannot go stale. It prints to chat, which scrolls.
+- **D, intro scenes 9 and 10 re-worded** to the current rules (`Intro.lua`, and the speech text in `render_takes.py`): only summons
+  of him count, five places on his list, leave and filler, the Index leaning toward the side that is behind, a whim some weeks, five
+  weeks to a season. Every phrase the cues and highlight boxes look for is still in the text, so the art and the scripts are unchanged.
+  **The audio is not re-rendered.** The Kokoro model, `sherpa-onnx` and PowerShell (for `build_audio.ps1`) are on the Windows
+  machine, not in this workspace; until `render_takes.py --only 9,10` and `build_audio.ps1` are run there, the narration and the
+  typed text are still the old recording, which is consistent but out of date.
+
+**Not chosen.** B, dropping the head start: it moves a week by about a point, but it only matters for weeks of one or two points,
+and nobody asked for it to go.
+
 **To decide before building**
-- Bound the list, and how tightly? (Five entries of four letters or more is the proposal.)
-- Is the head start worth keeping for its tie-breaking, or does it go?
+- Is five places of four letters or more the right bound? (Asked at the playtest, with how wide he makes the list.)
 
 **To watch in playtests**
 - How wide does Zennit make his list, and how often does the Index say "again"?
@@ -705,3 +724,4 @@ at a time. The group's chance of winning a week: quiet (2 summons, no helpers), 
 | 2026-10-04 | No rule change for Skill and Chance; say so when his last die is spent | Skill and Chance | A week is mostly chance and a season mostly skill, and the group's best order depends on how he rolls; the moment their ordering pays off was invisible |
 | 2026-10-04 | The Index remembers named moments, the silver he is paid, and a keepsake of each finished season; players named by character | Story and Emotion | The personal material was in the log and scrolled away; naming players is what a friend group repeats |
 | 2026-10-04 | Pools of lines, a whim of the week (four small twists, about half the weeks), a recording sheet and a list that remembers | Surprise | The surprises were in the people and the story only; the repeating lines were wallpaper by week 9 and every week played under the same rules |
+| 2026-10-04 | Bound the list (five places of four letters or more), add a rules card (`/sc rules`), and re-word intro scenes 9 and 10 (audio to be re-rendered); keep the head start | Elegance | An unbounded list could decide every week; no one place said all the rules; the narration predated four rules |
