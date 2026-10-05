@@ -2209,7 +2209,12 @@ raid, when everyone is there.
   chapter last week, the leader is reminded that `/sc week say` tells the raid where the week stands.
 - **B, saying it in the group.** The week's result line at login now ends "The story: /sc intro g2 group shows it to the group, at
   the raid perhaps."; the raid prompt mentions `/sc week say`. Speaking in chat stays a person's choice.
-- **Live check** `d-watch`; a self-test of the message, who is asked, last week's chapter and the once-a-week raid offer.
+- **Previously on** (asked while building: how does a newcomer catch up?). `/sc intro previously` plays every chapter this season
+  has reached, back to back, in the order the race reached them (`Intro.SeasonSoFar`, `Intro.PreviouslyOn`); each chapter plays to its
+  end and the next starts after a breath; closing the window stops it. The welcome mentions it. `/sc intro` (the setup and "The Index
+  today") stays the four-minute version.
+- **Live checks** `d-watch` and `s-previously`; self-tests of the message, who is asked (a newcomer still syncing included), last
+  week's chapter, the once-a-week raid offer, and the season's chapters in order.
 
 **To watch in playtests**
 - Does the group watch a chapter together? Do they ask for it?

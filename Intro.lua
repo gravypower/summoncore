@@ -164,6 +164,7 @@ end
 
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
 local onClose -- runs once when the viewer is next closed (Intro.Play's whenClosed)
+local queue = {} -- chapters still to play after this one ("previously on"); emptied when the viewer closes
 local pictureH, pictureW, buttonsWidth = 300, 533, 700
 local t, playing, shownScene, shownFrame, lastCue = 0, false, 0, -1, nil
 
@@ -616,11 +617,16 @@ local function build()
         if t >= endTime() then
             t = endTime() - 0.01
             setPlaying(false)
+            if #queue > 0 then -- "previously on": the next chapter, after a breath
+                local key = table.remove(queue, 1)
+                C_Timer.After(1.5, function() if frame:IsShown() then Intro.StartChapter(key) end end)
+            end
         end
         show(t)
     end))
     frame:SetScript("OnHide", function()
         setPlaying(false)
+        queue = {}
         local after = onClose
         onClose = nil
         -- One frame later: Esc hides every special frame in one pass, so a window reopened right here (the
@@ -682,6 +688,41 @@ function Intro.Toggle(arg)
     setPlaying(true)
 end
 
+-- Plays a chapter in the open viewer, from its first scene.
+function Intro.StartChapter(key)
+    local si = firstOf[CHAPTER_KEYS[key] or 0]
+    if not si then return end
+    setChapter(scenes[si].chapter)
+    shownScene = 0
+    seek(starts[si])
+    setPlaying(true)
+end
+
+-- This season's chapters so far, in the order the race reached them (the keys), for "previously on".
+function Intro.SeasonSoFar()
+    local season, keys = ST.Week.Season(), {}
+    for _, c in ipairs(season.chapters) do
+        if c.start >= (season.since or 0) and Intro.HasChapter(c.key) then keys[#keys + 1] = c.key end
+    end
+    return keys
+end
+
+-- "Previously on" (design/lenses.md, Pleasure): every chapter this season has reached, back to back, for anyone catching up.
+function Intro.PreviouslyOn()
+    local keys = Intro.SeasonSoFar()
+    if #keys == 0 then
+        return ST.print("Nothing has happened this season yet. |cffffd100/sc intro|r is the story so far.")
+    end
+    ST.print(string.format("Previously, at the Index: %d chapter%s of this season, back to back. Close the window to stop.",
+        #keys, #keys == 1 and "" or "s"))
+    Intro.Play(keys[1])
+    if frame and frame:IsShown() then
+        queue = {}
+        for i = 2, #keys do queue[#queue + 1] = keys[i] end
+    end
+    return keys
+end
+
 -- Starts a chapter (or scene) from the beginning even if the viewer is already open. whenClosed (optional)
 -- runs once, when the viewer is closed.
 function Intro.Play(arg, whenClosed)
@@ -702,7 +743,7 @@ function Intro.WelcomeLines(zennit)
         zennit and "Welcome to Summon Core. You do not have to do anything new: answer summons in the game's own prompt, as you always have, and the Index takes that as your answer."
             or "Welcome to Summon Core. You do not have to do anything new: cast and click portals as usual, and your summons of Zennit count for the group.",
         "Whoever casts the ritual needs Summon Core for the summons to count, and Zennit needs it for his answers to be his. Helpers are credited either way.",
-        "|cffffd100/sc rules|r is the race in a minute, |cffffd100/sc intro|r is the story (about four minutes), and |cffffd100/sc|r opens the window.",
+        "|cffffd100/sc rules|r is the race in a minute, |cffffd100/sc intro|r is the story (about four minutes), |cffffd100/sc intro previously|r catches up on this season, and |cffffd100/sc|r opens the window.",
     }
 end
 

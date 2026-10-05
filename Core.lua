@@ -411,6 +411,7 @@ end
 function commands.intro(rest)
     local key = (rest or ""):match("^(%S+)%s+group$")
     if key then return ST.Intro.PlayForGroup(key) end -- shows the group a chapter (design/lenses.md, Pleasure)
+    if rest == "previously" then return ST.Intro.PreviouslyOn() end -- this season's chapters, back to back
     ST.Intro.Toggle(rest)
 end
 
@@ -604,7 +605,7 @@ local HELP = {
     "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
     "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",
     "/sc export / /sc import - copy-paste strings of the summon log",
-    "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files; /sc intro g2 group shows a chapter to the group)    /sc welcome - the newcomer's welcome again",
+    "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files; /sc intro g2 group shows a chapter to the group; /sc intro previously plays this season's chapters back to back)    /sc welcome - the newcomer's welcome again",
     "/sc clip [category|file] - list or play voice clips from Media/clips",
     "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)",
     "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office",
