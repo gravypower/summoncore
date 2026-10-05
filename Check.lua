@@ -122,7 +122,7 @@ Check.LIST = {
       expect = "the binding is listed and the key does what /sc writ does", fails = "no key; /sc writ still works" },
     { id = "s-fit", kind = "solo", title = "The window fits: Party (Of Zennit column), Badges, Tools",
       steps = { "/sc and click through Party, Zennit, Log, Story, Sync and Tools.",
-          "Nothing should run off the edge: the Party tab's Of Zennit column, the Badges tab's third column and the Tools tab's five columns." },
+          "Nothing should run off the edge: the Party tab's Of Zennit column, the Badges tab's third column and each of the Tools tab's sections (General, Testing, Checks)." },
       expect = "no clipped text or overlapping buttons", fails = "layout needs a fix (say which tab)" },
     { id = "s-lines", kind = "solo", title = "The chat lines read well on a test summons",
       steps = { "On a Zennit test (/sc zenit) or an alt: /sc fake Zennit, then /sc week, /sc rules, /sc tab and /sc report.",

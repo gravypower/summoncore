@@ -288,7 +288,7 @@ local function buildAnswer(f)
         local n = #pending
         if n == 0 and not ST.Gag.IsZennit() then
             info:SetText("This tab is for Zennit's character: summons of him wait here for his answer." ..
-                (ST.IsAdmin() and " Try it with Tools > Test a summoning." or ""))
+                (ST.IsAdmin() and " Try it with Tools > Testing > Test a summoning." or ""))
         else
             info:SetText(n == 0 and "Nothing is waiting for your answer." or
                 string.format("%s summon%s waiting for your answer", T.Paint("amber", n), n == 1 and "" or "s"))
@@ -551,23 +551,16 @@ local function buildSync(f)
     end
 end
 
--- Tools: four columns of buttons. Admin-only tools are hidden for everyone else, and the columns close up
--- around them, so nobody sees gaps.
+-- Tools: three sections under one row of small buttons, like the Party tab. General holds what everyone uses (windows,
+-- the record, settings); Testing holds the things to try and the test switches; Checks holds the live checklist. Each
+-- section is a stack of titled groups, five buttons to a row; admin-only tools are hidden for everyone else and the rows
+-- close up around them, so nobody sees gaps. One output box sits under whichever section is on show.
+local TOOL_SECTIONS = { { "general", "GENERAL" }, { "testing", "TESTING" }, { "checks", "CHECKS" } }
+local tools = {} -- tools.select(name) shows one of the sections
+
 local function buildTools(f)
-    local COL_W, STEP = 142, 30 -- five columns of buttons across the 776 px tab; each has room for 12 or so before the output box
-    local columns = {}
-    local function column(x, title)
-        local col = { x = x, items = {} }
-        label(f, title, x, -8)
-        columns[#columns + 1] = col
-        return col
-    end
-    local function add(col, widget, adminOnly) col.items[#col.items + 1] = { widget = widget, admin = adminOnly } end
-    local function tool(col, text, onClick, adminOnly, style)
-        local b = T.Button(f, text, COL_W, 24, onClick, style)
-        add(col, b, adminOnly)
-        return b
-    end
+    local COL_W, GAP, PER_ROW, STEP = 142, 8, 5, 30 -- five buttons across the 776 px tab
+    local sections, sectionButtons = {}, {}
 
     local out = bodyText(f, 16, -300, 740, 140)
     local shown = "" -- what the output box says, so COPY can hand it over: the box itself cannot be selected
@@ -576,7 +569,35 @@ local function buildTools(f)
         out:SetText(text)
     end
 
-    local windows = column(16, "WINDOWS")
+    -- A section's contents, top to bottom: groups (a title and a grid of buttons) and rows (a frame of its own).
+    local function section(name)
+        local frame = CreateFrame("Frame", nil, f)
+        frame:SetPoint("TOPLEFT", 0, -34)
+        frame:SetPoint("BOTTOMRIGHT")
+        sections[name] = { frame = frame, blocks = {}, height = 0 }
+        return sections[name]
+    end
+    local function group(sec, title, adminOnly)
+        local g = { kind = "group", title = label(sec.frame, title, 16, 0), items = {}, admin = adminOnly }
+        sec.blocks[#sec.blocks + 1] = g
+        return g
+    end
+    local function tool(g, text, onClick, adminOnly, style)
+        local b = T.Button(g.title:GetParent(), text, COL_W, 24, onClick, style)
+        g.items[#g.items + 1] = { widget = b, admin = adminOnly }
+        return b
+    end
+    local function row(sec, title, adminOnly)
+        local r = CreateFrame("Frame", nil, sec.frame)
+        r:SetSize(740, 24)
+        local fs = label(r, title, 0, -3)
+        sec.blocks[#sec.blocks + 1] = { kind = "row", widget = r, admin = adminOnly }
+        return r, fs
+    end
+
+    -- GENERAL ------------------------------------------------------------------------------------------------------
+    local general = section("general")
+    local windows = group(general, "WINDOWS")
     tool(windows, "IMPORT / EXPORT", function() ST.Export.Open("import") end)
     tool(windows, "PLAY THE INTRO", function()
         window:Hide()
@@ -585,10 +606,7 @@ local function buildTools(f)
     tool(windows, "DIAGNOSTICS", function() ST.ToggleTests("") end, true)
     tool(windows, "LARGE-IMAGE TEST", function() ST.Comic.Toggle("") end, true)
 
-    -- the reports have a column of their own: with them in "try things" the admin's column ran 482 px down a 458 px tab
-    local record = column(164, "THE RECORD")
-    local try = column(312, "TRY THINGS")
-    tool(try, "WHERE AM I?", function() show(whereText()) end)
+    local record = group(general, "THE RECORD")
     tool(record, "WEEK AND SEASON", function()
         local W = ST.Week
         local season = W.Season()
@@ -601,9 +619,9 @@ local function buildTools(f)
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
         }, "\n"))
     end)
-    tool(record, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
-        for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
-        show("What the log says about how the race is being played is in the chat window.")
+    tool(record, "THE RULES", function() -- long: it goes to the chat window, which scrolls
+        for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
+        show("The rules of the race, with this week's numbers, are in the chat window.")
     end)
     tool(record, "THE TITLES", function()
         for _, line in ipairs(ST.Ledger.Standings()) do ST.print(line) end
@@ -617,10 +635,6 @@ local function buildTools(f)
         for _, line in ipairs(ST.Cards.Lines()) do ST.print(line) end
         show("Who holds a summon card, and the punches left, are in the chat window.")
     end)
-    tool(record, "THE RULES", function() -- long: it goes to the chat window, which scrolls
-        for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
-        show("The rules of the race, with this week's numbers, are in the chat window.")
-    end)
     tool(record, "PAST SEASONS", function() -- a few lines for each season: they go to the chat window, which scrolls
         local seasons = ST.Ledger.Seasons()
         for _, s in ipairs(seasons) do
@@ -629,6 +643,39 @@ local function buildTools(f)
         show(#seasons > 0 and "The Index's keepsake of each finished season is in the chat window." or
             "No season has finished yet. The Index is keeping the file open.")
     end)
+    tool(record, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
+        for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
+        show("What the log says about how the race is being played is in the chat window.")
+    end)
+
+    local paints = {} -- every switch repaints after any click, because the two test modes turn each other off
+    local function switch(g, name, get, set, adminOnly)
+        local b
+        local function paint() b:SetText(name .. ": " .. (get() and "ON" or "OFF")) end
+        b = tool(g, "", function()
+            set(not get())
+            for _, repaint in ipairs(paints) do repaint() end
+        end, adminOnly)
+        paints[#paints + 1] = paint
+        paint()
+    end
+
+    local data = group(general, "SETTINGS AND YOUR DATA")
+    switch(data, "SOUNDS", function() return ST.db.settings.soundOn ~= false end,
+        function(v) ST.db.settings.soundOn = v end)
+    tool(data, "UNDO LAST SUMMON", function()
+        local last = ST.Store.RemoveLast()
+        show(last and string.format("Removed %s -> %s (badges already earned are kept).", last.ev.caster, last.ev.target) or
+            "Nothing to undo.")
+        Hub.Refresh()
+    end)
+    tool(data, "RESET MY DATA...", function() ST.Reset.Ask(false) end, nil, "danger")
+    tool(data, "RESET ALL...", function() ST.Reset.Ask(true) end, true, "danger")
+
+    -- TESTING ------------------------------------------------------------------------------------------------------
+    local testing = section("testing")
+    local try = group(testing, "TRY THINGS")
+    tool(try, "WHERE AM I?", function() show(whereText()) end)
     tool(try, "BATTLE.NET CHECK", function() show(ST.TagReport()) end)
     tool(try, "LIST VOICE CLIPS", function()
         local cats = ST.Clips.Categories()
@@ -651,60 +698,7 @@ local function buildTools(f)
     tool(try, "PARTY GAG", function() ST.Gag.PlayParty() end, true)
     tool(try, "SOUND CHECK", function() ST.Intro.Check() end, true)
 
-    local switches = column(460, "SWITCHES")
-    local paints = {} -- every switch repaints after any click, because the two test modes turn each other off
-    local function switch(name, get, set, adminOnly)
-        local b
-        local function paint() b:SetText(name .. ": " .. (get() and "ON" or "OFF")) end
-        b = tool(switches, "", function()
-            set(not get())
-            for _, repaint in ipairs(paints) do repaint() end
-        end, adminOnly)
-        paints[#paints + 1] = paint
-        paint()
-    end
-    switch("SOUNDS", function() return ST.db.settings.soundOn ~= false end,
-        function(v) ST.db.settings.soundOn = v end)
-    switch("ZENNIT TEST", function() return ST.db.settings.zenitTest == true end,
-        function(v)
-            ST.db.settings.zenitTest = v
-            if v then ST.db.settings.partyTest = false end
-        end, true)
-    switch("PARTY TEST", function() return ST.db.settings.partyTest == true end,
-        function(v)
-            ST.db.settings.partyTest = v
-            if v then ST.db.settings.zenitTest = false end
-        end, true)
-    switch("DETECTOR", function() return ST.db.settings.debug == true end,
-        function(v) ST.db.settings.debug = v end, true)
-
-    local data = column(608, "YOUR DATA")
-    tool(data, "UNDO LAST SUMMON", function()
-        local last = ST.Store.RemoveLast()
-        show(last and string.format("Removed %s -> %s (badges already earned are kept).", last.ev.caster, last.ev.target) or
-            "Nothing to undo.")
-        Hub.Refresh()
-    end)
-    tool(data, "RESET MY DATA...", function() ST.Reset.Ask(false) end, nil, "danger")
-    tool(data, "RESET ALL...", function() ST.Reset.Ask(true) end, true, "danger")
-    tool(data, "ADD TEST SUMMON", function()
-        local ev = ST.AddFake("Tester", {})
-        show(string.format("Test summon saved: %s in %s (+%d, %s). It stays on this client.", ev.target, ev.subzone ~= "" and ev.subzone or "nowhere", ev.points, ev.kind))
-        Hub.Refresh()
-    end, true)
-    tool(data, "SYNC SELF-TEST", function()
-        ST.SyncTest.Run()
-        show("Self-test results are in the chat window.")
-    end, true)
-    tool(data, "RUN TAG TESTS", function()
-        local ok, detail = ST.TagTest()
-        show((ok and T.Paint("green", "PASS ") or T.Paint("red", "FAIL ")) .. detail)
-    end, true)
-
-    -- a row for playing a voice clip, and (admin) one for pinging a player; they sit under the columns
-    local clipRow = CreateFrame("Frame", nil, f)
-    clipRow:SetSize(740, 24)
-    label(clipRow, "VOICE CLIP", 0, -3)
+    local clipRow = row(testing, "VOICE CLIP")
     local clip = T.EditBox(clipRow, 170, 22)
     clip:SetPoint("TOPLEFT", 110, -1)
     local function playClip()
@@ -714,9 +708,7 @@ local function buildTools(f)
     clip:SetScript("OnEnterPressed", playClip)
     button(clipRow, "PLAY", 288, 0, 80, playClip)
 
-    local pingRow = CreateFrame("Frame", nil, f)
-    pingRow:SetSize(740, 24)
-    label(pingRow, "PING PLAYER", 0, -3)
+    local pingRow = row(testing, "PING PLAYER", true)
     local ping = T.EditBox(pingRow, 170, 22)
     ping:SetPoint("TOPLEFT", 110, -1)
     button(pingRow, "SEND PING", 288, 0, 120, function()
@@ -724,10 +716,45 @@ local function buildTools(f)
         show("Ping sent. Replies appear in Diagnostics > Addon messages.")
     end)
 
-    -- the live checks (design/verification.md): run the automatic ones, then step through the rest with the buttons
-    local checkRow = CreateFrame("Frame", nil, f)
-    checkRow:SetSize(740, 24)
-    local checkLabel = label(checkRow, "CHECKS", 0, -3)
+    local modes = group(testing, "TEST MODES", true)
+    switch(modes, "ZENNIT TEST", function() return ST.db.settings.zenitTest == true end,
+        function(v)
+            ST.db.settings.zenitTest = v
+            if v then ST.db.settings.partyTest = false end
+        end, true)
+    switch(modes, "PARTY TEST", function() return ST.db.settings.partyTest == true end,
+        function(v)
+            ST.db.settings.partyTest = v
+            if v then ST.db.settings.zenitTest = false end
+        end, true)
+    switch(modes, "DETECTOR", function() return ST.db.settings.debug == true end,
+        function(v) ST.db.settings.debug = v end, true)
+
+    local selfTests = group(testing, "TEST DATA AND SELF-TESTS", true)
+    tool(selfTests, "ADD TEST SUMMON", function()
+        local ev = ST.AddFake("Tester", {})
+        show(string.format("Test summon saved: %s in %s (+%d, %s). It stays on this client.", ev.target, ev.subzone ~= "" and ev.subzone or "nowhere", ev.points, ev.kind))
+        Hub.Refresh()
+    end, true)
+    tool(selfTests, "SYNC SELF-TEST", function()
+        ST.SyncTest.Run()
+        show("Self-test results are in the chat window.")
+    end, true)
+    tool(selfTests, "RUN TAG TESTS", function()
+        local ok, detail = ST.TagTest()
+        show((ok and T.Paint("green", "PASS ") or T.Paint("red", "FAIL ")) .. detail)
+    end, true)
+
+    -- CHECKS: the live checks (design/verification.md): run the automatic ones, then step through the rest with the buttons
+    local checks = section("checks")
+    local intro = T.Text(checks.frame, 18, "dim")
+    intro:SetSize(740, 60)
+    intro:SetJustifyH("LEFT")
+    intro:SetJustifyV("TOP")
+    intro:SetText("The live-client checklist. RUN AUTO runs the checks the addon can do itself; NEXT shows the steps " ..
+        "for the next one that needs a person, then PASS, FAIL or SKIP records it. REPORT opens the results to send back.")
+    checks.blocks[#checks.blocks + 1] = { kind = "row", widget = intro, height = 64 }
+    local checkRow, checkLabel = row(checks, "CHECKS")
     local current -- the check on show
     local function paintChecks()
         checkLabel:SetText("CHECKS " .. (ST.Check.Summary()))
@@ -775,39 +802,66 @@ local function buildTools(f)
     button(checkRow, "REPORT", 514, 0, 80, function() ST.Check.Command("report") end)
     button(checkRow, "COPY", 598, 0, 60, function() ST.Check.Copy(shown) end)
 
+    -- Lays a section out top to bottom for this player, and returns how far down it ran.
+    local function layout(sec, admin)
+        local y = -6
+        for _, block in ipairs(sec.blocks) do
+            local visible = admin or not block.admin
+            if block.kind == "group" then
+                local n = 0
+                for _, item in ipairs(block.items) do
+                    local on = visible and (admin or not item.admin)
+                    item.widget:SetShown(on)
+                    if on then
+                        item.widget:ClearAllPoints()
+                        item.widget:SetPoint("TOPLEFT", 16 + (n % PER_ROW) * (COL_W + GAP), y - 24 - math.floor(n / PER_ROW) * STEP)
+                        n = n + 1
+                    end
+                end
+                visible = n > 0
+                block.title:SetShown(visible)
+                if visible then
+                    block.title:ClearAllPoints()
+                    block.title:SetPoint("TOPLEFT", 16, y)
+                    y = y - 24 - math.ceil(n / PER_ROW) * STEP - 8
+                end
+            else
+                block.widget:SetShown(visible)
+                if visible then
+                    block.widget:ClearAllPoints()
+                    block.widget:SetPoint("TOPLEFT", 16, y)
+                    y = y - (block.height or STEP + 4)
+                end
+            end
+        end
+        sec.height = -y
+    end
+
+    local selected = "general"
+    local function placeOutput()
+        out:ClearAllPoints()
+        out:SetPoint("TOPLEFT", 16, -34 - sections[selected].height - 8)
+        out:SetPoint("BOTTOMRIGHT", -16, 4)
+    end
+    function tools.select(name)
+        selected = name
+        for _, s in ipairs(TOOL_SECTIONS) do
+            local on = s[1] == name
+            sections[s[1]].frame:SetShown(on)
+            sectionButtons[s[1]]:SetSelected(on)
+        end
+        placeOutput()
+    end
+    for i, s in ipairs(TOOL_SECTIONS) do
+        sectionButtons[s[1]] = button(f, s[2], 4 + (i - 1) * 126, -4, 120, function() tools.select(s[1]) end, "tab")
+    end
+    tools.select("general")
+
     return function()
         paintChecks()
         local admin = ST.IsAdmin()
-        local lowest = 0
-        for _, col in ipairs(columns) do
-            local y = -32
-            for _, item in ipairs(col.items) do
-                local visible = admin or not item.admin
-                item.widget:SetShown(visible)
-                if visible then
-                    item.widget:ClearAllPoints()
-                    item.widget:SetPoint("TOPLEFT", col.x, y)
-                    y = y - STEP
-                end
-            end
-            lowest = math.min(lowest, y)
-        end
-        local y = lowest - 8
-        clipRow:ClearAllPoints()
-        clipRow:SetPoint("TOPLEFT", 16, y)
-        y = y - STEP
-        pingRow:SetShown(admin)
-        if admin then
-            pingRow:ClearAllPoints()
-            pingRow:SetPoint("TOPLEFT", 16, y)
-            y = y - STEP
-        end
-        checkRow:ClearAllPoints()
-        checkRow:SetPoint("TOPLEFT", 16, y)
-        y = y - STEP
-        out:ClearAllPoints()
-        out:SetPoint("TOPLEFT", 16, y - 8)
-        out:SetPoint("BOTTOMRIGHT", -16, 4)
+        for _, s in ipairs(TOOL_SECTIONS) do layout(sections[s[1]], admin) end
+        placeOutput()
     end
 end
 

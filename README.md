@@ -28,7 +28,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc badges` | Badge list |
 | `/sc writ` | Arm a writ for your next ritual on Zennit (two a week): if he declines that summons in the game, it costs him its points. Again to withdraw it. It is also a **key binding** (Esc > Options > Key Bindings > AddOns > Summon Core: "Play a writ on your next summons of Zennit"), so it is one key in the middle of play; the binding (`Bindings.xml`) has never been tried in the client |
 | `/sc week say` | Tell the group (party or raid chat) where the week stands, in one line: the lead, his dice left, the last call. It uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
-| `/sc check` | The live-client checklist (`design/verification.md`), also on the Tools tab as the CHECKS row (RUN AUTO, NEXT, PASS, FAIL, SKIP, TRACE, REPORT, COPY: the output box cannot be selected, so COPY opens its text in a window that can): `/sc check auto` runs the automatic checks, `/sc check <id>` gives the steps for the rest, `pass`/`fail`/`skip <id> [note]` records a result, `trace` shows what the summon prompt did, `report` opens a copyable report to send back. Some checks turn green on their own when they happen for real |
+| `/sc check` | The live-client checklist (`design/verification.md`), also the Tools tab's Checks section (RUN AUTO, NEXT, PASS, FAIL, SKIP, TRACE, REPORT, COPY: the output box cannot be selected, so COPY opens its text in a window that can): `/sc check auto` runs the automatic checks, `/sc check <id>` gives the steps for the rest, `pass`/`fail`/`skip <id> [note]` records a result, `trace` shows what the summon prompt did, `report` opens a copyable report to send back. Some checks turn green on their own when they happen for real |
 | `/sc where` | Current map ID, subzone and how it scores |
 | `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
 | `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
@@ -419,8 +419,12 @@ things out of the way but is not security.
 
 ### Tools tab, BattleTags and reset
 
-The Tools tab now has a button for every command that has no tab of its own: week and season, Battle.net check, undo the last
-summon, reset, and (admin only) the sync self-test, a test summon, the BattleTag tests and the debug switches.
+The Tools tab has a button for every command that has no tab of its own, in three sections under a row of small buttons, like
+the Party tab: **General** (windows, the record: week and season, the rules, the titles, the tab, cards, past seasons and the
+playtest report; the sound switch, undo the last summon and reset), **Testing** (where am I, the Battle.net check, voice clips and,
+admin only, the test summoning, the gags, the test modes, a test summon, the sync self-test and the BattleTag tests) and
+**Checks** (the live checklist). The output box sits under whichever section is on show; admin-only buttons are hidden for
+everyone else and the rows close up around them.
 `/sc admin` (or the Battle.net check button) shows the BattleTag the game reports and whether it is the admin's or Zennit's; the
 admin's **Run tag tests** button, and the last two lines of `/sc synctest`, check the matching with sample tags.
 
