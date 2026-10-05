@@ -1511,6 +1511,40 @@ add("season titles: who leads what, named, with Zennit's kind ones, and the figu
     return ok and #few == 0, string.format("%d titles; Al: %d weeks, tipped %d", #titles, d.by.Al.weekCount, d.by.Al.tipped)
 end)
 
+add("the Monday tip: they go round without repeating, once a week, and can be switched off", function()
+    local W = ST.Week
+    local a = newClient("Alpha")
+    local printed, realPrint = {}, ST.print
+    local out = {}
+    local ok, err = pcall(function()
+        with(a, function()
+            local seen, prev, repeated = {}, nil, false
+            for _ = 1, #W.TIPS * 2 do
+                local tip = W.NextTip()
+                if tip == prev then repeated = true end
+                prev = tip
+                seen[tip] = (seen[tip] or 0) + 1
+            end
+            out.repeated, out.seen = repeated, 0
+            for _ in pairs(seen) do out.seen = out.seen + 1 end
+            ST.print = function(text) printed[#printed + 1] = text end
+            a.db.settings.tipSeen = nil
+            W.AnnounceTip()
+            W.AnnounceTip()                       -- the same week: nothing more
+            out.once = #printed
+            a.db.settings.tipSeen = nil
+            a.db.settings.tipsOff = true
+            W.AnnounceTip()                       -- switched off: nothing
+            out.off = #printed
+            out.line = printed[1]
+        end)
+    end)
+    ST.print = realPrint
+    if not ok then return false, "ERROR " .. tostring(err) end
+    local good = not out.repeated and out.seen >= 2 and out.once == 1 and out.off == 1 and out.line and out.line:find("Tip:", 1, true)
+    return good, string.format("%d different tips in a round, printed %d then %d, %s", out.seen, out.once, out.off, tostring(out.line))
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")
