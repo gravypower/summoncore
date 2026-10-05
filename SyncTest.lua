@@ -1159,6 +1159,63 @@ add("the list remembers: a place on his list that comes up again is noticed, and
     end)
 end)
 
+add("the list is bounded: places of four letters or more, five at most, and an old short entry stops matching", function()
+    local a = newClient("Alpha")
+    local R = ST.Respond
+    local out = {}
+    with(a, function()
+        a.db.settings = a.db.settings or {}
+        a.db.settings.zennitList = {}
+        out.short = { R.ListAdd("a") }
+        out.empty = { R.ListAdd("   ") }
+        for _, place in ipairs({ "Darnassus", "Stormwind", "Orgrimmar", "Ironforge", "Undercity" }) do out[place] = R.ListAdd(place) end
+        out.sixth = { R.ListAdd("Thunder Bluff") }
+        out.count = #R.ListActive()
+        local ev = { subzone = "Stormwind Harbor" }
+        out.hit = R.OnList(ev)
+        -- an entry saved before the bound: a single letter and a sixth place do not count
+        a.db.settings.zennitList = { "e", "Darnassus", "Stormwind", "Orgrimmar", "Ironforge", "Undercity", "Thunder Bluff" }
+        out.legacy = R.OnList({ subzone = "The Barrens" })          -- "e" would have matched
+        out.sixthPlace = R.OnList({ subzone = "Thunder Bluff" })    -- past the fifth
+        out.active = #R.ListActive()
+    end)
+    local ok = out.short[1] == false and out.short[2]:find("at least 4") and out.empty[1] == false
+        and out.Darnassus and out.Undercity and out.sixth[1] == false and out.sixth[2]:find("holds 5")
+        and out.count == 5 and out.hit and not out.legacy and not out.sixthPlace and out.active == 5
+    return ok, string.format("one letter refused, five places held, a sixth refused (%s); old entries: 'e' %s, sixth place %s",
+        tostring(out.sixth[2]), tostring(out.legacy), tostring(out.sixthPlace))
+end)
+
+add("the rules card: this week's live numbers, the whim, and the old rules when they apply", function()
+    return newRules(function()
+        local W = ST.Week
+        local savedWhims = W.RULES.whims
+        local a = newClient("Alpha")
+        local out = {}
+        with(a, function()
+            W.RULES.whims = false
+            out.plain = table.concat(W.RulesCard(), "\n")
+            W.RULES.whims = true
+            local start = W.Start()
+            for n = 0, 99 do                                  -- a week with a whim
+                local at = start + n * 7 * 86400
+                if W.Whim(at) then out.whimCard = table.concat(W.RulesCard(at), "\n") out.whimLine = W.WhimLine(at) break end
+            end
+            W.RULES.from = math.huge
+            out.old = table.concat(W.RulesCard(), "\n")
+            W.RULES.from = 0
+        end)
+        W.RULES.whims = savedWhims
+        local R = W.RULES
+        local ok = out.plain:find("up to " .. R.cap .. " a week", 1, true) and out.plain:find("Once " .. R.minimum .. " are filed", 1, true)
+            and out.plain:find("he has " .. R.dice .. " a week", 1, true) and out.plain:find("No whim this week", 1, true)
+            and out.plain:find("up to " .. ST.Respond.LIST_MAX .. " places", 1, true)
+            and out.whimCard and out.whimCard:find("This week's whim: " .. out.whimLine, 1, true)
+            and out.old:find("old rules", 1, true) and not out.old:find("Counts:", 1, true)
+        return ok, "cap, close, dice, list, whim and the old rules all read from the live numbers"
+    end)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

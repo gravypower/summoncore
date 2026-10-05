@@ -225,11 +225,16 @@ function commands.zenit(rest)
         -- his secret list: /sc zennit list [add <place> | remove <n> | clear]
         local R = ST.Respond
         local verb, what = arg:match("^(%S*)%s*(.-)$")
-        if verb == "add" then print_(R.ListAdd(what) and ("added '" .. what .. "'") or "add what?")
+        if verb == "add" then
+            local ok, why = R.ListAdd(what)
+            print_(ok and ("added '" .. what .. "'") or why)
         elseif verb == "remove" then print_(R.ListRemove(what) and "removed" or "no such entry")
         elseif verb == "clear" then R.ListClear() print_("list cleared") end
         local list = R.List()
         print_(#list == 0 and "secret list is empty" or "secret list: " .. table.concat(list, "; "))
+        if #R.ListActive() < #list then
+            print_(string.format("only the first %d entries of %d letters or more count", R.LIST_MAX, R.LIST_MIN))
+        end
         if ST.Hub then ST.Hub.Refresh() end
         return
     end
@@ -328,6 +333,11 @@ function commands.week(rest)
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
 
+-- The rules of the race, with this week's live numbers.
+function commands.rules()
+    for _, line in ipairs(ST.Week.RulesCard()) do print_(line) end
+end
+
 -- The Index's keepsake of each finished season, newest first.
 function commands.seasons()
     local seasons = ST.Ledger.Seasons()
@@ -391,6 +401,7 @@ local HELP = {
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc rules - the rules of the race, with this week's live numbers",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
     "/sc respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
     "/sc gag - preview the Zennit gag",

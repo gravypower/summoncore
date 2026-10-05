@@ -180,10 +180,30 @@ function Respond.List()
     return ST.db.settings.zennitList
 end
 
+-- The list is bounded (design/lenses.md, Elegance): an entry matches any part of a place's name, so a single letter would
+-- match most places and decide every week. Only the first LIST_MAX entries count, and only those of LIST_MIN letters or more.
+Respond.LIST_MAX, Respond.LIST_MIN = 5, 4
+
+-- The entries that count, in order.
+function Respond.ListActive()
+    local out = {}
+    for _, word in ipairs(Respond.List()) do
+        if #out < Respond.LIST_MAX and #word >= Respond.LIST_MIN then out[#out + 1] = word end
+    end
+    return out
+end
+
+-- Adds a place. Returns true, or false and why it was refused.
 function Respond.ListAdd(text)
     text = (text or ""):match("^%s*(.-)%s*$")
-    if text == "" then return false end
+    if text == "" then return false, "add what?" end
+    if #text < Respond.LIST_MIN then
+        return false, string.format("'%s' is too short: a place needs at least %d letters", text, Respond.LIST_MIN)
+    end
     local list = Respond.List()
+    if #Respond.ListActive() >= Respond.LIST_MAX then
+        return false, string.format("the list holds %d places: remove one first", Respond.LIST_MAX)
+    end
     list[#list + 1] = text
     return true
 end
@@ -201,7 +221,7 @@ end
 function Respond.OnList(ev)
     local zone = ev.mapID and C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(ev.mapID)
     local where = ((ev.subzone or "") .. " " .. ((zone and zone.name) or "")):lower()
-    for _, word in ipairs(Respond.List()) do
+    for _, word in ipairs(Respond.ListActive()) do
         if where:find(word:lower(), 1, true) then return true end
     end
     return false

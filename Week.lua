@@ -402,6 +402,39 @@ local function checkLastWeek()
     end
 end
 
+-- The rules of the race on one card, with this week's live numbers (the base rules, the whim and the catch-up already
+-- applied), so there is one place that says them all and it cannot go stale. A list of lines.
+function Week.RulesCard(start)
+    start = start or Week.Start()
+    local R, kinds = Week.RULES, ST.Scoring.kindPoints
+    if not Week.NewRules(start) then
+        return { "The race runs on the old rules this week: every landed summon counts for the group, and Zennit starts with " ..
+            Week.HEADSTART .. " points." }
+    end
+    local edge, moved = Week.Edge(start)
+    local bonus = Week.Rule("helperBonus", start)
+    local card = {
+        "THE RACE, this week",
+        string.format("Counts: only summons of Zennit, up to %d a week. Any more are filed under 'enthusiasm'. Once %d are filed and " ..
+            "the latest is answered, he may close the Index for the week.", R.cap, R.minimum),
+        string.format("Points: a city %d, a zone %d, a dungeon %d, a far-flung place %d. The group scores the summons that land; " ..
+            "Zennit scores the dice he wins and the places on his list that land. Zennit starts the week with %d, and a tie is his.",
+            kinds.city, kinds.zone, kinds.dungeon, kinds.remote, R.headstart),
+        string.format("Dice: he has %d a week and adds +%d to his roll; each helper (two at most) adds +%d to the summoner's. " ..
+            "When they are gone he can only accept, refuse or ask for the silver.", Week.Rule("dice", start), edge, bonus),
+        string.format("His list: up to %d places of %d letters or more. Accepting a summon there earns him the points; refusing it is free.",
+            ST.Respond.LIST_MAX, ST.Respond.LIST_MIN),
+        string.format("Catch-up: when a side leads the season by two wins, his edge moves %d toward the side that is behind; by three, %d.%s",
+            R.catchup[2] or 0, R.catchup[3] or 0, moved ~= 0 and string.format(" This week it has moved %+d.", moved) or ""),
+        string.format("The season: win %d weeks to take its finale. A week he wins is followed by his week off, when summons of him are filler.",
+            Week.WINS),
+    }
+    local whim = Week.WhimLine(start)
+    card[#card + 1] = whim and ("This week's whim: " .. whim) or "No whim this week."
+    if Week.IsOff(start) then card[#card + 1] = "This is his week off: summons of him are filler, and nobody wins the week." end
+    return card
+end
+
 -- At login: how the last week ended, then this week's whim.
 function Week.Check()
     checkLastWeek()

@@ -248,7 +248,8 @@ local function buildAnswer(f)
     local entry = T.EditBox(secret, 150, 22)
     entry:SetPoint("TOPLEFT", 460, -229)
     local function addEntry()
-        if ST.Respond.ListAdd(entry:GetText()) then entry:SetText("") end
+        local ok, why = ST.Respond.ListAdd(entry:GetText())
+        if ok then entry:SetText("") elseif why then ST.print(why) end
         entry:ClearFocus()
         Hub.Refresh()
     end
@@ -262,8 +263,18 @@ local function buildAnswer(f)
     return function()
         secret:SetShown(ST.Gag.IsZennit() or ST.IsAdmin())
         closeIndex:SetShown(ST.Gag.IsZennit() and ST.Week.CloseTarget(ST.Week.Start()) ~= nil)
-        local list = ST.Respond.List()
-        listText:SetText(#list == 0 and T.Paint("dim", "empty: refusing always costs points") or table.concat(list, ", "))
+        local list, active = ST.Respond.List(), ST.Respond.ListActive()
+        local shown, used = {}, {}
+        for _, word in ipairs(active) do used[word] = (used[word] or 0) + 1 end
+        for _, word in ipairs(list) do
+            if (used[word] or 0) > 0 then
+                used[word] = used[word] - 1
+                shown[#shown + 1] = word
+            else
+                shown[#shown + 1] = T.Paint("dim", word) -- too short, or past the fifth: it does not count
+            end
+        end
+        listText:SetText(#list == 0 and T.Paint("dim", "empty: refusing always costs points") or table.concat(shown, ", "))
         local pending = ST.Respond.Pending()
         local cur = surface.current
         -- keep what is on show (a summon being answered, or its outcome) until the user moves on
@@ -589,13 +600,17 @@ local function buildTools(f)
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
         }, "\n"))
     end)
-    tool(try, "PAST SEASONS", function()
-        local lines = {}
-        for _, s in ipairs(ST.Ledger.Seasons()) do
-            for _, line in ipairs(s.lines) do lines[#lines + 1] = line end
-            lines[#lines + 1] = ""
+    tool(try, "THE RULES", function() -- long: it goes to the chat window, which scrolls
+        for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
+        show("The rules of the race, with this week's numbers, are in the chat window.")
+    end)
+    tool(try, "PAST SEASONS", function() -- a few lines for each season: they go to the chat window, which scrolls
+        local seasons = ST.Ledger.Seasons()
+        for _, s in ipairs(seasons) do
+            for _, line in ipairs(s.lines) do ST.print(line) end
         end
-        show(#lines > 0 and table.concat(lines, "\n") or "No season has finished yet. The Index is keeping the file open.")
+        show(#seasons > 0 and "The Index's keepsake of each finished season is in the chat window." or
+            "No season has finished yet. The Index is keeping the file open.")
     end)
     tool(try, "BATTLE.NET CHECK", function() show(ST.TagReport()) end)
     tool(try, "LIST VOICE CLIPS", function()
