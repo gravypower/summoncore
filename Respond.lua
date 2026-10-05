@@ -710,6 +710,7 @@ end
 
 -- A live summon of Zennit has arrived on his client (Sync calls this).
 function Respond.Incoming(id, ev)
+    ST.Trace(string.format("the Index's form opened for %s (from %s)", id, tostring(ev.caster)))
     if not dlg then buildDialog() end
     Respond.Select(dlgSurface, id, ev)
     dlg:Show()
@@ -760,31 +761,57 @@ function Respond.Real(kind, summoner)
             break
         end
     end
-    if not pick then return nil end
+    if not pick then
+        ST.Trace(kind .. ": no summons of him is waiting, so nothing is recorded")
+        return nil
+    end
+    local rolling = state[pick.id] ~= nil
     state[pick.id] = nil -- a roll in flight is over: the game's prompt is his answer, and no die is spent
     if pendingRoll and pendingRoll.id == pick.id then pendingRoll = nil end
-    if kind == "accept" then return Respond.Decide(pick.id, "accepted") end
-    if ST.Week.WritCounts(pick.ev) then return Respond.Decide(pick.id, "refused") end
-    if ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then return Respond.Decide(pick.id, "declined") end
-    ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
-        pick.ev.points or 0, plural(pick.ev.points or 0)))
-    return Respond.Decide(pick.id, "refused")
+    local resp, why
+    if kind == "accept" then
+        resp, why = Respond.Decide(pick.id, "accepted"), "d-accept"
+    elseif ST.Week.WritCounts(pick.ev) then
+        resp, why = Respond.Decide(pick.id, "refused"), "d-writ"
+    elseif ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then
+        resp, why = Respond.Decide(pick.id, "declined"), "d-decline"
+    else
+        ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
+            pick.ev.points or 0, plural(pick.ev.points or 0)))
+        resp, why = Respond.Decide(pick.id, "refused"), "d-cost"
+    end
+    ST.Trace(string.format("%s -> %s (%s%s)", kind, resp and resp.result or "nothing recorded", pick.id, rolling and ", ended a roll in flight" or ""))
+    if resp and ST.Check then
+        ST.Check.Seen(why, string.format("%s recorded %s", kind, resp.result))
+        if rolling then ST.Check.Seen("d-dice-ends", string.format("%s ended a roll; %s", kind, resp.result)) end
+    end
+    return resp
 end
 
 local promptFrame = CreateFrame("Frame")
-pcall(promptFrame.RegisterEvent, promptFrame, "CONFIRM_SUMMON")
-promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function()
+Respond.hooks = {} -- what was installed, for /sc check
+Respond.hooks.event = pcall(promptFrame.RegisterEvent, promptFrame, "CONFIRM_SUMMON") and true or false
+pcall(promptFrame.RegisterEvent, promptFrame, "CANCEL_SUMMON") -- only traced: it tells us whether an expiry closes the prompt
+promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function(_, event)
+    if event == "CANCEL_SUMMON" then return ST.Trace("CANCEL_SUMMON: the game closed the prompt") end
     lastSummoner = nil
     local get = C_SummonInfo and C_SummonInfo.GetSummonConfirmSummoner
     if get then
         local ok, name = pcall(get)
         lastSummoner = ok and ST.baseName(name) or nil
     end
+    ST.Trace("CONFIRM_SUMMON: summoner=" .. (lastSummoner or "hidden"))
+    if ST.Check then ST.Check.Seen("d-name", lastSummoner and ("the game named " .. lastSummoner) or "the game hid the name") end
 end))
 
 -- What he presses is what he did: the prompt's buttons call these, and a hook sees the call without changing it. Where this client
 -- has no such functions the hooks are skipped and nothing here runs.
-if C_SummonInfo and hooksecurefunc then
-    pcall(hooksecurefunc, C_SummonInfo, "ConfirmSummon", ST.Safe("accepting a summons", function() Respond.Real("accept", lastSummoner) end))
-    pcall(hooksecurefunc, C_SummonInfo, "CancelSummon", ST.Safe("declining a summons", function() Respond.Real("decline", lastSummoner) end))
+local function hook(name, kind, flag)
+    if not (C_SummonInfo and hooksecurefunc and C_SummonInfo[name]) then Respond.hooks[flag] = false return end
+    Respond.hooks[flag] = pcall(hooksecurefunc, C_SummonInfo, name, ST.Safe("the summon prompt", function()
+        ST.Trace("hook " .. name .. " called")
+        Respond.Real(kind, lastSummoner)
+    end)) and true or false
 end
+hook("ConfirmSummon", "accept", "confirm")
+hook("CancelSummon", "decline", "cancel")

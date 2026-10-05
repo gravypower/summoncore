@@ -31,3 +31,4 @@ Comic.lua
 IntroCues.lua
 Intro.lua
 Tests.lua
+Check.lua

@@ -6,6 +6,9 @@ asked the ones that are feelings, and nobody keeps notes** (they dislike bookkee
 
 ## Smoke test, once, before anything else (10 minutes, in the live client)
 
+**Start with `/sc check`** (`design/verification.md`): it runs the checks that can run by itself and walks through the rest, and
+`/sc check report` prints what to send back. The list below is what it grew out of.
+
 Several things have only been run in a stub, never in the game. Fix these before judging the design.
 
 1. `/sc synctest`: every test should pass. Paste any failure.

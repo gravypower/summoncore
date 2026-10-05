@@ -189,6 +189,11 @@ function commands.test(rest)
     if ST.ToggleTests then ST.ToggleTests(rest) end
 end
 
+-- The live-client checklist: what has to be confirmed in the real game, and what the addon can confirm by itself.
+function commands.check(rest)
+    ST.Check.Command(rest)
+end
+
 function commands.where()
     local mapID, sub = C_Map.GetBestMapForUnit("player"), GetSubZoneText()
     local pts, kind = ST.Scoring.Score(mapID, sub)
@@ -209,6 +214,7 @@ function ST.ToggleWrit()
     local W, D = ST.Week, ST.Detector
     if D.writ then
         D.writ = false
+        ST.Trace("writ withdrawn")
         return print_("The writ is withdrawn. Nothing is spent.")
     end
     local start = W.Start()
@@ -217,6 +223,7 @@ function ST.ToggleWrit()
     local left = W.WritsLeft(start)
     if left == 0 then return print_(string.format("The group has played all %d writs this week.", W.RULES.writs)) end
     D.writ = true
+    ST.Trace("writ armed")
     print_(string.format("A writ is armed for your next summons of Zennit (%d left this week). If he declines it in the game, it costs him " ..
         "its points. If he accepts, the writ is spent anyway. /sc writ again withdraws it.", left))
 end
@@ -383,6 +390,7 @@ function commands.week(rest)
             channel = function() return IsInRaid() and "RAID" or IsInGroup() and "PARTY" or nil end,
             send = function(msg, channel) SendChatMessage(msg, channel) end,
         })
+        ST.Trace("week say: " .. (ok and "sent" or text))
         return print_(ok and ("Told the group: " .. text) or text)
     end
     local this, last = W.Score(W.Start()), W.Score(W.Start() - 7 * 86400)
@@ -537,6 +545,7 @@ local HELP = {
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
     "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",
     "/sc writ - arm a writ for your next ritual on Zennit: if he declines that summons in the game, it costs him its points",
+    "/sc check - the live-client checklist: run the automatic checks, follow the steps with a friend, and print a report to send back",
     "/sc where - current map, subzone and how it scores    /sc places - what every place is worth, checked against the game",
     "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
     "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",
