@@ -65,7 +65,13 @@ Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3
     -- (design/lenses.md, Community).
     overdue = 3600,
     -- In the last stretch of a week (this many seconds) the Index says it is about to close (design/lenses.md, Time).
-    lastCall = 24 * 3600 }
+    lastCall = 24 * 3600,
+    -- Writs (design/lenses.md, Resonance): the group may play this many a week on a summons of him. If he then declines that
+    -- summons in the game's own prompt, it costs him its points; with no writ a decline costs nothing and the summons does not count.
+    writs = 2,
+    -- Free declines (design/lenses.md, Balance): the first decline he really makes in a week costs nothing and the summons does not
+    -- happen. Every later one costs him its points, as a refusal does: a free decline with no limit would be better than refusing.
+    declines = 1 }
 
 -- Each whim moves one rule for one week, by a few points of the group's chance (about +6 or -5 in a normal week), so no
 -- week is much easier or harder than another. `show` is the rule whose number the text names, when it does.
@@ -146,6 +152,46 @@ local function summonsOfZennit(start)
         return tostring(a.id) < tostring(b.id)
     end)
     return list
+end
+
+-- The writs played on summons of Zennit in the week starting at `start`, oldest first. Only the first RULES.writs count: the rest
+-- are worked out the same way on every client, so two friends who arm one at once cannot get a third.
+function Week.Writs(start)
+    local out = {}
+    for _, s in ipairs(summonsOfZennit(start)) do
+        if s.ev.writ then out[#out + 1] = s.ev end
+    end
+    return out
+end
+
+-- Writs the group can still play in the week starting at `start` (none outside the new rules, or in his week off).
+function Week.WritsLeft(start)
+    if not Week.NewRules(start) or Week.IsOff(start) then return 0 end
+    return math.max(0, Week.RULES.writs - #Week.Writs(start))
+end
+
+-- Free declines he still has in the week starting at `start`: the first decline of a week is free, counted from the log.
+function Week.DeclinesLeft(start)
+    if not Week.NewRules(start) or Week.IsOff(start) then return 0 end
+    local used = 0
+    for _, s in ipairs(summonsOfZennit(start)) do
+        if s.ev.response and s.ev.response.result == "declined" then used = used + 1 end
+    end
+    return math.max(0, Week.RULES.declines - used)
+end
+
+local function declinesText(n)
+    return string.format("%d free decline%s left", n, n == 1 and "" or "s")
+end
+Week.DeclinesText = declinesText
+
+-- Does this summons carry a writ that counts?
+function Week.WritCounts(ev)
+    if not ev.writ then return false end
+    for i, w in ipairs(Week.Writs(Week.Start(ev.time))) do
+        if w == ev then return i <= Week.RULES.writs end
+    end
+    return false
 end
 
 -- The summons of Zennit filed toward the week starting at `start`: the list (oldest first), how many of them count
@@ -510,6 +556,10 @@ function Week.RulesCard(start)
             kinds.city, kinds.zone, kinds.dungeon, kinds.remote, R.headstart),
         string.format("Dice: he has %d a week and adds +%d to his roll; each helper (two at most) adds +%d to the summoner's. " ..
             "When they are gone he can only accept, refuse or ask for the silver.", Week.Rule("dice", start), edge, bonus),
+        string.format("Writs: the group has %d a week. Played with /sc writ before a ritual on him, a writ makes his decline of that summons " ..
+            "in the game cost him its points.", R.writs),
+        string.format("Declines: when he declines a summons in the game's own prompt it does not happen (no points either way). The first decline " ..
+            "of a week is free (%d); every later one costs him its points, as a refusal does, and one with a writ always does.", R.declines),
         string.format("His list: up to %d places of %d letters or more. Accepting a summon there earns him the points; refusing it is free.",
             ST.Respond.LIST_MAX, ST.Respond.LIST_MIN),
         string.format("Catch-up: when a side leads the season by two wins, his edge moves %d toward the side that is behind; by three, %d.%s",
@@ -661,6 +711,7 @@ function Week.StatusLine(start, you)
     if r.off then return "Week: Zennit's week off, so summons of him are filler and nothing counts." end
     local parts = { leadText(r, you), string.format("%d of %d filed", r.counted, Week.RULES.cap),
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
+    if you and not r.closed and Week.NewRules(start) and not r.off then parts[#parts + 1] = declinesText(Week.DeclinesLeft(start)) end
     local edge, moved = Week.Edge(start)
     if moved ~= 0 and not r.closed then parts[#parts + 1] = string.format("his dice edge is +%d", edge) end
     local waiting = Week.Overdue(start)
@@ -708,7 +759,7 @@ end
 
 -- What the caster should know as a ritual on `target` begins, or nil when it is not Zennit or the old rules apply:
 -- whether it will count, where the week stands, his dice, and what helpers add.
-function Week.Briefing(target, mapID, subzone)
+function Week.Briefing(target, mapID, subzone, writ)
     if not isZennit(target) then return nil end
     local now = time()
     local start = Week.Start(now)
@@ -743,6 +794,13 @@ function Week.Briefing(target, mapID, subzone)
     end
     local whim = first and Week.WhimLine(start)
     if whim then text = text .. " This week's whim: " .. whim end
+    if writ then
+        local pts = (mapID ~= nil or subzone ~= nil) and (ST.Scoring.Score(mapID, subzone))
+        text = text .. (pts and string.format(" A writ is played: if he declines this summons in the game, it costs him %d point%s.", pts,
+            pts == 1 and "" or "s") or " A writ is played: if he declines this summons in the game, it costs him its points.")
+    elseif first and Week.WritsLeft(start) > 0 then
+        text = text .. string.format(" /sc writ (%d left) makes a decline of this one cost him.", Week.WritsLeft(start))
+    end
     local left = Week.LastCall(now)
     if left then text = text .. string.format(" Last call: the Index closes the week in %s (%s).", leftText(left), (Week.ClosesText(start))) end
     local waiting = Week.Overdue(start)

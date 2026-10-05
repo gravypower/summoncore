@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.19.1"
+ST.version = "0.20.0"
 
 local DB_VERSION = 1
 
@@ -204,6 +204,23 @@ function commands.places()
     for _, l in ipairs(lines) do print_(l) end
 end
 
+-- Arms (or withdraws) a writ for your next ritual on Zennit: if he declines that summons in the game, it costs him its points.
+function commands.writ()
+    local W, D = ST.Week, ST.Detector
+    if D.writ then
+        D.writ = false
+        return print_("The writ is withdrawn. Nothing is spent.")
+    end
+    local start = W.Start()
+    if not W.NewRules(start) then return print_("There are no writs under the old rules.") end
+    if W.IsOff(start) then return print_("It is Zennit's week off: summons of him are filler, so a writ would have nothing to say.") end
+    local left = W.WritsLeft(start)
+    if left == 0 then return print_(string.format("The group has played all %d writs this week.", W.RULES.writs)) end
+    D.writ = true
+    print_(string.format("A writ is armed for your next summons of Zennit (%d left this week). If he declines it in the game, it costs him " ..
+        "its points. If he accepts, the writ is spent anyway. /sc writ again withdraws it.", left))
+end
+
 -- Adds a test summon at your current location. It is never put on the network.
 function ST.AddFake(target, assistants)
     local _, ev, badges = ST.Store.Add({
@@ -366,6 +383,11 @@ function commands.week(rest)
     print_("Last week: " .. W.Describe(last))
     local whim = W.WhimLine(W.Start())
     if whim and not W.IsOff(W.Start()) then print_("This week's whim: " .. whim) end
+    local left = W.DeclinesLeft(W.Start())
+    if W.NewRules(W.Start()) and not W.IsOff(W.Start()) then
+        print_(string.format("His free declines this week: %d of %d left. Writs: %d of %d left.", left, W.RULES.declines,
+            W.WritsLeft(W.Start()), W.RULES.writs))
+    end
     local season = W.Season()
     print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
         season.group, W.WINS, #season.finales))
@@ -507,6 +529,7 @@ local HELP = {
     "/sc test - diagnostics panel (/sc test ping <name>)",
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
     "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",
+    "/sc writ - arm a writ for your next ritual on Zennit: if he declines that summons in the game, it costs him its points",
     "/sc where - current map, subzone and how it scores    /sc places - what every place is worth, checked against the game",
     "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
     "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",

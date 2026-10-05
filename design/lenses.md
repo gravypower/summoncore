@@ -40,6 +40,8 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
 | The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
+| Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
+| Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 
 ## Entries
 
@@ -1401,6 +1403,130 @@ dungeons where chat is already scrolling.
 - Does the caster read the briefing at all while the ritual is channelling?
 - The measurements above are from stubs; the wrapped-line count depends on the player's chat window.
 
+### 2026-10-05 · Lens of Resonance: does it ring true?
+
+**The questions (paraphrased):** what is it about this game that feels real and strong to the people playing it? What in their own
+experience does it touch, and where does the game sit at odds with that experience?
+
+**What the group already knows, and the game plays with.** Everyone in a WoW group has asked for a summons, waited for a warlock to
+set up the ritual and two friends to click, and then pressed Accept on the game's own prompt. That small, slightly absurd ritual
+is the real thing the Index files. The paperwork joke has a true centre: the game's prompt really is a form (Accept, Decline).
+
+**Where the build rings true:** the ritual is detected for real (verified live), the clips play at the real moments, the Index's
+voice borrows the prompt's own bureaucratic tone, and the contest is about a real friend's real choices.
+
+**Where it sits apart from the real thing**
+
+1. **Two decisions arrive at once, and only one of them is real.** When the ritual completes, the game puts its own summon prompt in
+   front of Zennit (Accept or Decline, with a timer). At the same moment the addon opens its own "A SUMMONING!" popup, with four
+   answers and the dice (`Respond.Incoming`, from the live `E` message). The addon's answer is a statement in the contest. Whether he
+   actually presses Accept on the game's prompt is a separate act that the addon never sees: nothing hooks `CONFIRM_SUMMON`, and the
+   README parks it ("a notice when a summon is declined in game"). So he can say "accepted" in the Index and decline in the game, or
+   the reverse, and the log cannot tell the difference.
+2. **The two popups sit in nearly the same place.** The addon's dialog is anchored at the top of the screen, 140 pixels down
+   (`Respond.lua`, `buildDialog`). From memory, the game's own prompt is anchored at the top, about 135 pixels down. If that is right,
+   one covers the other at the one moment both matter. This is an inference from the default layout, not something seen in the
+   client, so it is the first thing to look at in the game.
+3. **The most resonant fact, did he actually arrive, is the least visible.** The contest is about whether Zennit came when called. The
+   addon only knows what he said. A summons he accepted in the Index and did not actually take would be the funniest line the Index
+   could file ("accepted, and is still in Ironforge"), and the information is available on his client: where he is after the answer,
+   against where the summons was to (`ev.mapID`).
+
+**Proposed changes**
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Move the Index's popup off the game's prompt** (lower on the screen), and head it as the Index's form so the two are not confused | 2 | A position and a title; seen in the game to confirm |
+| B | **The Index notes whether he arrived**: after an accepted (or unanswered) summons, his client checks for two minutes whether he is in the summons' map, and says so on his client: "The Index confirms that you arrived in Silithus, 40 seconds after you accepted." or "The Index notes that you accepted and are still in Ironforge." Banter only: it never changes a score | 1, 3 | A timer on his client, a map comparison and a test; a wrong "still in Ironforge" is possible when the arrival lands in another sub-map |
+| C | **Tell the group too**: the same note sent with his answer so the group sees "accepted, and has not arrived". Needs a protocol bit and a resend after the answer | 3 | Sync format change (a new flag on the response); wait until B has run in the game |
+| D | **Leave the two decisions independent**: the Index's paperwork and the game's prompt are two forms for one event, which is the joke | 1 | Nothing |
+
+**Our answer.** Asked "why are we prompting him if he has arrived? surely we can detect this?", the design changed: instead of a note
+about arrival (B and C), **what he really does at the game's prompt is his answer**, with the Index's form as the fallback.
+- **He accepts in the game:** the Index records "accepted" and the form is done. (The silver ask belongs before he presses Accept.)
+- **He declines in the game:** a new answer, **"declined"**: the summons did not happen, so no points for the caster and none for him.
+  It is not a refusal, so a real-life decline (away, in combat) costs him nothing.
+- **A writ turns a decline into a cost** (the group's idea: "a wild card, only a few times a week"). The group has two writs a week.
+  `/sc writ` before the ritual arms one; his popup tells him before he decides; if he declines that summons it is a refusal and costs
+  him its points (his list does not excuse it). If he accepts, the writ is spent anyway (and the group scores as it would have).
+- **Nothing seen:** the form works as before, and an unanswered summons still counts as accepted.
+- **How it listens:** the game's own buttons call `C_SummonInfo.ConfirmSummon` and `CancelSummon`; the addon hooks them (it does
+  not change them) and matches the most recent summons of him still waiting, within the two minutes the prompt lasts, by the
+  summoner's name when the game gives it. This is the part never run in the live client: where the functions are missing, or the
+  client hides the name, it falls back as above.
+- **Protocol:** a record with a writ has an 11th field, and "declined" is a new answer, so this is **0.20.0**; a friend on 0.19 is
+  told once and cannot read those records.
+- **Left:** A (moving the form off the game's prompt) needs a look in the game first; B and C are replaced by the above.
+
+**Decided:** the real prompt answers; his first decline of a week costs nothing (a real-life exit), a later one and any on a writ
+cost him the points (see the Balance entry, which found that unlimited free declines were a dominant move).
+
+**To watch in playtests**
+- Do the two popups cover each other on his screen? Does he miss one of them?
+- Does he accept in the Index and decline in the game, or the reverse, and does anyone notice?
+- Nothing here has run in the live client.
+
+### 2026-10-05 · Lens of Balance: is any choice always the best?
+
+**The questions (paraphrased):** are there choices that are simply better than the others whatever else is going on (a *dominant
+strategy*), so that the other choices are never worth making? If so, the game has stopped being a game at that point: players find the
+dominant choice and the others become traps. Do both sides have a real chance? Does the balance shift as people learn?
+
+**How to use it:** list every choice a player has at a moment, work out what each one does to the score, and ask whether one of them is
+at least as good as the rest in every case. A quick way is to simulate the week with each policy and compare how often each side wins.
+
+**The choice under test: what Zennit can do with a summons, after the change in the Resonance entry**
+
+| His choice | The group gets | He gets | Cost to him |
+|---|---|---|---|
+| Accept | + P | 0 (or + P on his list) | The group scores |
+| Refuse, in the Index | 0 | - P | P points |
+| **Decline, in the game (no writ)** | **0** | **0** | **Nothing** |
+| Decline a summons with a writ | 0 | - P | P points |
+| Dice (3 a week) | + P if he loses, 0 if he wins | + P if he wins | A coin toss |
+
+**Findings** (simulated: five summons, two helpers, his +10 edge, a head start of 2; the numbers are the group's chance to win the
+week; `decline.py` and `decline2.py` in the scratchpad)
+1. **A free decline is a dominant move.** It does what a refusal does to the group (nothing scored) and costs him nothing, where the
+   refusal costs him P. Pressing Decline in the game is better than "Refuse" in the Index every time, so the Index's Refuse is now a
+   trap. If he declines everything and no writ is played, the group wins **0%** of weeks (his head start of 2 beats a score of 0). The
+   old rules, with him rolling his dice on the first three summons, gave the group **63%** in a five-summons week.
+2. **Each free decline he is allowed takes about 10 to 20 points off the group's chance.** Five zone summons, 63% with none; with one
+   free decline a week, about 43%; with two, about 34%; with three, about 23%. A mixed week of [3, 3, 3, 10, 10] goes 91%, 56%, 38%.
+   One a week is close to the middle of what the earlier lenses aimed for.
+3. **A writ is not a gamble for the group.** If he declines, he loses P; if he accepts, the group scores P, which is what it would have
+   scored without the writ. It costs nothing but one of only two a week, so the group should always play both, and the only decision is
+   *which* summons. That matters: on the dear summons it is strong (mixed week, two free declines: the group's chance goes from 33% to
+   91% with two writs on the 10s); on the cheap ones it barely moves anything. The earlier README and lens text called a writ "a gamble":
+   that was wrong.
+4. **The fiction.** The Index is a place where the target is summoned and goes. A rule that pays him most for never turning up pulls
+   against that, even if no friend would play it that way.
+
+**Proposed changes**
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A limited number of free declines a week: one.** A decline with no writ is "declined" (no points either way) for his first one of the week; every later one costs him P, as a refusal does. A decline of a writ summons always costs him. It is counted from the log, like the writs | 1, 2 | `Week.RULES.declines = 1`, a count in the answer, a line saying how many he has left, and a test |
+| B | **Say how many free declines he has left** in his popup and in the "Week:" line, as with his dice, so it is a visible resource | 2 | A phrase in two places |
+| C | **Correct the wording on writs** ("the writ is spent either way", not "a gamble") in the README, the lens entry and the command text | 3 | Wording |
+| D | **Leave declines free**, and trust the group to stay friendly | | Nothing; the simulation says he would win every week he chose to |
+
+**Our answer (built: A, B and C; one free decline a week)**
+- **A.** `Week.RULES.declines = 1`. His first decline of a week in the game is "declined" (no points either way); every later one,
+  and any decline of a summons with a writ, is a refusal and costs him its points. The count comes from the log, like the writs. When it
+  costs him the Index says so on his client ("your free decline this week is used, so this one costs you 3 points").
+- **B.** His popup says what a decline would do before he decides (free, or costs P, or a writ is on it); his own "Week:" line ends with
+  "1 free decline left"; `/sc week` and the rules card say how many he and the group have of each. The group's own lines are not
+  longer (the Toy entry: chat is already busy).
+- **C.** The writ wording is corrected: it is spent either way, and the group scores the summons as it would have if he accepts.
+
+**Decided:** one free decline a week, the middle of what the simulation gave (about 43% for the group in a five-summons zone week, 56%
+in a mixed one, against 63% and 91% on the old rules); two would leave about 34% and 38%.
+
+**To watch in playtests**
+- Does he ever press Decline in the game, and how does the group react? That is the real test of this.
+- Nothing here has run in the live client.
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1430,3 +1556,5 @@ dungeons where chat is already scrolling.
 | 2026-10-05 | The ritual briefing says what the place is worth and what it puts at stake for both sides; `/sc places` checks every map ID against the game's own name; the point values stay | Endogenous Value | A place's worth is the stake of a summons and was invisible when the choice was made; the place table was from memory and never checked |
 | 2026-10-05 | The Party tab and `/sc tally` rank by summons of Zennit this season (an "Of Zennit" column), then points; `/sc week say` tells the group where the week stands; the cheap-slot order is left to the group | Cooperation | The one list everyone reads counted all-time points of every summons, not what the race counts, and the plan for the order lived in the caster's chat alone |
 | 2026-10-05 | The ritual briefing is long once a week (the first summons of him) and short after; the second Week line and a chat setting wait for a playtest | The Toy | One summons cost about six wrapped lines of chat, and the longest, most repeated line arrived while the caster was channelling |
+| 2026-10-05 | What he presses at the game's own summon prompt is his answer (accept: accepted; decline: declined, worth nothing either way); the group has two writs a week that make a decline of one summons cost him its points; the version is 0.20.0 | Resonance | The addon asked him to answer a summons he had already taken or declined for real, and could not tell the two apart; a decline needed to be a move the group could price, not a punishment for real life |
+| 2026-10-05 | His first decline of a week in the game is free; every later one, and any on a writ, costs him the summons' points; the popup and his own Week line say how many free declines are left | Balance | A free decline with no limit was better than refusing every time and let him win every week he chose to (simulated: the group won 0% against 63% on the old rules); one a week leaves about 43% |

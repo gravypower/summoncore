@@ -76,6 +76,7 @@ function Respond.Describe(ev)
     if r.result == "accepted" then return "accepted" end
     if r.result == "refused" then return "refused (-" .. (ev.points or 0) .. ")" end
     if r.result == "excused" then return "refused (on his list)" end
+    if r.result == "declined" then return "declined in the game" end
     if r.result == "owed" then return "owes " .. Respond.AmountOf(r) .. " silver" end
     if r.result == "paid" then return (r.card and "paid by a punch: " or "paid ") .. Respond.AmountOf(r) .. " silver" end
     if r.result == "won" then return string.format("won the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
@@ -129,7 +130,7 @@ local function listNote(ev, resp)
 end
 
 -- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
-local DID = { accepted = "accepted", refused = "refused", excused = "refused", owed = "put the silver for",
+local DID = { accepted = "accepted", refused = "refused", excused = "refused", declined = "declined", owed = "put the silver for",
     paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
 
 -- One line for the chat window when Zennit has answered.
@@ -152,6 +153,16 @@ function Respond.Announce(ev, resp)
             "%s accepted the summon from %s. +%d point%s.%s",
             "%s accepted the summon from %s, without comment. +%d point%s.%s",
             "The Index records that %s accepted the summon from %s. +%d point%s.%s" }, who, ev.caster, pts, plural(pts), bonus)
+    end
+    if r == "declined" then
+        return say("answer.declined", {
+            "%s declined the summon from %s in the game, so it did not happen. No points for them, and none for him: the Index files it under 'did not happen'.",
+            "The game saw %s decline the summon from %s. It did not happen: no points for them, none for him, and the Index has no comment.",
+            "%s declined the summon from %s at the game's own prompt. It did not happen, so it is worth nothing to either side." }, who, ev.caster)
+    end
+    if r == "refused" and ev.writ and ST.Week.WritCounts(ev) then
+        return string.format("%s declined the summon from %s in the game, and the group had played a writ on it. No points for them, and %s loses %d point%s toward his goal.",
+            who, ev.caster, who, pts, plural(pts))
     end
     if r == "refused" then
         return say("answer.refused", {
@@ -544,8 +555,19 @@ ST.Sync.onDiceReply = Respond.OnDiceReply
 local function summonText(ev)
     local where = (ev.subzone and ev.subzone ~= "") and ev.subzone or "somewhere"
     local helpers = #ev.assistants > 0 and table.concat(ev.assistants, ", ") or "nobody"
-    return string.format("%s has summoned you to %s.\n(%s, %s. Helped by %s.)", T.Paint("cyan", ev.caster), where,
+    local text = string.format("%s has summoned you to %s.\n(%s, %s. Helped by %s.)", T.Paint("cyan", ev.caster), where,
         ev.kind or "?", T.Paint("amber", (ev.points or 0) .. " point" .. plural(ev.points or 0)), helpers)
+    if not ev.response and not ev.fake and ST.Week.NewRules(ST.Week.Start(ev.time)) then -- he must know before he decides, in the game or here
+        local pts = string.format("%d point%s", ev.points or 0, plural(ev.points or 0))
+        if ev.writ and ST.Week.WritCounts(ev) then
+            text = text .. string.format("\n%s If you decline it in the game, it costs you %s.", T.Paint("amber", "The group has played a writ on this summons."), pts)
+        elseif ST.Week.DeclinesLeft(ST.Week.Start(ev.time)) > 0 then
+            text = text .. string.format("\nIf you decline it in the game it is free: you have %s this week.", ST.Week.DeclinesText(ST.Week.DeclinesLeft(ST.Week.Start(ev.time))))
+        else
+            text = text .. string.format("\nIf you decline it in the game it costs you %s: your free decline this week is used.", pts)
+        end
+    end
+    return text
 end
 
 local function setButtons(s, list)
@@ -715,4 +737,54 @@ function Respond.Test()
         mapID = C_Map.GetBestMapForUnit("player"), subzone = GetSubZoneText(), confirmed = true, fake = true,
     }, true)
     Respond.Incoming(id, ev)
+end
+
+----------------------------------------------------------------------
+-- The game's own summon prompt (design/lenses.md, Resonance)
+----------------------------------------------------------------------
+-- When the ritual completes the game puts its own Accept / Decline prompt in front of Zennit, and has since long before this addon. What
+-- he really does with it is the answer: accepting records "accepted" and closes the Index's form; declining records "declined" (the
+-- summons did not happen: no points either way), or "refused" if the group played a writ on it. If nothing is seen, the form works
+-- as it always did, and an unanswered summons still counts as accepted.
+local SUMMON_WINDOW = 150   -- the game's prompt lasts about two minutes; a later answer is not about this summons
+local lastSummoner          -- who the game's prompt named, when the client says (a plain first name, or nil)
+
+-- kind: "accept" or "decline". summoner: the plain name the prompt named, if known. Returns the answer recorded, or nil when this
+-- was not about a summons we are waiting on (a warlock without the addon, a summons already answered, or a dice roll in progress).
+function Respond.Real(kind, summoner)
+    if not ST.Gag.IsZennit() then return nil end
+    local now, pick = time(), nil
+    for _, r in ipairs(Respond.Pending()) do -- newest first
+        local ev = r.ev
+        if not ev.response and not ev.fake and not state[r.id] and now - ev.time <= SUMMON_WINDOW
+            and (not summoner or ST.baseName(ev.caster) == summoner) then
+            pick = r
+            break
+        end
+    end
+    if not pick then return nil end
+    if kind == "accept" then return Respond.Decide(pick.id, "accepted") end
+    if ST.Week.WritCounts(pick.ev) then return Respond.Decide(pick.id, "refused") end
+    if ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then return Respond.Decide(pick.id, "declined") end
+    ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
+        pick.ev.points or 0, plural(pick.ev.points or 0)))
+    return Respond.Decide(pick.id, "refused")
+end
+
+local promptFrame = CreateFrame("Frame")
+pcall(promptFrame.RegisterEvent, promptFrame, "CONFIRM_SUMMON")
+promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function()
+    lastSummoner = nil
+    local get = C_SummonInfo and C_SummonInfo.GetSummonConfirmSummoner
+    if get then
+        local ok, name = pcall(get)
+        lastSummoner = ok and ST.baseName(name) or nil
+    end
+end))
+
+-- What he presses is what he did: the prompt's buttons call these, and a hook sees the call without changing it. Where this client
+-- has no such functions the hooks are skipped and nothing here runs.
+if C_SummonInfo and hooksecurefunc then
+    pcall(hooksecurefunc, C_SummonInfo, "ConfirmSummon", ST.Safe("accepting a summons", function() Respond.Real("accept", lastSummoner) end))
+    pcall(hooksecurefunc, C_SummonInfo, "CancelSummon", ST.Safe("declining a summons", function() Respond.Real("decline", lastSummoner) end))
 end

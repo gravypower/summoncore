@@ -147,11 +147,12 @@ end
 function Sync.Encode(id, ev)
     local assist = {}
     for _, a in ipairs(ev.assistants or {}) do assist[#assist + 1] = esc(a) end
+    -- an 11th field "w" marks a summons the group played a writ on; most records stay 10 fields, as before
     return table.concat({
         esc(id), esc(ev.caster), esc(ev.target), table.concat(assist, ","),
         ev.mapID and tostring(ev.mapID) or "", esc((ev.subzone or ""):sub(1, MAX_SUBZONE)),
         tostring(ev.time), ev.confirmed and "1" or "0", tostring(ev.wrote or ev.time),
-        respString(ev.response),
+        respString(ev.response), ev.writ and "w" or nil,
     }, "|")
 end
 
@@ -162,7 +163,8 @@ end
 -- Returns id, ev on success, or nil, reason. Never trusts the sender's field values.
 function Sync.Decode(record)
     local f = split(record, "|")
-    if #f ~= 9 and #f ~= 10 then return nil, "fields" end
+    if #f < 9 or #f > 11 then return nil, "fields" end
+    if f[11] ~= nil and f[11] ~= "w" then return nil, "writ" end
     local id, caster, target = unesc(f[1]), unesc(f[2]), unesc(f[3])
     if not validName(caster) or not validName(target) then return nil, "name" end
     if #id > 48 or id:sub(1, #caster + 1) ~= caster .. "-" then return nil, "id" end
@@ -191,7 +193,7 @@ function Sync.Decode(record)
     return id, {
         caster = caster, target = target, assistants = assistants, mapID = mapID,
         subzone = subzone, time = t, wrote = wrote, confirmed = f[8] == "1",
-        response = resp,
+        response = resp, writ = f[11] == "w" or nil,
     }
 end
 

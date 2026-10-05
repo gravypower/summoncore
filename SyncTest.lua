@@ -1804,7 +1804,7 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
             W.RULES.from = 0
         end)
         local ok = out.empty == "Week: Zennit leads by 2, 0 of 10 filed, 3 dice left."
-            and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left."
+            and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left, 1 free decline left."
             and out.tie == "Week: it is level, and a tie goes to Zennit, 1 of 10 filed, 3 dice left."
             and out.ahead == "Week: the group leads by 3, 2 of 10 filed, 3 dice left."
             and out.first:find("each helper adds +5 to your roll", 1, true) and out.first:find("summon 1 of 10 this week", 1, true)
@@ -1812,6 +1812,102 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
             and not out.brief:find("each helper adds", 1, true) and #out.brief < #out.first
             and out.notHim == nil and out.old == nil and out.oldBrief == nil
         return ok, string.format("%s | %s | %s | %s", tostring(out.empty), tostring(out.tie), tostring(out.ahead), tostring(out.brief))
+    end)
+end)
+
+add("a record carries a writ in an 11th field, and the old 10-field record still reads", function()
+    local ev = { caster = "Alpha", target = "Zennit", assistants = {}, mapID = 1436, subzone = "Sentinel Hill", time = BASE + 5,
+        wrote = BASE + 5, confirmed = true }
+    local id = "Alpha-" .. (BASE + 5)
+    local plain = Sync.Encode(id, ev)
+    ev.writ = true
+    local marked = Sync.Encode(id, ev)
+    ev.response = { result = "refused", zroll = 0, sroll = 0, time = BASE + 9 }
+    local answered = Sync.Encode(id, ev)
+    local _, a = Sync.Decode(plain)
+    local _, b = Sync.Decode(marked)
+    local _, c = Sync.Decode(answered)
+    local tooLong = select(2, Sync.Decode(marked .. "|x"))
+    local badFlag = select(2, Sync.Decode((marked:gsub("|w$", "|q"))))
+    local ok = a and a.writ == nil and b and b.writ == true and b.response == nil and c and c.writ == true
+        and c.response.result == "refused" and tooLong == "fields" and badFlag == "writ" and not plain:find("|w", 1, true)
+    return ok, string.format("plain %s, marked %s, tooLong %s, badFlag %s", tostring(a and a.writ), tostring(b and b.writ),
+        tostring(tooLong), tostring(badFlag))
+end)
+
+add("writs: two a week count, the rest do not, and none in his week off or under the old rules", function()
+    return newRules(function()
+        local a, W, out = newClient("Alpha"), ST.Week, {}
+        with(a, function()
+            local this = W.Start()
+            local function put(key, n, writ)
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + 60 * n, points = 3,
+                    kind = "zone", writ = writ or nil }
+            end
+            out.none = W.WritsLeft(this)
+            put("a", 1, true)
+            out.one = W.WritsLeft(this)
+            put("b", 2)
+            put("c", 3, true)
+            put("d", 4, true)
+            out.zero = W.WritsLeft(this)
+            local e = a.db.events
+            out.counts = table.concat({ tostring(W.WritCounts(e.a)), tostring(W.WritCounts(e.b)), tostring(W.WritCounts(e.c)),
+                tostring(W.WritCounts(e.d)) }, " ")
+            W.RULES.from = math.huge
+            out.old = W.WritsLeft(this)
+            W.RULES.from = 0
+        end)
+        local ok = out.none == W.RULES.writs and out.one == W.RULES.writs - 1 and out.zero == 0
+            and out.counts == "true false true false" and out.old == 0
+        return ok, string.format("left %s, %s, %s; counts %s; old rules %s", tostring(out.none), tostring(out.one), tostring(out.zero),
+            tostring(out.counts), tostring(out.old))
+    end)
+end)
+
+add("what he presses at the game's own prompt is his answer: accept, a free decline, then a decline costs, and a writ always costs", function()
+    return newRules(function()
+        local a, R, S, G, W, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, ST.Week, {}
+        local realMe, realIs = S.me, G.IsZennit
+        S.me = function() return "Zennit" end
+        G.IsZennit = function() return true end
+        local ok, err = pcall(with, a, function()
+            local now = time()
+            local this = W.Start(now)
+            local function put(key, age, caster, writ)
+                a.db.events[key] = { caster = caster, target = "Zennit", assistants = {}, time = now - age, points = 3, kind = "zone",
+                    writ = writ or nil }
+            end
+            local function result(key) return a.db.events[key].response and a.db.events[key].response.result end
+            out.free0 = W.DeclinesLeft(this)
+            put("acc", 60, "Alpha");   out.acc = R.Real("accept", "Alpha")
+            put("w1", 50, "Cy", true); put("w2", 49, "Di", true); put("w3", 48, "Ed", true)   -- the third writ of the week does not count
+            out.w3 = R.Real("decline", "Ed")                  -- the first decline of the week: free
+            out.free1 = W.DeclinesLeft(this)
+            put("dec", 40, "Bo");      out.dec = R.Real("decline", "Bo")                      -- the free one is used: this costs
+            out.w1 = R.Real("decline", "Cy")                  -- a writ always costs
+            put("old", 400, "Gus");    out.stale = R.Real("decline", "Gus")
+            put("mm", 5, "Hal");       out.mismatch = R.Real("accept", "Zed")
+            put("nn", 1, "Ian");       out.newest = R.Real("accept", nil)
+            out.again = R.Real("accept", "Alpha")             -- already answered
+            out.results = table.concat({ tostring(result("acc")), tostring(result("w3")), tostring(result("dec")),
+                tostring(result("w1")), tostring(result("old")), tostring(result("mm")), tostring(result("nn")) }, " ")
+            out.w3Lands, out.w3Goal = S.Lands(a.db.events.w3), S.Goal(a.db.events.w3)
+            out.decLands, out.decGoal = S.Lands(a.db.events.dec), S.Goal(a.db.events.dec)
+            out.status = W.StatusLine(this, true)
+            G.IsZennit = function() return false end
+            out.notHim = R.Real("accept", "Hal")
+        end)
+        S.me, G.IsZennit = realMe, realIs
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.free0 == 1 and out.free1 == 0 and out.acc and out.acc.result == "accepted"
+            and out.w3 and out.w3.result == "declined" and out.dec and out.dec.result == "refused"
+            and out.w1 and out.w1.result == "refused" and out.stale == nil and out.mismatch == nil
+            and out.newest and out.newest.result == "accepted" and out.again == nil
+            and out.results == "accepted declined refused refused nil nil accepted"
+            and not out.w3Lands and out.w3Goal == 0 and not out.decLands and out.decGoal == -3
+            and out.status:find("0 free declines left", 1, true) and out.notHim == nil
+        return good, tostring(out.results)
     end)
 end)
 
@@ -1825,6 +1921,7 @@ add("the briefing says what the place is worth: both sides of the stakes, and a 
             out.city = W.Briefing("Zennit", 1453, "Trade District")
             out.dungeon = W.Briefing("Zennit", 1451, "The Deadmines")
             out.noPlace = W.Briefing("Zennit")
+            out.writ = W.Briefing("Zennit", 1436, "Sentinel Hill", true)
         end)
         local ok = out.zone:find("From here (a zone) the summons is worth 3: his roll could take 3, and so could yours.", 1, true)
             and out.remote:find("(a far-flung place) the summons is worth 10: his roll could take 10", 1, true)
@@ -1832,6 +1929,9 @@ add("the briefing says what the place is worth: both sides of the stakes, and a 
             and out.city:find("(a city) the summons is worth 1, which is less than his head start of 2", 1, true)
             and not out.city:find("his roll could take", 1, true)
             and not out.noPlace:find("From here", 1, true)
+            and out.zone:find("/sc writ (2 left) makes a decline of this one cost him.", 1, true)
+            and out.writ:find("A writ is played: if he declines this summons in the game, it costs him 3 points.", 1, true)
+            and not out.writ:find("/sc writ (", 1, true)
         return ok, tostring(out.remote)
     end)
 end)
