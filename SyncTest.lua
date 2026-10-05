@@ -2172,7 +2172,7 @@ add("the briefing says when a writ can bite: while his free decline is left, els
     end)
 end)
 
-add("postcards: the first landed summons of him to each far-flung place in a season, once, and in the keepsake", function()
+add("postcards: the first landed summons of him to each far-flung place in a season, once, in the keepsake, and what is still missing", function()
     return newRules(function()
         local a, L, out = newClient("Alpha"), ST.Ledger, {}
         with(a, function()
@@ -2195,11 +2195,15 @@ add("postcards: the first landed summons of him to each far-flung place in a sea
             out.zone = L.PostcardFor(put("z", 10, 1436, "accepted"), nil)                  -- not far-flung
             out.count = #L.Postcards()
             out.line = L.PostcardsLine(L.Facts())
+            out.missing, out.short = L.MissingLine(L.Facts()), L.MissingLine(L.Facts(), true)
         end)
         local good = out.declined == nil and out.first and out.first:find("in Silithus: 'Sand.", 1, true)
             and out.first:find("Stamped: 1 of 10", 1, true) and out.again == nil and out.moon and out.moon:find("2 of 10", 1, true)
             and out.paid == nil and out.zone == nil and out.count == 2
             and out.line == "Postcards from Zennit: Silithus and Moonglade (2 of 10)."
+            and out.missing and out.missing:find("Still no postcard from: Azshara, Blasted Lands", 1, true)
+            and not out.missing:find("Silithus", 1, true) and not out.missing:find("Moonglade", 1, true)
+            and out.short == "Still no postcard from: Azshara, Blasted Lands, Burning Steppes and 5 more. The Index has stamps."
         return good, tostring(out.first)
     end)
 end)

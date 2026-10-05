@@ -50,7 +50,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
 | Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
-| Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A proposed, B after the playtest |
+| Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
 
 ## Entries
 
@@ -2056,7 +2056,16 @@ alive, and keep it friendly. And Zennit to answer, and enjoy it.
 cheapest way to make the place nudge arrive on time. B is the bigger simplification, but it should wait for the log to show how many
 helpers a summons really has. C is fun but is a second weekly draw on top of the whim; keep it for later.
 
-**Live checks with whatever is built** (step 6): `/sc week` lists the missing postcards (solo); the Monday line (with `/sc week login`).
+**Our answer (built: A; C noted; B after the playtest).**
+
+**Built**
+- **A, postcards still to collect** (`Ledger.MissingLine`). `/sc week` ends with every far-flung place that has no postcard yet this
+  season ("Still no postcard from: Azshara, Blasted Lands... The Index has stamps."), and the Monday login, right after the week's
+  clock, names three and counts the rest. Nothing when all ten are stamped.
+- **C, noted** in the README's "Parked for later": the Index's request of the week, one far-flung place drawn weekly, no points.
+- **B** waits for the report's helper counts.
+- **Live checks:** `s-login` now expects the missing-postcards line, and `d-postcard` the list in `/sc week`; the postcards self-test
+  covers both forms of the line.
 
 **To watch in playtests**
 - Does the group plan trips from the missing postcards?
@@ -2101,3 +2110,4 @@ helpers a summons really has. C is fun but is a second weekly draw on top of the
 | 2026-10-05 | His list is set for the week (a new place counts from Monday); the briefing says a writ only bites at his list once his free decline is used; postcards from far-flung places, once each a season, no points | Secrets | The list could be changed with a summons on screen, which made every decline free; the group could not see when a writ mattered; the far-flung trips earned points but no part in the joke |
 | 2026-10-05 | Zennit writes his own postcards and an out-of-office for his week off; sent from his characters only, the newest kept, used on every client in place of ours | Character | Every word about him was ours; the two moments the joke is about him (where he was dragged, where he went on leave) are where his own line is funniest |
 | 2026-10-05 | A summons of him on his week off is "disturbing his leave": the lines say the race is off but postcards and titles still count, and the Index counts who disturbed it most; the week off itself stays | Inner Contradiction | About a third of weeks are his weeks off, and the only line the caster read said "do not bother", though most of the game still ran |
+| 2026-10-05 | The far-flung places still missing a postcard are named in `/sc week` and at the Monday login; the helper bonus waits for the report's helper counts; the Index's weekly request is parked | Indirect Control | The place nudges (points, postcards) arrived at the cast, after the group had already travelled; a ritual needs two helpers anyway, so the bonus steers only the bookkeeping |

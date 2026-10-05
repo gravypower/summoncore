@@ -456,6 +456,8 @@ function commands.week(rest)
     if leave then print_(leave) end
     print_(ST.Ledger.PostcardsLine(facts) or
         string.format("Postcards from Zennit: none yet this season (0 of %d far-flung places).", ST.Ledger.PostcardPlaces()))
+    local missing = ST.Ledger.MissingLine(facts)
+    if missing then print_(missing) end
     local immune, untilT = W.Immune(time())
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
