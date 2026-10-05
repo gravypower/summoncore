@@ -1,9 +1,11 @@
 name: Release
 
 # Push a tag like v0.7.0 (it must match "## Version" in summoncore.toc) to build and publish a zip.
+# Or run this workflow by hand (Actions > Release > Run workflow) on master: it tags the commit with the TOC version itself.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,21 +15,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check the tag matches the TOC version
+      - name: Work out the tag
         run: |
           toc=$(grep -m1 '^## Version:' summoncore.toc | sed 's/^## Version: *//' | tr -d '\r')
-          if [ "v$toc" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match TOC version v$toc"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if [ "v$toc" != "$GITHUB_REF_NAME" ]; then
+              echo "Tag $GITHUB_REF_NAME does not match TOC version v$toc"
+              exit 1
+            fi
+          elif [ "$GITHUB_REF_NAME" != "master" ]; then
+            echo "Run it on master: a release is cut from master"
+            exit 1
+          elif git ls-remote --exit-code --tags origin "refs/tags/v$toc" >/dev/null; then
+            echo "v$toc is already tagged: bump the version in summoncore.toc first"
             exit 1
           fi
+          echo "TAG=v$toc" >> "$GITHUB_ENV"
       - name: Package
         run: |
           mkdir -p dist/summoncore
           cp ./*.lua summoncore.toc Bindings.xml README.md dist/summoncore/
           cp -r Media dist/summoncore/Media
           rm -f dist/summoncore/Media/.gitkeep
-          (cd dist && zip -r "summoncore-${GITHUB_REF_NAME}.zip" summoncore)
+          (cd dist && zip -r "summoncore-${TAG}.zip" summoncore)
       - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" "dist/summoncore-${GITHUB_REF_NAME}.zip" --title "$GITHUB_REF_NAME" --generate-notes
+        # --target creates the tag on this commit when it does not exist yet (a hand-run release)
+        run: gh release create "$TAG" "dist/summoncore-${TAG}.zip" --title "$TAG" --target "$GITHUB_SHA" --generate-notes
