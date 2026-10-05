@@ -9,7 +9,7 @@ while you play, remembers each result in your saved variables, and prints a repo
 
 | Command | What it does |
 |---|---|
-| The **Tools tab** (`/sc`, then Tools > Checks) | The same, with buttons: RUN AUTO, NEXT (the steps for the next check go to the chat window, with a headline in the box), PASS / FAIL / SKIP (record it and move on), TRACE, REPORT and COPY (opens whatever the output box says in a window you can select and copy: Ctrl+A, Ctrl+C). The label shows how many have passed (3/40) |
+| The **Tools tab** (`/sc`, then Tools > Checks) | The same, with buttons: RUN AUTO, NEXT (the steps for the next check go to the chat window, with a headline in the box), PASS / FAIL / SKIP (record it and move on), TRACE, REPORT and COPY (opens whatever the output box says in a window you can select and copy: Ctrl+A, Ctrl+C). The label shows how many have passed (3/42) |
 | `/sc check` | The list with a result against each, and the next thing to do |
 | `/sc check auto` | Runs the automatic checks (nothing to do but read) |
 | `/sc check <id>` | The steps for one check, what to expect, and what breaks if it fails |
@@ -23,6 +23,12 @@ prompt, the summoner's name) turn green on their own when they happen for real. 
 
 **What to send back:** `/sc check report` after each phase. It has the counts, every failure with its note, the errors the addon
 caught (`/sc errors`) and the trace. That is enough to fix most things without a second round.
+
+## Ready to share: the gate
+
+Before the group gets it (design/lenses.md, Playtesting revisited): **one tagged release for everyone**; `/sc check auto` all
+passing; the solo checks of Phase 1; the core of Phase 2 (`d-sync`, `d-ritual`, `d-accept`, `d-decline`, `d-cost`, `d-dice`) with
+one friend; and `/sc errors` empty after an evening. Then share it, and make no new rules until the first week's report.
 
 ## Phase 1: by yourself, ten minutes, any character
 
@@ -56,7 +62,8 @@ Both run `/sc check auto` first. Decide who is the warlock and who is Zennit (hi
 11. `d-leave`: in a week off, a summons of him says it disturbs his leave and what still counts (it marks this itself).
 12. `d-away`: Zennit AFK for five minutes; a ritual on him is warned about and filed as away (it marks this itself).
 13. `d-watch`: one shows a chapter to the group (`/sc intro g1 group`) and the other watches; at the raid, the leader's offer.
-14. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
+14. `d-feelings`: the friend answers the weekly question; the admin's `/sc feelings` shows the count, the friend's does not.
+15. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
 
 ## Phase 3: a week with the group
 

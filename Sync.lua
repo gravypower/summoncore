@@ -7,6 +7,8 @@
 --   R  REQUEST  body: since                (asks the whisper target for events with time > since)
 --   B  BATCH    body: record               (one record per message, whispered in reply to R)
 --   L  LINE     body: key|time|text        (a line Zennit wrote for himself: a postcard "pc:<mapID>" or his out-of-office "away")
+--   F  FEELING  body: week|role|n           (how a player felt about a week: role p (the group) or z (Zennit), n 1 good to 3 bad;
+--                                           kept only by Zennit's and the admin's clients, shown as counts)
 --   V  WATCH    body: key                   (someone is showing the group a chapter of the story: z1..z5, g1..g5)
 --   W  WITNESS  body: caster|target|helpers|mapID|subzone|time|helping   (what a group member saw of a ritual, for Zennit's client)
 -- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote[|answer[|w[|by]]]
@@ -306,6 +308,7 @@ function Sync.Hello(channel, target)
         enqueue(channel, target, "H", helloBody())
     else
         for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "H", helloBody()) end
+        Sync.SendFeelings() -- our own answers again, so Zennit's and the admin's clients catch up
         if ST.IsZennitAccount() then
             Sync.SendAlt()
             Sync.SendCards()
@@ -378,6 +381,36 @@ function Sync.SendWitness(note)
     for _, ch in ipairs(Sync.channels()) do
         if ch ~= "GUILD" then enqueue(ch, nil, "W", body) end
     end
+end
+
+----------------------------------------------------------------------
+-- Feelings (design/lenses.md, Playtesting revisited): one click a week on how the week felt. Each client keeps its own answers and
+-- sends them with its hello; only Zennit's and the admin's clients keep everyone's, and they show counts, never names.
+----------------------------------------------------------------------
+Sync.FEEL_KEEP = 8 * 7 * 86400 -- answers older than eight weeks are neither sent nor kept
+
+local function feelBody(week, a) return string.format("%d|%s|%d", week, a.role, a.n) end
+
+function Sync.SendFeeling(week, a)
+    for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "F", feelBody(week, a)) end
+end
+
+function Sync.SendFeelings()
+    local mine = ST.db.settings.feelMine or {}
+    for week, a in pairs(mine) do
+        if week >= time() - Sync.FEEL_KEEP then Sync.SendFeeling(week, a) end
+    end
+end
+
+-- Keeps an answer from `sender`, if this client is one that keeps them. One answer per person per week: a later one replaces it.
+function Sync.PutFeeling(sender, week, role, n)
+    if not (ST.Gag.IsZennit() or ST.IsAdmin()) then return "ignored" end
+    ST.db.settings.feelings = ST.db.settings.feelings or {}
+    local all = ST.db.settings.feelings
+    all[week] = all[week] or {}
+    all[week][sender] = { role = role, n = n }
+    for w in pairs(all) do if w < time() - Sync.FEEL_KEEP then all[w] = nil end end
+    return "kept"
 end
 
 -- Shows a chapter of the story to the group (Intro.PlayForGroup): party or raid only.
@@ -674,6 +707,13 @@ function Sync.OnMessage(text, channel, sender)
         if #s.zenitAlts >= MAX_ALTS then return "rejected:full" end
         s.zenitAlts[#s.zenitAlts + 1] = sender
         return "learned"
+
+    elseif typ == "F" then
+        local week, role, n = body:match("^(%d+)|([pz])|([123])$")
+        week, n = tonumber(week), tonumber(n)
+        if not week or week > time() or week < time() - Sync.FEEL_KEEP or not validName(sender) then return "bad" end
+        if (role == "z") ~= (ST.Week.IsZennit(sender) and true or false) then return "rejected:role" end
+        return Sync.PutFeeling(sender, week, role, n)
 
     elseif typ == "V" then
         -- a chapter shown to the group: only from the party or raid, and never our own echo

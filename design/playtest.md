@@ -33,7 +33,11 @@ Play as usual. The report (below) records the numbers. Watch for the things it c
 - Does Zennit say which of the four answers he enjoys, and when he forgets he has dice?
 - Does anyone stop reading chat? Which lines?
 
-## Each Monday: one command, three questions
+## Each Monday: one command, three questions, and the counts
+
+The addon also asks everyone one question at their first login of the week (`/sc feelings`, design/lenses.md, Playtesting
+revisited). The admin reads the counts with `/sc feelings`; they are never named, so read them as a trend, and act on a "Too much"
+from Zennit or "Not for me" twice running.
 
 Anyone runs `/sc report` and pastes it into the group chat. Then ask, out loud or in chat, one line each:
 

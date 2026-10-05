@@ -2408,6 +2408,52 @@ add("previously on: this season's chapters in the order the race reached them, o
     end)
 end)
 
+add("feelings: one answer a week, sent to everyone, kept and counted only by Zennit's and the admin's clients, never named", function()
+    return newRules(function()
+        local p, adm, other, F, W, out = newClient("Alpha"), newClient("Admin"), newClient("Bo"), ST.Feelings, ST.Week, {}
+        local realIs, realAdmin, realAsk, realPrint = ST.Gag.IsZennit, ST.IsAdmin, F.ask, ST.print
+        local asked = {}
+        F.ask = function(week) asked[#asked + 1] = week end
+        ST.print = function() end
+        local ok, err = pcall(function()
+            local last = W.Start() - 7 * 86400
+            with(p, function()
+                p.db.events.x = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 60, points = 3, kind = "zone" }
+                F.Check(); F.Check()                                                        -- asked once a week
+                F.Answer(last, 1)
+                out.mine = p.db.settings.feelMine[last] and p.db.settings.feelMine[last].n
+            end)
+            local sent
+            for _, m in ipairs(p.state.queue) do if m.payload:find("~F~", 1, true) then sent = m.payload end end
+            ST.IsAdmin = function() return true end
+            with(adm, function()
+                out.kept = Sync.OnMessage(sent, "PARTY", "Alpha")
+                out.again = Sync.OnMessage("1~F~" .. last .. "|p|2", "PARTY", "Alpha")      -- a later answer replaces it
+                out.bob = Sync.OnMessage("1~F~" .. last .. "|p|3", "PARTY", "Bo")
+                out.fake = Sync.OnMessage("1~F~" .. last .. "|z|3", "PARTY", "Bo")          -- only Zennit answers as Zennit
+                out.zen = Sync.OnMessage("1~F~" .. last .. "|z|1", "PARTY", "Zennit")
+                out.summary = table.concat(F.Summary(4), " ")
+            end)
+            ST.IsAdmin = function() return false end
+            ST.Gag.IsZennit = function() return false end
+            with(other, function()
+                out.ignored = Sync.OnMessage(sent, "PARTY", "Alpha")
+                out.hidden = F.Summary(4)
+                other.db.settings.feelOff = true
+                out.off = F.Due()
+            end)
+        end)
+        ST.Gag.IsZennit, ST.IsAdmin, F.ask, ST.print = realIs, realAdmin, realAsk, realPrint
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = #asked == 1 and out.mine == 1 and out.kept == "kept" and out.again == "kept" and out.bob == "kept"
+            and out.fake == "rejected:role" and out.zen == "kept"
+            and out.summary:find("0 good fun, 1 it was fine, 1 not for me; Zennit: bring it on.", 1, true)
+            and not out.summary:find("Alpha", 1, true) and not out.summary:find("Bo", 1, true)
+            and out.ignored == "ignored" and out.hidden == nil and out.off == nil
+        return good, tostring(out.summary)
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }
