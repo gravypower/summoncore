@@ -526,6 +526,7 @@ function Respond.OnResponse(id, ev, resp, before)
     playAnswerClip(resp)
     if line then ST.print(line) end
     printWeek(ev, false)
+    ST.Scoring.Announce() -- his answer may have earned me a badge (a tipped roll, a clean tab, a card used up)
     if ST.Hub then ST.Hub.Refresh() end
     if diceDlg and diceCurrent and diceCurrent.id == id then
         diceDlg.text:SetText(line or "")

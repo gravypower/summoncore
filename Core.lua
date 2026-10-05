@@ -365,6 +365,11 @@ function commands.probe()
     ST.Silver.Probe()
 end
 
+-- The titles as they stand in this season (the Index names them for good at the finale).
+function commands.titles()
+    for _, line in ipairs(ST.Ledger.Standings()) do print_(line) end
+end
+
 -- The tab: who owes Zennit what (his client), or what you owe (everyone else's).
 function commands.tab()
     for _, line in ipairs(ST.Silver.Lines()) do print_(line) end
@@ -443,6 +448,7 @@ local HELP = {
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",
     "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)",

@@ -1472,6 +1472,45 @@ add("the tab as a statement: per payer for Zennit, and only your own for a caste
     return ok, text:sub(1, 120)
 end)
 
+add("season titles: who leads what, named, with Zennit's kind ones, and the figures the badges read", function()
+    local W = 7 * 86400
+    local base = 100 * W
+    local function ev(week, n, caster, helpers, result, z, sr, extra)
+        local t = base + week * W + n * 60
+        local r = result and { result = result, zroll = z or 0, sroll = sr or 0, time = t + 30 } or nil
+        for k, v in pairs(extra or {}) do r[k] = v end
+        return { caster = caster, target = "Zennit", assistants = helpers or {}, time = t, points = 3, response = r }
+    end
+    local events = {
+        e1 = ev(0, 1, "Al", { "Cy", "Di" }, "lost", 45, 52), e2 = ev(0, 2, "Al", { "Cy", "Di" }, "lost", 45, 52),   -- both tipped
+        e3 = ev(1, 3, "Al", { "Cy" }, "accepted"), e4 = ev(2, 4, "Al", {}, "accepted"), e10 = ev(3, 5, "Al", {}, "accepted"),
+        e5 = ev(0, 6, "Bo", {}, "won", 90, 10), e6 = ev(0, 7, "Bo", {}, "won", 90, 10), e7 = ev(0, 8, "Bo", {}, "won", 90, 10),
+        e9 = ev(0, 9, "Bo", {}, "paid", 0, 0, { amount = 150 }),
+        e8 = ev(0, 10, "Cy", {}, "owed", 0, 0, { amount = 500 }),
+    }
+    local ctx = { isZennit = function(n) return n == "Zennit" end, name = function(n) return n end,
+        bonus = function(e) return math.min(#(e.assistants or {}), 2) * 5 end, edge = function() return 10 end,
+        resolve = ST.Respond.Resolve, silver = 50, helpersMax = 2 }
+    local d = ST.Ledger.Collect(events, 0, math.huge, ctx)
+    local titles = ST.Ledger.Titles(d)
+    local by = {}
+    for _, t in ipairs(titles) do by[t.id] = t end
+    local ok = by.heaviest and by.heaviest.text == "The Heaviest Hand: Al, with 5 summons of him." and by.heaviest.next == "Bo is next with 4"
+        and by.support and by.support.text:find("The Best Supporting Role: Cy, who helped 3 times", 1, true) and by.support.next == "Di is next with 2"
+        and by.lucky and by.lucky.text:find("The Lucky Pair: Cy and Di, whose bonus tipped 2 rolls", 1, true)
+        and by.payer and by.payer.text:find("The Prompt Payer: Bo, who paid 150 silver", 1, true)
+        and by.goblin and by.goblin.text:find("3 times in a row", 1, true)
+        and by.bargain and by.bargain.text:find("asked Cy for 500 silver", 1, true)
+        and by.quick and by.quick.text:find("within 30 seconds", 1, true)
+        and d.by.Al.weekCount == 4 and d.by.Al.owed == 0 and d.by.Bo.paid == 150 and d.by.Cy.owed == 500
+        and d.by.Al.tipped == 2 and d.by.Bo.tipped == 0
+    local keep = table.concat(ST.Ledger.Keepsake(1, { start = base + W, side = "group", from = base }, d), " ")
+    ok = ok and keep:find("The Heaviest Hand", 1, true) and keep:find("The Dice Goblin", 1, true)
+    -- too little to name anyone: no titles
+    local few = ST.Ledger.Titles(ST.Ledger.Collect({ x = ev(0, 1, "Al", {}, "accepted") }, 0, math.huge, ctx))
+    return ok and #few == 0, string.format("%d titles; Al: %d weeks, tipped %d", #titles, d.by.Al.weekCount, d.by.Al.tipped)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

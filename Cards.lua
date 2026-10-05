@@ -83,6 +83,16 @@ function Cards.PunchesLeft(card)
     return 0
 end
 
+-- How many of this holder's cards have been used up.
+function Cards.Exhausted(holder)
+    local b = Cards.Balances()[base(holder)]
+    local n = 0
+    for _, entry in ipairs(b and b.cards or {}) do
+        if entry.left == 0 then n = n + 1 end
+    end
+    return n
+end
+
 -- What one punch is worth for this holder, in silver: the price of their oldest card with a punch left, per punch.
 function Cards.UnitPrice(holder)
     local b = Cards.Balances()[base(holder)]

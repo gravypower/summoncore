@@ -32,6 +32,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Playtesting | Every lens ended with questions for a playtest; the first new-rules week starts today | Answered; the report and the script built |
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
 | Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
+| Reward | What does each member get, and when? | Answered; A, B, C and D built |
 
 ## Entries
 
@@ -889,6 +890,80 @@ punches. Test summons and summons of other people are left out.
 - What does Zennit ask, and what do the casters say about it? (`/sc report` does not show it yet.)
 - Does anyone buy a card, and at what price?
 
+### 2026-10-05 · Lens of Reward: who gets what, and when
+
+**The questions (paraphrased):** what rewards does the game give (praise, points, a gateway to more, spectacle, expression, powers,
+resources, completion)? Does each kind of player get some? Do they arrive often enough, and do they stay surprising? And what
+happens to someone who fails: is there a punishment, and is it one the friends would enjoy?
+
+**What each member receives, as built** (`Scoring.lua`, `Ledger.lua`, `Intro.lua`, `Respond.lua`)
+
+| | A warlock | A helper | Zennit | The group |
+|---|---|---|---|---|
+| Praise | "Summon logged", points, the Index's lines | Named when their bonus tips a roll | The Index's lines, his own popup | The keepsake |
+| Points | The tally, the race | None (on purpose) | Hidden by the gag | The race |
+| A gateway | Chapters, shared | Chapters, shared | Chapters, shared | A chapter a win, the finale |
+| Spectacle | The story viewer, the gags | The same | The gag on the wrong tab | The same |
+| Expression | Named in the keepsake and the moments | Named as "in the room" | Named in the keepsake | None to choose |
+| Powers and resources | Cards (a discount) | None | Silver, cards he sells, his list | None |
+| Completion | Six badges, a season | A season | A season | The finale |
+
+**How often** (about 20 summons of him over 11 weeks at normal effort; three warlocks, so about 7 each)
+
+| Reward | Arrives |
+|---|---|
+| The first one (a logged summons, points, "First Summon") | At once |
+| A chapter | About every 1.6 weeks (a win a week-and-a-bit), shared |
+| The finale and its keepsake | About week 11 |
+| A warlock's badges | **Five of six in the first season or two** (First Summon, Dungeon Doorman, Far Flung, Well Travelled, Ten Summons); then nothing until Fifty Summons, about **seven seasons** away |
+| A helper's named line ("Al and Cy's +10 tipped it") | About **once every other season**: roughly 14 rolls a season, about 6 with helpers, each tipped about 7% of the time |
+
+**Findings**
+1. **The rewards are collective, which fits the group.** Chapters, the finale and the keepsake belong to everyone; the Player entry
+   says the group likes banter and doing things together, not achievements.
+2. **The individual rewards are front-loaded, and only warlocks get them.** After the first season or two a warlock has one badge
+   left, seven seasons off. Nothing new to chase.
+3. **A helper's only reward is the named line, and it comes about once every other season.** Helpers are most of the group (two or
+   three warlocks, the rest helpers), and the game asks them for togetherness, which it barely acknowledges. (No badges for them: the
+   group said so. Recognition in words is a different thing.)
+4. **Zennit has no named recognition of his own.** He gets the results of his answers, silver and chapters, but his tally is hidden
+   (the gag) and the keepsake names the group more than him.
+5. **The weeks between rewards are filled with numbers.** A chapter every 1.6 weeks is a good pace, but what comes between is "Week:"
+   lines and the tab.
+6. **Punishment is fine.** Losing a week gives the group Zennit's chapter; a refusal costs him points; the only thing that stings
+   is a tab, and that is owed to a friend. Nothing needs changing.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Season titles**: when a season ends, the Index gives out a handful of titles, each to one person by name (the heaviest hand; the best supporting role, for most assists; the lucky pair, whose bonus tipped most rolls; the prompt payer, who paid the most silver), worked out from the log, shown in the keepsake and `/sc seasons`. Titles for helpers and warlocks alike, praise and no points | 2, 3 | A function over the log; wording |
+| B | **Standings mid-season**: `/sc titles` shows who leads each title now ("The best supporting role: Cy, 9 assists; Al, 7"), so there is banter to be had before the season ends | 5 | Reuses A |
+| C | **Titles for Zennit**, in the same spirit and kind to him (the dice goblin, for his longest run; the hard bargain, for the biggest ask; the quick reply, for his fastest median answer) | 4 | Reuses A |
+| D | **More individual badges** spread across the season (for example Ten Assists, a clean tab, a card used up) | 2 | New badge rules; helper badges were turned down |
+
+**Our answer:** build **all four** (A, B, C, D).
+
+**Built** (`Ledger.lua`; every figure is counted from the log, so every client names the same people)
+- **A, season titles.** At a finale the keepsake (and `/sc seasons`) names up to seven titles, each to one person (or both, on a tie):
+  *The Heaviest Hand* (most summons of him, at least 3), *The Best Supporting Role* (most assists, at least 3), *The Lucky Pair* (the
+  helpers whose bonus tipped the most rolls), *The Prompt Payer* (most silver paid, at least 50). Praise in words, no points.
+- **B, standings.** `/sc titles` (and the Tools tab's **The titles**) shows the same for the season in progress, with who is close
+  behind ("The Heaviest Hand: Al, with 5 summons of him (Bo is next with 4)"), or says nothing has been earned yet.
+- **C, Zennit's titles**, kind ones: *The Dice Goblin* (a run of three or more dice wins), *The Hard Bargain* (his biggest ask, at
+  least twice the usual price, and of whom), *The Quick Reply* (his median time to answer, if it is within an hour: a slow one is
+  not named, so there is no title for being late).
+- **D, four badges that come later,** for the people who cast: *Regular* (summoned him in four different weeks), *Well Supported*
+  (helpers tipped a roll of yours), *Clean Slate* (paid in full and owe nothing), *Card Sharp* (used up a card). They are checked when
+  a summons is logged and when an answer arrives. Helper badges stay turned down (the Player entry), so helpers get titles instead.
+
+**To decide before building**
+- Are titles (praise in words, once a season) the right size of reward for helpers? (Asked at the playtest.)
+
+**To watch in playtests**
+- Which titles does the group argue about, and which does nobody care for?
+- Does anyone ask where they stand before the season ends?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -910,3 +985,4 @@ punches. Test summons and summons of other people are left out.
 | 2026-10-05 | The group sees how many summons are waiting for his answer; Monday's result is provisional while he can still answer; unanswered still counts as accepted for now | Community | The balance is hostage to his attendance (a quarter skipped doubles a normal week's chance), nothing reminded him, and a late answer could reverse an announced win |
 | 2026-10-05 | A demand for silver no longer holds the summons back: it counts at once and the silver goes on a tab; Zennit names the price, and a card's punch pays it | Meaningful Choices | Under the new rules a silver demand cost him nothing and blocked the group's points until paid, so it beat refusing, had no weekly limit, and put the blame for paying late on the group |
 | 2026-10-05 | A `/sc tab` statement of who owes what; the ask is not bounded (trust the group); cards are not forced to be a discount and points stay a score | Economy | The tab was only visible as a total and a login line; the silver cannot hurt the race, so a bound would only police the mood of friends |
+| 2026-10-05 | Season titles, mid-season standings (`/sc titles`), kind titles for Zennit, and four later badges for the people who cast; helpers get titles, not badges | Reward | Individual rewards were front-loaded and for warlocks only; a helper's only reward was a named line about every other season |
