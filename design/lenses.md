@@ -36,6 +36,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
+| Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 
 ## Entries
 
@@ -1157,6 +1158,69 @@ and the cost of the season is small for years.
 **To watch in playtests**
 - Does `/sc errors` show anything? Does anyone see the version notice?
 
+### 2026-10-05 · Lens of Unification: is it still one game?
+
+**The questions (paraphrased):** what is the theme, in a sentence? Does every element (rules, story, look, sound, words) serve it?
+Which ones do not, and do they have to change, or does the theme? A game that has grown by one lens at a time can end up as a pile
+of good ideas that do not belong together.
+
+**The theme, as the story states it:** *a deadpan bureaucracy of the impossible.* The Cosmic Index of Summonable Persons files
+everything, accepts most things, never takes sides, and wants a receipt. Its vocabulary is paperwork: filed, stamped, evidence,
+enthusiasm, a form in triplicate.
+
+**Where each element stands** (`Intro.lua`, `Ledger.lua`, `Theme.lua`, `Week.lua`, `Respond.lua`, `Silver.lua`, `Cards.lua`, `Scoring.lua`)
+
+| Element | Serves the theme? | How |
+|---|---|---|
+| The story (32 scenes, "The Index today") | **Yes** | The source of the theme; the Ledger scene is 70% in its voice |
+| The look (green-on-black terminal, key clicks, a typed narration) | **Yes** | The Index is a filing computer |
+| The rules' names (enthusiasm, filler, close the Index, the Ritual's price, a tab) | **Yes** | Paperwork words for game rules |
+| The titles and the keepsake ("The Heaviest Hand", "the Index has framed it") | Yes | Written in the voice |
+| The play-time chat lines | **Partly** | The week and the answers are 35% and 18% in the voice; the rest is plain |
+| The silver and the cards (the newest systems) | **No** | Plain: "Take a punch", "Ask for silver (you name it), no receipt", "N summons are waiting for your answer" |
+| The badges | **No** | Game-ish names (First Summon, Ten Summons, Regular, Clean Slate, Card Sharp) with none of the Index in them |
+| The gag (a finger-wag with "ah ah ah") | Off-theme, on purpose | A pop-culture joke aimed at Zennit |
+
+**Counted:** of about 270 player-facing sentences in the code, about 68 (a quarter) are in the Index's voice (a rough count by
+its vocabulary). Most of the rest are diagnostics and labels, where a plain voice is right. The ones that matter are the lines read
+*while playing*: the week (Week.lua) 35%, answers (Respond.lua) 18%, the silver popups and cards 0 to 16%.
+
+**Findings**
+1. **The theme is strong where the story is and thin where the play is.** The group reads a typed Index monologue now and then, and
+   reads plain bookkeeping in chat every time they summon. That is the same gap the Story entry found (finding 1), and the
+   pooled lines only partly closed it.
+2. **The two newest systems have no voice at all.** Silver and cards arrived after the voice work; every line in them is neutral.
+3. **The badges are the most visible rewards and the least themed.** Their names read as any game's.
+4. **One-off words drift.** "Summons" and "summon", "leave" and "week off" and "filler", "punch" and "stamp" are used for the same
+   things in different places. Nothing is wrong; it is a style guide that does not exist yet.
+5. **The gag is the one deliberate exception**, and should stay.
+
+**Proposed changes**
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A voice pass on the lines read while playing**: the silver confirmation and the price box, the card lines, the waiting and tab lines, the last call, `/sc tab` lines; each in the Index's voice with the same facts (pooled where they repeat) | 1, 2 | Wording, and the tests that read exact words |
+| B | **Index names for the badges**: display names only, ids unchanged ("First Summon" becomes "Entered in the Index", "Ten Summons" becomes "Filed in Triplicate"...), so what is on the Badges tab and in chat reads as the Index's | 3 | A names table |
+| C | **A house style page** (`design/voice.md`): the words to use and avoid, five examples, so later text keeps one voice | 4 | One page |
+
+**Our answer (built: A, B and C)**
+- **A.** The lines read while playing are in the Index's voice with the same facts: the silver confirmation and the price box, the
+  card lines, the waiting and tab lines, the last call and `/sc tab` ("The Index has Bo down for 250 silver on 2 summons...").
+  The self-tests that read exact words were updated to match.
+- **B.** Witty, in the Index's voice (the answer to the question below): "Entered in the Index", "Filed in Triplicate", "Known to the
+  Clerk", "Paid in Full, No Receipt", "Stamped to the Last Punch" and so on. Ids are unchanged, so earned badges carry over. Because
+  a witty name no longer says what it takes, each badge has a plain `how` line, shown next to a locked badge on the Badges tab and in
+  `/sc badges`.
+- **C.** `design/voice.md`: the words to use, what stays plain on purpose (labels, errors, anything the player must act on exactly),
+  five before-and-after examples and a checklist for new lines.
+
+**Decided:** the voice goes as far as the badges, and witty beats readable at a glance, because the plain `how` line carries the meaning.
+
+**To watch in playtests**
+- Which lines does the group quote? Are they the voiced ones?
+- Does anyone ask what a badge is for? (The `how` line should answer it.)
+- Nothing here has run in the live client; the voiced lines are checked only against stubs.
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1182,3 +1246,4 @@ and the cost of the season is small for years.
 | 2026-10-05 | The Tools tab is five columns (the reports have their own, The record); a one-line command tip each Monday (`/sc tips off`); `/sc help` is five lines and `/sc help all` is the rest | Interface | One Tools column had grown past the tab for the admin; the useful commands were listed only in a 25-line help |
 | 2026-10-05 | The week's turnover stays at Monday 00:00 UTC (11:00 on the east coast of Australia in summer); the week's close is said in the player's time, and the last day of a week has a last call | Time | Nothing said when a week ends, and the deadline was never felt; the group's evenings fit the UTC week |
 | 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |
+| 2026-10-05 | The lines read while playing, the silver and card lines and the badge names are in the Index's voice; a plain `how` line says what each badge takes; `design/voice.md` is the house style | Unification | The theme was strong in the story and thin in the play; the newest systems had no voice, and the badges read as any game's |

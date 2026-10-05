@@ -303,7 +303,7 @@ function commands.badges()
     for _, b in ipairs(ST.Scoring.badges) do
         local got = ST.db.badges[b.id]
         print_(string.format("%s %s%s", got and "|cff33ff66[x]|r" or "[ ]", b.name,
-            got and (" (" .. fmtTime(got.earned) .. ")") or ""))
+            got and (" (" .. fmtTime(got.earned) .. ")") or (b.how and (": " .. b.how) or "")))
     end
 end
 

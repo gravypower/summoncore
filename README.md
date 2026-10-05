@@ -112,8 +112,7 @@ Placeholder values, meant to be argued about. Edit the tables at the top of `Sco
 A dungeon entrance sits inside an ordinary outdoor map, so it is matched by subzone. Stand at the spot and
 run `/sc where` to read the exact string. Points go to the caster only.
 
-Badges: First Summon, Ten Summons, Fifty Summons, Dungeon Doorman, Far Flung, Well Travelled (five
-distinct maps), and four that come later and come from the log: Regular (summoned him in four different weeks), Well Supported (helpers tipped a roll of yours), Clean Slate (paid your tab in full) and Card Sharp (used up a card). They are for the people who cast; helpers get titles, not badges.
+Badges, named as the Index would (the Badges tab says what each takes): Entered in the Index (a first summons), Filed in Triplicate (ten), A Volume of Their Own (fifty), Admitted Below Stairs (a dungeon entrance), Beyond the Index's Jurisdiction (a far-flung place), Stamped in Five Places (five different maps), and four that come later and come from the log: Known to the Clerk (summoned him in four different weeks), Countersigned by Witnesses (helpers tipped a roll of yours), Paid in Full, No Receipt (your tab is clear) and Stamped to the Last Punch (used up a card). They are for the people who cast; helpers get titles, not badges.
 
 ### Sync
 
@@ -200,6 +199,8 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 - `zenit_land`: played on Zennit's client when a friend's live summon of him arrives.
 - `zenit_refuse`: when Zennit refuses a summon (his client and the summoner's). `zenit_win`: when he wins the dice. `ritual`: as a ritual begins on your client. `narrator_weekopen`: when a finished week is announced.
   Clips are silent until recorded; none are so far.
+
+The house style for every line the addon says (the deadpan Index, the words to use, what stays plain) is `design/voice.md`; add to it when a new line breaks it.
 
 `design/recording-sheet.md` lists lines to record for each category and how to convert and name the takes (it is in the repo, so treat its lines as prompts: Zennit can read them).
 

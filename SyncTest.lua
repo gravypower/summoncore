@@ -1491,11 +1491,11 @@ add("the tab as a statement: per payer for Zennit, and only your own for a caste
     local none = ST.Silver.Statement(events, ctx, "Al")
     local text = table.concat(all.lines, " | ")
     local ok = all.owed == 300 and text:find("The tab: 300 silver owed to Zennit, 200 paid so far", 1, true)
-        and text:find("Bo owes 250 silver on 2 summons", 1, true) and text:find("Cy owes 50 silver on 1 summons", 1, true)
-        and text:find("Di owes nothing now; paid 50 silver so far", 1, true) and not text:find("999", 1, true)
-        and all.lines[2]:find("^Bo owes") and mine.lines[1]:find("You owe Zennit 250 silver on 2 summons", 1, true)
-        and mine.lines[1]:find("paid so far 150", 1, true) and #mine.lines == 1
-        and nobody.lines[1] == "Nobody owes anything." and none.lines[1] == "You owe Zennit nothing."
+        and text:find("The Index has Bo down for 250 silver on 2 summons", 1, true) and text:find("The Index has Cy down for 50 silver on 1 summons", 1, true)
+        and text:find("The Index has Di down for nothing now, with 50 silver paid so far", 1, true) and not text:find("999", 1, true)
+        and all.lines[2]:find("^The Index has Bo down for") and mine.lines[1]:find("The Index has you down for 250 silver on 2 summons", 1, true)
+        and mine.lines[1]:find("150 paid so far", 1, true) and #mine.lines == 1
+        and nobody.lines[1] == "The Index has nobody down for anything." and none.lines[1] == "The Index has you down for nothing."
     return ok, text:sub(1, 120)
 end)
 
@@ -1606,10 +1606,10 @@ add("the week's clock in the player's time, and a last call in the final day", f
         local start = W.Start()
         local good = out.closes == date("%A %H:%M", start + 7 * 86400) and out.answers == date("%A %H:%M", start + 9 * 86400)
             and out.left == 3 * 3600 and out.status:find("the week closes in 3 hours", 1, true)
-            and out.brief:find("Last call: the week closes in 3 hours (" .. out.closes .. ")", 1, true)
-            and out.printed:find("This week closes " .. out.closes .. ", your time", 1, true)
-            and out.printed:find("Last call: the week closes in 3 hours", 1, true)
-            and select(2, out.printed:gsub("This week closes", "")) == 1 and select(2, out.printed:gsub("Last call", "")) == 1
+            and out.brief:find("Last call: the Index closes the week in 3 hours (" .. out.closes .. ")", 1, true)
+            and out.printed:find("The Index closes this week on " .. out.closes .. ", your time", 1, true)
+            and out.printed:find("Last call:|r the Index closes the week in 3 hours", 1, true)
+            and select(2, out.printed:gsub("closes this week on", "")) == 1 and select(2, out.printed:gsub("Last call", "")) == 1
             and out.early == nil and not out.earlyStatus:find("closes in", 1, true)
             and out.card:find("this week closes " .. out.closes .. ", your time", 1, true)
         return good, string.format("closes %s, answers until %s; %s", tostring(out.closes), tostring(out.answers), tostring(out.status))

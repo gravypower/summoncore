@@ -58,17 +58,28 @@ end
 
 -- Badges: threshold rules over the summons the player cast. stats comes from Store.Stats.
 Scoring.badges = {
-    { id = "first-summon", name = "First Summon", test = function(s) return s.cast >= 1 end },
-    { id = "summons-10", name = "Ten Summons", test = function(s) return s.cast >= 10 end },
-    { id = "summons-50", name = "Fifty Summons", test = function(s) return s.cast >= 50 end },
-    { id = "dungeon-1", name = "Dungeon Doorman", test = function(s) return (s.kinds.dungeon or 0) >= 1 end },
-    { id = "far-flung-1", name = "Far Flung", test = function(s) return (s.kinds.remote or 0) >= 1 end },
-    { id = "variety-5", name = "Well Travelled", test = function(s) return s.distinctMaps >= 5 end },
+    -- name: how the Index would put it (design/voice.md); how: what it takes, said plainly. The ids are what is saved.
+    { id = "first-summon", name = "Entered in the Index", how = "cast a summons",
+        test = function(s) return s.cast >= 1 end },
+    { id = "summons-10", name = "Filed in Triplicate", how = "cast ten summons that land",
+        test = function(s) return s.cast >= 10 end },
+    { id = "summons-50", name = "A Volume of Their Own", how = "cast fifty summons that land",
+        test = function(s) return s.cast >= 50 end },
+    { id = "dungeon-1", name = "Admitted Below Stairs", how = "summon someone to a dungeon entrance",
+        test = function(s) return (s.kinds.dungeon or 0) >= 1 end },
+    { id = "far-flung-1", name = "Beyond the Index's Jurisdiction", how = "summon someone to a far-flung place",
+        test = function(s) return (s.kinds.remote or 0) >= 1 end },
+    { id = "variety-5", name = "Stamped in Five Places", how = "summon to five different places",
+        test = function(s) return s.distinctMaps >= 5 end },
     -- spread across the season rather than front-loaded (design/lenses.md, Reward); for the people who cast
-    { id = "regular", name = "Regular", test = function(s) return (s.extra.weekCount or 0) >= 4 end },
-    { id = "well-supported", name = "Well Supported", test = function(s) return (s.extra.tipped or 0) >= 1 end },
-    { id = "clean-slate", name = "Clean Slate", test = function(s) return (s.extra.paid or 0) > 0 and (s.extra.owed or 0) == 0 end },
-    { id = "card-sharp", name = "Card Sharp", test = function(s) return (s.cardsUsedUp or 0) >= 1 end },
+    { id = "regular", name = "Known to the Clerk", how = "summon Zennit in four different weeks",
+        test = function(s) return (s.extra.weekCount or 0) >= 4 end },
+    { id = "well-supported", name = "Countersigned by Witnesses", how = "have your helpers tip a roll of yours",
+        test = function(s) return (s.extra.tipped or 0) >= 1 end },
+    { id = "clean-slate", name = "Paid in Full, No Receipt", how = "pay what you owe Zennit",
+        test = function(s) return (s.extra.paid or 0) > 0 and (s.extra.owed or 0) == 0 end },
+    { id = "card-sharp", name = "Stamped to the Last Punch", how = "use up a summon card",
+        test = function(s) return (s.cardsUsedUp or 0) >= 1 end },
 }
 
 -- After an answer or a payment changes what the log says about me: award and say any badge that has just been earned.
