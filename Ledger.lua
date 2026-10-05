@@ -7,22 +7,38 @@ local ADDON, ST = ...
 local Ledger = {}
 ST.Ledger = Ledger
 
--- Where each trunk stands after its nth win of the season (the fifth is the finale, told as the last season's end).
-local RECAP = {
-    z1 = "Zennit has had his week off, and has not yet decided whether he liked it.",
-    z2 = "Zennit holds a brass key to a side door, and has ticked the first item on his list.",
-    z3 = "Zennit has found that his list is a syllabus, and is studying it in a corridor, with a kettle.",
-    z4 = "The clerk has shown Zennit the desk, and is looking everywhere for his hat.",
-    g1 = "The group has had its cake, which Zennit did not trust.",
-    g2 = "The group keeps a carbon copy of Form 27B slash 6, and the Index would like it back.",
-    g3 = "The Ritual has handed up Form 27B slash 6, after sitting on it beneath a tavern.",
-    g4 = "The Ritual has named its price: fifty silver, in cash, and the third copy of the form.",
+-- The scene's fixed sentences: no names and no numbers in them, so each one has a recorded clip
+-- (Media/ledger/<id>.ogg, with its length in LedgerClips.lua). tools/intro/build_ledger_audio.py renders the clips from
+-- this table, so keep every entry a single string on one line. The lines that carry a name or a number are built
+-- below and stay typed and silent.
+local LINES = {
+    -- Where each trunk stands after its nth win of the season (the fifth is the finale, told as the last season's end).
+    recap_z1 = "Zennit has had his week off, and has not yet decided whether he liked it.",
+    recap_z2 = "Zennit holds a brass key to a side door, and has ticked the first item on his list.",
+    recap_z3 = "Zennit has found that his list is a syllabus, and is studying it in a corridor, with a kettle.",
+    recap_z4 = "The clerk has shown Zennit the desk, and is looking everywhere for his hat.",
+    recap_g1 = "The group has had its cake, which Zennit did not trust.",
+    recap_g2 = "The group keeps a carbon copy of Form 27B slash 6, and the Index would like it back.",
+    recap_g3 = "The Ritual has handed up Form 27B slash 6, after sitting on it beneath a tavern.",
+    recap_g4 = "The Ritual has named its price: fifty silver, in cash, and the third copy of the form.",
+    -- How the season before this one ended.
+    last_zennit = "Last season ended with Zennit in the clerk's chair. He accepts every summons, and the Index has asked him to stop apologising.",
+    last_group = "Last season ended with a receipt, and Zennit free. The Index was asked to carry on regardless, and agreed, with misgivings.",
+    -- The standing.
+    empty_first = "The Index has opened a file on the season, and it is empty. Nobody has won a week.",
+    empty_fresh = "The Index has opened a fresh file, and it is empty.",
+    wait = "The Index is prepared to wait.",
+    -- The pressure.
+    end_both = "Both sides are one win from the end. The Index has stopped sleeping.",
+    end_group = "The group is one win from the finale, and the Ritual has started to glow in a meaningful manner.",
+    end_zennit = "Zennit is one win from the clerk's chair, and the kettle is on.",
+    -- This week.
+    week_leave = "This week is Zennit's. He is on leave and cannot be summoned, and the Index files the attempts as filler.",
+    week_closed = "Zennit has closed the Index for the week. Anything more is filed under enthusiasm.",
+    week_none = "Nobody has summoned Zennit this week. The Index is patient.",
+    evidence = "The Index is accepting further evidence.",
 }
-
-local LAST_SEASON = {
-    zennit = "Last season ended with Zennit in the clerk's chair. He accepts every summons, and the Index has asked him to stop apologising.",
-    group = "Last season ended with a receipt, and Zennit free. The Index was asked to carry on regardless, and agreed, with misgivings.",
-}
+Ledger.LINES = LINES
 
 local function weeks(n)
     return n == 1 and "1 week" or (n .. " weeks")
@@ -32,12 +48,11 @@ end
 local function weekLine(s)
     local w = s.score
     if s.immune then
-        return "This week is Zennit's. He is on leave and cannot be summoned, and the Index files the attempts as filler.",
-            "ZENNIT IS ON LEAVE"
+        return LINES.week_leave, "ZENNIT IS ON LEAVE", "week_leave"
     elseif w.closed then
-        return "Zennit has closed the Index for the week. Anything more is filed under enthusiasm.", "THE INDEX IS CLOSED"
+        return LINES.week_closed, "THE INDEX IS CLOSED", "week_closed"
     elseif w.summons == 0 then
-        return "Nobody has summoned Zennit this week. The Index is patient.", "NO SUMMONS YET"
+        return LINES.week_none, "NO SUMMONS YET", "week_none"
     end
     local lead
     if w.group > w.zennit then
@@ -322,21 +337,23 @@ end
 -- Returns a list of { text, cue }, where cue is the punchline for the Text: key mode (or nil).
 function Ledger.Build(s)
     local out = {}
-    local function say(text, cue) out[#out + 1] = { text = text, cue = cue } end
+    -- clip: the id of a fixed line's recording (see LINES); nil for the lines built from names and numbers
+    local function say(text, cue, clip) out[#out + 1] = { text = text, cue = cue, clip = clip } end
     local z, g, wins = s.season.zennit, s.season.group, s.wins
     local finales = s.season.finales
     local number = #finales + 1
 
     -- how the season began, or how the last one ended
     if number > 1 then
-        say(LAST_SEASON[finales[#finales].side], "SEASON " .. number)
+        local clip = "last_" .. finales[#finales].side
+        say(LINES[clip], "SEASON " .. number, clip)
     end
 
     -- the standing
     if z == 0 and g == 0 then
-        say(number > 1 and "The Index has opened a fresh file, and it is empty." or
-            "The Index has opened a file on the season, and it is empty. Nobody has won a week.", "NOBODY HAS WON A WEEK")
-        say("The Index is prepared to wait.")
+        local clip = number > 1 and "empty_fresh" or "empty_first"
+        say(LINES[clip], "NOBODY HAS WON A WEEK", clip)
+        say(LINES.wait, nil, "wait")
     elseif z == g then
         say(string.format("The season stands level at %s each. The Index would like it noted that it is not taking sides.",
             weeks(z)), "LEVEL AT " .. z)
@@ -348,8 +365,8 @@ function Ledger.Build(s)
     end
 
     -- how far down each trunk
-    if z > 0 and RECAP["z" .. z] then say(RECAP["z" .. z]) end
-    if g > 0 and RECAP["g" .. g] then say(RECAP["g" .. g]) end
+    if z > 0 and LINES["recap_z" .. z] then say(LINES["recap_z" .. z], nil, "recap_z" .. z) end
+    if g > 0 and LINES["recap_g" .. g] then say(LINES["recap_g" .. g], nil, "recap_g" .. g) end
 
     -- what the Index remembers of this season, by name, and the silver
     if s.facts then
@@ -363,12 +380,11 @@ function Ledger.Build(s)
 
     -- the pressure
     if z == wins - 1 and g == wins - 1 then
-        say("Both sides are one win from the end. The Index has stopped sleeping.", "ONE WIN FROM THE END")
+        say(LINES.end_both, "ONE WIN FROM THE END", "end_both")
     elseif g == wins - 1 then
-        say("The group is one win from the finale, and the Ritual has started to glow in a meaningful manner.",
-            "ONE WIN FROM THE FINALE")
+        say(LINES.end_group, "ONE WIN FROM THE FINALE", "end_group")
     elseif z == wins - 1 then
-        say("Zennit is one win from the clerk's chair, and the kettle is on.", "ONE WIN FROM THE CHAIR")
+        say(LINES.end_zennit, "ONE WIN FROM THE CHAIR", "end_zennit")
     end
 
     -- the Index's thumb on the scale, when the season is lopsided (Week.Edge)
@@ -378,23 +394,26 @@ function Ledger.Build(s)
             "THE INDEX TAKES NO SIDES")
     end
 
-    local text, cue = weekLine(s)
-    say(text, cue)
+    local text, cue, clip = weekLine(s)
+    say(text, cue, clip)
     if s.whim and not s.immune then say("This week's whim: " .. s.whim, "THE WHIM OF THE WEEK") end
-    say("The Index is accepting further evidence.")
+    say(LINES.evidence, nil, "evidence")
     return out
 end
 
 -- Reading speed of the typed-out lines: a sentence stays up for a second and a bit, plus a share of its length.
 local LEAD, PER_CHAR = 1.2, 1 / 16
 
--- Times the sentences for the viewer. Returns sentences { { t, text } }, cues { { t, text } } and the total length.
+-- Times the sentences for the viewer. Returns sentences { { t, text, clip } }, cues { { t, text } } and the total
+-- length. A line with a recording lasts as long as its clip (which has its own breath of silence at each end); the
+-- rest are timed to be read.
 function Ledger.Timed(list)
     local sentences, cues, t = {}, {}, 0
     for _, item in ipairs(list) do
-        sentences[#sentences + 1] = { t = t, text = item.text }
-        if item.cue then cues[#cues + 1] = { t = t + 0.3, text = item.cue } end
-        t = t + LEAD + #item.text * PER_CHAR
+        local len = item.clip and ST.ledgerClips and ST.ledgerClips[item.clip]
+        sentences[#sentences + 1] = { t = t, text = item.text, clip = len and item.clip or nil }
+        if item.cue then cues[#cues + 1] = { t = t + (len and 0.45 or 0.3), text = item.cue } end
+        t = t + (len or (LEAD + #item.text * PER_CHAR))
     end
     return sentences, cues, t
 end

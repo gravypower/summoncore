@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.19.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.19.1, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -177,8 +177,8 @@ written from the season each time it plays, so the story moves with the tree: wh
 trunk the race has got (a line for the latest win on each side, and only for chapters already reached, so nothing is
 spoiled), a warning when a side is one win from its finale, how the last season ended once there has been one, and how
 this week stands (his week off, the Index closed, or the lead and the summons filed). Its picture is the latest chapter
-reached, or "The week" before any. It is typed out under the key clicks with no voice, because it is never the same
-twice, and it now tells the season's named moments (the roll a helper pair tipped, who has summoned him most, a run of dice he won) and the silver he has been paid, all worked out from the log; `/sc intro now` plays it alone. Tune the wording in `Ledger.lua` (`RECAP`, `LAST_SEASON` and `Ledger.Build`).
+reached, or "The week" before any. It is typed out under the key clicks, and the sentences that never change (the recaps, how last season ended, the empty file, the one-win warnings, the quiet weeks) are voiced from clips in `Media/ledger` (made by `tools/intro/build_ledger_audio.py` from the `LINES` table in `Ledger.lua`); the lines that carry a name or a number are never the same
+twice, and it now tells the season's named moments (the roll a helper pair tipped, who has summoned him most, a run of dice he won) and the silver he has been paid, all worked out from the log; `/sc intro now` plays it alone. Tune the wording in `Ledger.lua` (`LINES` and `Ledger.Build`), then rerun the script for the voiced lines.
 
 Scenes 9 and 10 explain the weekly challenge: only summons of Zennit count (summons between friends count for nothing), the group earns points by place, ten summons a week count, Zennit holds a secret list of five places that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), close the Index once five are filed, go on leave when he wins a week (summons of him are then filler), and the Index leans toward the side that is behind, with a whim some weeks. The first to five weeks takes the season. **The wording was brought up to date, but the takes have not been re-rendered yet**: `Intro.lua` and `render_takes.py` have the new text, while `Media/intro_9.ogg` and `intro_10.ogg` (and their `_voice` twins) and `IntroCues.lua` are still the old recording until `.claude/skills/zenit-narrator-audio` has been run for scenes 9 and 10 (`render_takes.py --only 9,10`, copy to `tools/intro/narration/voice_09.ogg` and `voice_10.ogg`, then `tools/intro/build_audio.ps1`), after which WoW needs a full restart.
 
