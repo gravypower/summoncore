@@ -333,6 +333,11 @@ function commands.week(rest)
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
 
+-- Listens to trade and mail events and prints what the client lets an addon see, to learn how silver could be detected.
+function commands.probe()
+    ST.Silver.Probe()
+end
+
 -- What the log says about how the race is being played (for a playtest).
 function commands.report()
     for _, line in ipairs(ST.Report.Lines()) do print_(line) end
@@ -406,6 +411,7 @@ local HELP = {
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)",
     "/sc report - what the log says about how the race is being played (for a playtest)",
     "/sc rules - the rules of the race, with this week's live numbers",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",

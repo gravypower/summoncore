@@ -1318,6 +1318,45 @@ add("a provisional Monday: announced as provisional while he can still answer, t
     end)
 end)
 
+add("silver owed: counted by week and overall, shown to both sides, and payable after the week has closed", function()
+    return newRules(function()
+        local W, R = ST.Week, ST.Respond
+        local a = newClient("Alpha")
+        local out = {}
+        local me = ST.Store.me()
+        local realClosed = W.EventClosed
+        with(a, function()
+            local this = W.Start()
+            local function put(key, caster, target, result, at)
+                a.db.events[key] = { caster = caster, target = target, assistants = {}, time = at, points = 3, kind = "zone",
+                    response = result and { result = result, zroll = 0, sroll = 0, time = at + 1 } or nil }
+            end
+            put("s1", "Bo", "Zennit", "owed", this + 10); put("s2", "Bo", "Zennit", "owed", this + 20)
+            put("s3", "Bo", "Zennit", "paid", this + 30)
+            out.n, out.silver = W.Owed(this)
+            out.group = W.StatusLine(this)
+            out.you = W.StatusLine(this, true)
+            -- what I am owed, and what I owe, across all weeks
+            put("t1", "Bo", me, "owed", this - 21 * 86400); put("t2", me, "Zennit", "owed", this - 21 * 86400 + 5)
+            out.owedToMe, out.silverToMe = R.Owed("target")
+            out.iOwe, out.silverIOwe = R.Owed("caster")
+            -- the silver of a closed week can still be paid, and nothing else can be answered into it
+            W.EventClosed = function() return true end
+            a.db.events.t1.target = me
+            out.paid = R.Decide("t1", "paid")
+            out.lateAccept = R.Decide("t2", "accepted")
+            W.EventClosed = realClosed
+        end)
+        W.EventClosed = realClosed
+        local ok = out.n == 2 and out.silver == 100
+            and out.group:find("100 silver owed to him", 1, true) and out.you:find("100 silver owed to you", 1, true)
+            and out.owedToMe == 1 and out.silverToMe == 50 and out.iOwe == 1 and out.silverIOwe == 50
+            and out.paid and out.paid.result == "paid" and out.lateAccept == nil
+        return ok, string.format("2 owe (%s silver); owed to me %s, I owe %s; closed week: paid %s, accepted %s", tostring(out.silver),
+            tostring(out.silverToMe), tostring(out.silverIOwe), tostring(out.paid ~= nil), tostring(out.lateAccept))
+    end)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

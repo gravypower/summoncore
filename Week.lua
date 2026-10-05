@@ -178,6 +178,15 @@ function Week.Unanswered(start, minAge)
     return n
 end
 
+-- Summons of Zennit in the week starting at `start` whose silver he has asked for and not yet had. Returns how many, and the silver.
+function Week.Owed(start)
+    local n = 0
+    for _, s in ipairs(summonsOfZennit(start)) do
+        if s.ev.response and s.ev.response.result == "owed" then n = n + 1 end
+    end
+    return n, n * ST.Respond.SILVER
+end
+
 -- Waiting for his answer for longer than RULES.overdue.
 function Week.Overdue(start)
     return Week.Unanswered(start, Week.RULES.overdue)
@@ -494,6 +503,16 @@ function Week.Check()
             ST.print(string.format("%d summons %s waiting for your answer. |cffffd100/sc respond|r opens the latest.", waiting,
                 waiting == 1 and "is" or "are"))
         end
+        local n, silver = ST.Respond.Owed("target")
+        if n > 0 then
+            ST.print(string.format("You are owed %d silver for %d summons (in cash, with no receipt). Mark each paid in the Answer tab.", silver, n))
+        end
+    else
+        local n, silver = ST.Respond.Owed("caster")
+        if n > 0 then
+            ST.print(string.format("You owe Zennit %d silver for %d summons: fifty each, in cash, no receipt. The Ritual is keeping count.",
+                silver, n))
+        end
     end
 end
 
@@ -548,6 +567,10 @@ function Week.StatusLine(start, you)
     local waiting = Week.Overdue(start)
     if waiting > 0 then
         parts[#parts + 1] = string.format(you and "%d waiting for your answer" or "%d waiting for his answer", waiting)
+    end
+    local _, silver = Week.Owed(start)
+    if silver > 0 then
+        parts[#parts + 1] = string.format(you and "%d silver owed to you" or "%d silver owed to him", silver)
     end
     return ST.Voice.Say("week.status", { "Week: %s.", "The Index's tally for the week: %s.", "Standing: %s." },
         table.concat(parts, ", "))

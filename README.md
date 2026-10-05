@@ -37,6 +37,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
 | `/sc intro [scene\|z1..z5\|g1..g5\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter, `now` plays only "The Index today", `check` tests the sound files |
+| `/sc probe` | Listens to trade and mail events and prints what the client lets an addon see (who, how much, or a secret value), to learn how the fifty silver could be detected. Run it again to stop |
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. Paste it into the group chat. Also the Tools tab's **Playtest report**; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). Also the Tools tab's **The rules** |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
@@ -65,6 +66,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
 | `Voice.lua` | Voice | Pools of lines: the Index says a fact that repeats a few different ways, never the same one twice running |
+| `Silver.lua` | Silver | The money side: so far the `/sc probe` listener for trade and mail |
 | `Report.lua` | Report | `/sc report`: the playtest numbers, worked out from the log |
 | `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays; and the log's memory of a season (named moments, the silver, the keepsake) |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
@@ -285,6 +287,10 @@ numbers behind it, is in `design/lenses.md`):
   he is ahead (to +5), and grows when the group is ahead (to +15). At three or more it moves by **10** (to +0, or +20);
   a lead of one changes nothing. The briefing, the "Week:" line, his popup, the dice prompts and "The Index today" say
   so ("The Index, which takes no sides, has cut his edge on the dice to +5 this week"). Tune it in `Week.RULES.catchup`.
+- **The silver is seen on both sides.** A summons he has asked fifty silver for stays owed until he marks it paid, however old it
+  is (it is paid in person, often after the week has closed, and the silver of a closed week can still be marked paid). The "Week:"
+  line says "100 silver owed to him" (to you, on his client); at login his client says how much he is owed, and everyone else's says
+  how much they owe him.
 - **The group can see who is slow.** A summons of Zennit unanswered for an hour (`Week.RULES.overdue`) is counted as *waiting for
   his answer*, and the "Week:" line ("... 2 waiting for his answer") and the briefing as a ritual on him begins say how many, so the
   group can chase him. On his own client, a minute after login, the chat says how many summons are waiting for him and that

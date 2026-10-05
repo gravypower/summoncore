@@ -227,6 +227,18 @@ function Respond.OnList(ev)
     return false
 end
 
+-- Silver still owed, in every week (it is paid in person, so a summons stays owing until Zennit says it was paid).
+-- Returns the number of summons and the silver, for the summons OF this character (`role` "target": what he is owed) or
+-- cast BY this character ("caster": what they owe).
+function Respond.Owed(role)
+    local me, n = ST.Store.me(), 0
+    for _, ev in pairs(ST.db.events) do
+        local who = role == "caster" and ev.caster or ev.target
+        if not ev.fake and who == me and ev.response and ev.response.result == "owed" then n = n + 1 end
+    end
+    return n, n * SILVER
+end
+
 -- How many summons of this character have no answer at all (not counting those that only owe the silver).
 function Respond.Waiting()
     local n = 0
@@ -241,7 +253,8 @@ function Respond.Pending()
     local me, out = ST.Store.me(), {}
     for _, r in ipairs(ST.Store.Recent(200)) do
         local res = r.ev.response and r.ev.response.result
-        if r.ev.target == me and (not res or res == "owed") and not ST.Week.EventClosed(r.ev) then out[#out + 1] = r end
+        -- silver stays owed however old the summons is: it is paid in person, often after the week has closed
+        if r.ev.target == me and ((not res and not ST.Week.EventClosed(r.ev)) or res == "owed") then out[#out + 1] = r end
     end
     return out
 end
@@ -273,7 +286,8 @@ end
 function Respond.Decide(id, result, zroll, sroll)
     local ev = ST.Store.Get(id)
     if not ev or not ST.Store.RESULTS[result] then return nil end
-    if ST.Week.EventClosed(ev) then return nil end -- that week is over; answers no longer change it
+    -- that week is over; answers no longer change it, except the silver being paid, which does not move a decided week
+    if ST.Week.EventClosed(ev) and not (result == "paid" and ev.response and ev.response.result == "owed") then return nil end
     -- a new answer is always later than the one it replaces, or other clients keep the old one (sync takes the later)
     local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0,
         time = math.max(time(), ev.response and ev.response.time + 1 or 0),
