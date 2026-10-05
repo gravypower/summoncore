@@ -304,8 +304,10 @@ function commands.zenit(rest)
             print_(ok and ("added '" .. what .. "'") or why)
         elseif verb == "remove" then print_(R.ListRemove(what) and "removed" or "no such entry")
         elseif verb == "clear" then R.ListClear() print_("list cleared") end
-        local list = R.List()
-        print_(#list == 0 and "secret list is empty" or "secret list: " .. table.concat(list, "; "))
+        local list, shown = R.List(), {}
+        for i, word in ipairs(list) do shown[i] = R.ListPending(word) and (word .. " (from Monday)") or word end
+        print_(#list == 0 and "secret list is empty" or "secret list: " .. table.concat(shown, "; "))
+        if #list > 0 then print_("a place added this week counts from next Monday; removing one takes effect at once") end
         if #R.ListActive() < #list then
             print_(string.format("only the first %d entries of %d letters or more count", R.LIST_MAX, R.LIST_MIN))
         end
@@ -412,6 +414,8 @@ function commands.week(rest)
     local season = W.Season()
     print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
         season.group, W.WINS, #season.finales))
+    print_(ST.Ledger.PostcardsLine(ST.Ledger.Facts(season)) or
+        string.format("Postcards from Zennit: none yet this season (0 of %d far-flung places).", ST.Ledger.PostcardPlaces()))
     local immune, untilT = W.Immune(time())
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end

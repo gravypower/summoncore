@@ -269,7 +269,8 @@ local function buildAnswer(f)
         for _, word in ipairs(list) do
             if (used[word] or 0) > 0 then
                 used[word] = used[word] - 1
-                shown[#shown + 1] = word
+                -- a place added this week counts from Monday: the list is set for the week (design/lenses.md, Secrets)
+                shown[#shown + 1] = ST.Respond.ListPending(word) and (word .. T.Paint("dim", " (from Monday)")) or word
             else
                 shown[#shown + 1] = T.Paint("dim", word) -- too short, or past the fifth: it does not count
             end
