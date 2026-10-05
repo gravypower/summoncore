@@ -365,6 +365,13 @@ function commands.probe()
     ST.Silver.Probe()
 end
 
+-- The Monday tip on or off.
+function commands.tips(rest)
+    local s = ST.db.settings
+    if rest == "off" then s.tipsOff = true elseif rest == "on" then s.tipsOff = nil end
+    print_("Monday tips are " .. (s.tipsOff and "off" or "on") .. ". /sc tips " .. (s.tipsOff and "on" or "off") .. " changes it.")
+end
+
 -- The titles as they stand in this season (the Index names them for good at the finale).
 function commands.titles()
     for _, line in ipairs(ST.Ledger.Standings()) do print_(line) end
@@ -433,8 +440,17 @@ function commands.debug()
     print_("detector debug " .. (ST.db.settings.debug and "on" or "off"))
 end
 
+-- What a player needs: five lines. /sc help all has the rest (design/lenses.md, Interface).
+local HELP_SHORT = {
+    "/sc - the Summon Core window: the party's tally and badges, Zennit's answers, the log, the story and the tools",
+    "/sc rules - the rules of the race, with this week's live numbers    /sc week - how this week and the season stand",
+    "/sc tab - what is owed in silver    /sc cards - who holds a summon card    /sc titles - who leads the season's titles",
+    "/sc report - how the race is going (paste it to the group)    /sc seasons - the record of every finished season",
+    "/sc help all - every command (the rest are for setting up, testing and Zennit)    /sc tips off - stop the Monday tip",
+}
+
 local HELP = {
-    "/sc - open the Summon Core window (everything below is also in it)    /sc help - this list",
+    "/sc - open the Summon Core window (everything below is also in it)    /sc help - the short list    /sc help all - this list",
     "/sc test - diagnostics panel (/sc test ping <name>)",
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
     "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",
@@ -455,7 +471,8 @@ local HELP = {
     "/sc report - what the log says about how the race is being played (for a playtest)",
     "/sc rules - the rules of the race, with this week's live numbers",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
-    "/sc respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",
+    "/sc respond [test] - Zennit answers a summon of him (accept, refuse, ask for silver, dice); test tries it",
+    "/sc tips [on|off] - the one-line tip about a command, at the Monday login",
     "/sc gag - preview the Zennit gag",
     "/sc comic [256|512|1024|2048] - large-image test pattern viewer",
     "/sc undo - remove the latest summon    /sc debug - toggle detector messages",
@@ -482,6 +499,7 @@ SlashCmdList["SUMMONCORE"] = function(input)
     else
         if cmd ~= "" and cmd ~= "help" then print_("unknown command '" .. cmd .. "'") end
         print_("v" .. ST.version)
-        for _, l in ipairs(HELP) do print_(l) end
+        local all = cmd == "help" and rest:lower() == "all"
+        for _, l in ipairs(all and HELP or HELP_SHORT) do print_(l) end
     end
 end

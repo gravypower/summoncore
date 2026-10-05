@@ -19,7 +19,8 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | Command | What it does |
 |---|---|
 | `/sc` (also `/summoncore`) | Open the Summon Core window: Party (Summary, Tally and Badges), Zennit (his answers), Log, Story, Sync and Tools tabs; the Party tab is closed to Zennit (he gets the "ah ah ah" gag) and Zennit's tab to the party (a gag of its own; the admin can open both); Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
-| `/sc help` | List the commands in chat |
+| `/sc help` | Five lines: the commands a player needs (the window, rules, week, tab, cards, titles, report, seasons). `/sc help all` lists every command |
+| `/sc tips [on\|off]` | The one-line tip about a command, said once a Monday at login (they go round in order; two are for Zennit's client only). `/sc tips off` stops it |
 | `/sc panel` | Open the window on the Party tab |
 | `/sc log [n]` | Recent summons |
 | `/sc tally` | Cast, received and assisted counts and points per player |

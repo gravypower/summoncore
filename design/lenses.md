@@ -33,7 +33,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
 | Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
 | Reward | What does each member get, and when? | Answered; A, B, C and D built |
-| Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; B to D wait for a decision |
+| Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
 
 ## Entries
 
@@ -1009,8 +1009,18 @@ client**: the layout is worked out from the numbers, and the first thing to chec
 | C | **A short `/sc help`**: five lines for players (`/sc`, rules, tab, titles, report) and `/sc help all` for the rest | 3 | Wording |
 | D | **Reports pasteable**: `/sc report say` (and the same for rules, tab, titles) sends the report to party chat instead of the local window, so the Monday report reaches the group without copying it | 2 | A channel check |
 
+**Our answer:** build **A (the weekly tip)** and **C (the short help)**. B (a Record tab) and D (say the report to the group) were not
+chosen: B carries layout risk in a client we cannot see, and D can wait until the group pastes the report by hand and says it is a chore.
+
+**Built**
+- **A, the weekly tip.** Once a Monday at login (after the week's result and its whim) the chat says one line about a command players
+  may not know ("Tip: /sc tab shows what is owed in silver, and /sc cards who holds a summon card..."). They go round in order, so none
+  comes twice running; two are for Zennit's client only (`/sc respond`, `/sc zennit list`). `/sc tips off` stops it (and `on` brings it
+  back). Tips live in `Week.TIPS`.
+- **C, the short help.** `/sc help` (and an unknown command) prints five lines for players; `/sc help all` prints every command.
+
 **To decide before building**
-- Do players need a hint, or will the group learn the commands from each other?
+- Do players need more than the tip? (Asked at the playtest.)
 
 **To watch in playtests**
 - Which commands does the group actually type? Does anyone ask "how do I see..."?
@@ -1038,3 +1048,4 @@ client**: the layout is worked out from the numbers, and the first thing to chec
 | 2026-10-05 | A demand for silver no longer holds the summons back: it counts at once and the silver goes on a tab; Zennit names the price, and a card's punch pays it | Meaningful Choices | Under the new rules a silver demand cost him nothing and blocked the group's points until paid, so it beat refusing, had no weekly limit, and put the blame for paying late on the group |
 | 2026-10-05 | A `/sc tab` statement of who owes what; the ask is not bounded (trust the group); cards are not forced to be a discount and points stay a score | Economy | The tab was only visible as a total and a login line; the silver cannot hurt the race, so a bound would only police the mood of friends |
 | 2026-10-05 | Season titles, mid-season standings (`/sc titles`), kind titles for Zennit, and four later badges for the people who cast; helpers get titles, not badges | Reward | Individual rewards were front-loaded and for warlocks only; a helper's only reward was a named line about every other season |
+| 2026-10-05 | The Tools tab is five columns (the reports have their own, The record); a one-line command tip each Monday (`/sc tips off`); `/sc help` is five lines and `/sc help all` is the rest | Interface | One Tools column had grown past the tab for the admin; the useful commands were listed only in a 25-line help |

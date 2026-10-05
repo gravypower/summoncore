@@ -495,10 +495,49 @@ function Week.RulesCard(start)
     return card
 end
 
+-- One line about a command players may not know, once a Monday at login (design/lenses.md, Interface). They go round in order,
+-- so none comes twice running; `for` limits a tip to Zennit's client or everyone else's.
+Week.TIPS = {
+    { text = "/sc rules prints the race with this week's live numbers: the cap, his dice and edge, what a helper adds, the whim." },
+    { text = "/sc tab shows what is owed in silver, and /sc cards who holds a summon card and how many punches are left." },
+    { text = "/sc titles shows who leads the season's titles so far. The Index names them for good in the finale's keepsake." },
+    { text = "/sc report prints how the race is going. Paste it into the group chat on a Monday." },
+    { text = "/sc seasons keeps the Index's record of every finished season: who was in the room, the silver, the moments." },
+    { text = "The Story tab in /sc shows every chapter the season has reached. Click a lit one to play it again." },
+    { text = "/sc respond opens the summons waiting for your answer, and /sc card sell <name> sells someone a card.", only = "zennit" },
+    { text = "/sc zennit list add <place> adds to your secret list (five places of four letters or more).", only = "zennit" },
+}
+
+-- The next tip for this client, advancing the round; nil when there are none for it.
+function Week.NextTip()
+    local s = ST.db and ST.db.settings
+    if not s then return nil end
+    local zennit = ST.Gag and ST.Gag.IsZennit()
+    local list = {}
+    for _, tip in ipairs(Week.TIPS) do
+        if not tip.only or (tip.only == "zennit") == (zennit and true or false) then list[#list + 1] = tip end
+    end
+    if #list == 0 then return nil end
+    s.tipIndex = ((s.tipIndex or 0) % #list) + 1
+    return list[s.tipIndex].text
+end
+
+-- Says one tip once a week, unless they are switched off (/sc tips off).
+function Week.AnnounceTip()
+    local s = ST.db and ST.db.settings
+    local start = Week.Start()
+    if not s or s.tipsOff or s.tipSeen == start then return end
+    local tip = Week.NextTip()
+    if not tip then return end
+    s.tipSeen = start
+    ST.print("|cffffd100Tip:|r " .. tip)
+end
+
 -- At login: how the last week ended, then this week's whim, and (on Zennit's client) what is waiting for his answer.
 function Week.Check()
     checkLastWeek()
     Week.AnnounceWhim()
+    Week.AnnounceTip()
     if ST.Gag.IsZennit() then
         local waiting = ST.Respond.Waiting()
         if waiting > 0 then
