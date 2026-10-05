@@ -41,6 +41,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
 | The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
 | Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
+| Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one; the fix waits for a decision (below) |
 
 ## Entries
 
@@ -1463,6 +1464,59 @@ punished for a real-life decline he could not have known the group was raising.
 **To watch in playtests**
 - Do the two popups cover each other on his screen? Does he miss one of them?
 - Does he accept in the Index and decline in the game, or the reverse, and does anyone notice?
+- Nothing here has run in the live client.
+
+### 2026-10-05 · Lens of Balance: is any choice always the best?
+
+**The questions (paraphrased):** are there choices that are simply better than the others whatever else is going on (a *dominant
+strategy*), so that the other choices are never worth making? If so, the game has stopped being a game at that point: players find the
+dominant choice and the others become traps. Do both sides have a real chance? Does the balance shift as people learn?
+
+**How to use it:** list every choice a player has at a moment, work out what each one does to the score, and ask whether one of them is
+at least as good as the rest in every case. A quick way is to simulate the week with each policy and compare how often each side wins.
+
+**The choice under test: what Zennit can do with a summons, after the change in the Resonance entry**
+
+| His choice | The group gets | He gets | Cost to him |
+|---|---|---|---|
+| Accept | + P | 0 (or + P on his list) | The group scores |
+| Refuse, in the Index | 0 | - P | P points |
+| **Decline, in the game (no writ)** | **0** | **0** | **Nothing** |
+| Decline a summons with a writ | 0 | - P | P points |
+| Dice (3 a week) | + P if he loses, 0 if he wins | + P if he wins | A coin toss |
+
+**Findings** (simulated: five summons, two helpers, his +10 edge, a head start of 2; the numbers are the group's chance to win the
+week; `decline.py` and `decline2.py` in the scratchpad)
+1. **A free decline is a dominant move.** It does what a refusal does to the group (nothing scored) and costs him nothing, where the
+   refusal costs him P. Pressing Decline in the game is better than "Refuse" in the Index every time, so the Index's Refuse is now a
+   trap. If he declines everything and no writ is played, the group wins **0%** of weeks (his head start of 2 beats a score of 0). The
+   old rules, with him rolling his dice on the first three summons, gave the group **63%** in a five-summons week.
+2. **Each free decline he is allowed takes about 10 to 20 points off the group's chance.** Five zone summons, 63% with none; with one
+   free decline a week, about 43%; with two, about 34%; with three, about 23%. A mixed week of [3, 3, 3, 10, 10] goes 91%, 56%, 38%.
+   One a week is close to the middle of what the earlier lenses aimed for.
+3. **A writ is not a gamble for the group.** If he declines, he loses P; if he accepts, the group scores P, which is what it would have
+   scored without the writ. It costs nothing but one of only two a week, so the group should always play both, and the only decision is
+   *which* summons. That matters: on the dear summons it is strong (mixed week, two free declines: the group's chance goes from 33% to
+   91% with two writs on the 10s); on the cheap ones it barely moves anything. The earlier README and lens text called a writ "a gamble":
+   that was wrong.
+4. **The fiction.** The Index is a place where the target is summoned and goes. A rule that pays him most for never turning up pulls
+   against that, even if no friend would play it that way.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A limited number of free declines a week: one.** A decline with no writ is "declined" (no points either way) for his first one of the week; every later one costs him P, as a refusal does. A decline of a writ summons always costs him. It is counted from the log, like the writs | 1, 2 | `Week.RULES.declines = 1`, a count in the answer, a line saying how many he has left, and a test |
+| B | **Say how many free declines he has left** in his popup and in the "Week:" line, as with his dice, so it is a visible resource | 2 | A phrase in two places |
+| C | **Correct the wording on writs** ("the writ is spent either way", not "a gamble") in the README, the lens entry and the command text | 3 | Wording |
+| D | **Leave declines free**, and trust the group to stay friendly | | Nothing; the simulation says he would win every week he chose to |
+
+**To decide before building**
+- One free decline a week, or two? One leaves the group about 43% in a typical week and about 56% in a mixed one; two about 34% and 38%.
+  A real-life reason to decline (away, in combat) is the thing it is for.
+
+**To watch in playtests**
+- Does he ever press Decline in the game, and how does the group react? That is the real test of this.
 - Nothing here has run in the live client.
 
 ## Decisions
