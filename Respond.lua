@@ -265,6 +265,51 @@ function Respond.ListAdd(text)
     return true
 end
 
+-- Every zone the client knows, by its own names. No map IDs are written down here: start from where the player stands (or the
+-- client's default world map), climb to the top of the map tree, and ask for every zone below it.
+function Respond.WorldZoneNames()
+    local names = {}
+    if not (C_Map and C_Map.GetMapInfo and C_Map.GetMapChildrenInfo and Enum and Enum.UIMapType) then return names end
+    local id = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+    if not id and C_Map.GetFallbackWorldMapID then id = C_Map.GetFallbackWorldMapID() end
+    local ok, info = pcall(C_Map.GetMapInfo, id)
+    if not (ok and info) then return names end
+    for _ = 1, 10 do -- a short tree; the bound only guards against a loop
+        if not info.parentMapID or info.parentMapID == 0 then break end
+        local okUp, up = pcall(C_Map.GetMapInfo, info.parentMapID)
+        if not (okUp and up) then break end
+        id, info = info.parentMapID, up
+    end
+    local okKids, maps = pcall(C_Map.GetMapChildrenInfo, id, Enum.UIMapType.Zone, true)
+    if okKids and type(maps) == "table" then
+        for _, m in ipairs(maps) do names[#names + 1] = m.name end
+    end
+    return names
+end
+
+-- Place names to suggest while he types an entry, sorted: the places the Index scores, the world's zones as the client names
+-- them, and every place a summons has landed. Names already on his list are left out.
+function Respond.ListSuggestions()
+    local seen, out = {}, {}
+    for _, word in ipairs(Respond.List()) do seen[word:lower()] = true end
+    local function add(name)
+        if type(name) ~= "string" or #name < Respond.LIST_MIN then return end
+        local key = name:lower()
+        if seen[key] then return end
+        seen[key] = true
+        out[#out + 1] = name
+    end
+    for _, n in pairs(ST.Scoring.cityNames) do add(n) end
+    for _, n in pairs(ST.Scoring.remoteNames) do add(n) end
+    for sz in pairs(ST.Scoring.subzoneKinds) do -- kept lowercase for matching: capitalise each word to show
+        add((sz:gsub("(%a)([%w']*)", function(a, b) return a:upper() .. b end):gsub(" Of ", " of ")))
+    end
+    for _, name in ipairs(Respond.WorldZoneNames()) do add(name) end
+    for _, ev in pairs(ST.db.events or {}) do add(ev.subzone) end
+    table.sort(out, function(a, b) return a:lower() < b:lower() end)
+    return out
+end
+
 function Respond.ListRemove(n)
     return table.remove(Respond.List(), tonumber(n) or 0) ~= nil
 end

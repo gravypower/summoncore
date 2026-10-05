@@ -16,7 +16,7 @@ globals = {
 
 -- WoW API used by the addon.
 read_globals = {
-    "Ambiguate", "C_ChatInfo", "C_Map", "C_Spell", "C_Timer", "ChatFontNormal", "CreateFrame",
+    "Ambiguate", "C_ChatInfo", "Enum", "C_Map", "C_Spell", "C_Timer", "ChatFontNormal", "CreateFrame",
     "GetBuildInfo", "GetNormalizedRealmName", "GetPhysicalScreenSize", "GetSpellInfo", "GetSubZoneText",
     "GetTime", "GetUnitName", "GetZoneText", "IsInGroup", "IsInGuild", "IsInInstance", "IsInRaid",
     "PlaySound", "PlaySoundFile", "RANDOM_ROLL_RESULT", "RandomRoll", "StopSound", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo",
