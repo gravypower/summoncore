@@ -554,7 +554,8 @@ end
 -- Tools: three sections under one row of small buttons, like the Party tab. General holds what everyone uses (windows,
 -- the record, settings); Testing holds the things to try and the test switches; Checks holds the live checklist. Each
 -- section is a stack of titled groups, five buttons to a row; admin-only tools are hidden for everyone else and the rows
--- close up around them, so nobody sees gaps. One output box sits under whichever section is on show.
+-- close up around them, so nobody sees gaps. One output box sits under whichever section is on show. The tab opens on
+-- the section used last.
 local TOOL_SECTIONS = { { "general", "GENERAL" }, { "testing", "TESTING" }, { "checks", "CHECKS" } }
 local tools = {} -- tools.select(name) shows one of the sections
 
@@ -845,6 +846,7 @@ local function buildTools(f)
     end
     function tools.select(name)
         selected = name
+        ST.db.settings.toolsSection = name -- the tab opens on the section used last, across reloads
         for _, s in ipairs(TOOL_SECTIONS) do
             local on = s[1] == name
             sections[s[1]].frame:SetShown(on)
@@ -855,7 +857,7 @@ local function buildTools(f)
     for i, s in ipairs(TOOL_SECTIONS) do
         sectionButtons[s[1]] = button(f, s[2], 4 + (i - 1) * 126, -4, 120, function() tools.select(s[1]) end, "tab")
     end
-    tools.select("general")
+    tools.select(sections[ST.db.settings.toolsSection] and ST.db.settings.toolsSection or "general")
 
     return function()
         paintChecks()
