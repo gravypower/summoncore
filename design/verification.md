@@ -24,6 +24,12 @@ prompt, the summoner's name) turn green on their own when they happen for real. 
 **What to send back:** `/sc check report` after each phase. It has the counts, every failure with its note, the errors the addon
 caught (`/sc errors`) and the trace. That is enough to fix most things without a second round.
 
+## Ready to share: the gate
+
+Before the group gets it (design/lenses.md, Playtesting revisited): **one tagged release for everyone**; `/sc check auto` all
+passing; the solo checks of Phase 1; the core of Phase 2 (`d-sync`, `d-ritual`, `d-accept`, `d-decline`, `d-cost`, `d-dice`) with
+one friend; and `/sc errors` empty after an evening. Then share it, and make no new rules until the first week's report.
+
 ## Phase 1: by yourself, ten minutes, any character
 
 1. `/sc check auto`. Eight checks: the game's calls exist (a-api), the prompt hooks installed (a-hooks), every map ID is a real map

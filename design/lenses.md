@@ -53,6 +53,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
 | Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A built |
 | Pleasure | Which kinds of fun does it give, to whom, and when? The week's triumph and the story's wonder arrive to each person alone | Answered; A and B built, at the weekly raid |
+| Playtesting, revisited | Every lens now ends in "watch in playtests", and nothing since 0.20 has run in the game. When is it ready to share? | A five-step gate; then a freeze until the first week's report |
 
 ## Entries
 
@@ -2220,6 +2221,41 @@ raid, when everyone is there.
 - Does the group watch a chapter together? Do they ask for it?
 - When do people hear a week's result: in game, or in voice first?
 
+### 2026-10-05 · Lens of Playtesting, revisited: when is it ready to share?
+
+**Why this lens, and not a new one.** Thirty-odd entries in, every lens ends the same way: "to watch in playtests". The lenses that
+fit a small addon for one group of friends are largely done (the book has about a hundred, many about studios, budgets, technology
+and large worlds), and each new one now finds smaller things than the last. Meanwhile almost everything since 0.19 has only run
+against stubs. The most useful lens now is the one that asks what the game needs before people play it, so this entry is a gate,
+not a design change.
+
+**Where it stands**
+- **Built and self-tested:** the race, the answers, the story, sync, and every change in this journal. The self-test (`/sc synctest`,
+  100 tests) passes in the stub except the window test, which needs the real UI.
+- **Confirmed in the game:** ritual detection, the addon messages, the solo tools (from earlier versions). Nothing from 0.20 on.
+- **The live checklist** (`/sc check`) has 41 checks: 9 run by themselves, 12 need one person, 20 need a friend.
+
+**Ready to share when** (in order; stop at the first failure and send `/sc check report`)
+
+| Step | Who, how long | What must pass | If it fails |
+|---|---|---|---|
+| 1. The build | Anyone, 2 minutes | Everyone installs the same tagged release (`v0.23.x` from the release workflow), not a copy of a working folder | Mixed versions misread answers (the version notice says so) |
+| 2. By itself | One person, 2 minutes | `/sc check auto`: all nine, above all **a-api**, **a-hooks**, **a-selftest** | Stop: the rest depends on them |
+| 3. By yourself | One person, 15 minutes | `s-popup`, `s-fit`, `s-decline`, `s-list`, `s-welcome` (fresh character), `s-login`, `s-sound` | A layout or wording fix; not a blocker unless the popup fails |
+| 4. With one friend | Two people (one as Zennit, or `/sc zenit`), an hour | **d-sync**, **d-ritual**, **d-accept**, **d-decline**, **d-cost**, **d-dice**, then d-writ, d-expire, d-away, d-watch | d-sync or d-ritual failing is a blocker; the rest each have a fallback (verification.md) |
+| 5. Quiet evening | Same two, an evening of normal play | `/sc errors` is empty afterwards | Paste the errors |
+
+**Then share it.** Everything else on the list (d-postcard, d-leave, d-lines, d-witness, d-firstbrief, d-silver, s-lastcall,
+d-overlap) happens in normal play and marks itself, or is a judgement the group makes; it belongs to the playtest, not before it.
+Phase 3 of `design/verification.md` and `design/playtest.md` take over from there: the Monday report and three questions.
+
+**A freeze.** From the moment it is shared, no new rules until the first week's report is read. Fixes for what the checks find, and
+wording, are fine. The open decisions that wait on data are already named: the helper bonus (Indirect Control, B), the head start
+(Elegance, Simplicity/Complexity), what an expired prompt does (`d-expire`), and whether five weekly wins is the right season.
+
+**Lenses left for after the first week**, when there is something to look at: Expected Value (the writ and the free decline,
+with real numbers), the Interest Curve again (how a real season felt), and Balance again (whatever the group found).
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -2262,3 +2298,4 @@ raid, when everyone is there.
 | 2026-10-05 | The far-flung places still missing a postcard are named in `/sc week` and at the Monday login; the helper bonus waits for the report's helper counts; the Index's weekly request is parked | Indirect Control | The place nudges (points, postcards) arrived at the cast, after the group had already travelled; a ritual needs two helpers anyway, so the bonus steers only the bookkeeping |
 | 2026-10-05 | A summons that comes while he has been AFK for five minutes or more is filed as away: free, not his free decline; the caster is warned at the cast; version 0.23.0 | Freedom | Stepping away from the keyboard in the group let summons count as accepted with nothing he could do; silence cannot be free in general (Balance), but an AFK that began before the ritual is not a dodge |
 | 2026-10-05 | A chapter can be shown to the whole group (each person asked "Watch now?"), and the raid leader is offered last week's chapter when the weekly raid gathers | Pleasure | The week's triumph and the story's wonder were the only pleasures delivered alone, at each person's login; the weekly raid is when everyone is there |
+| 2026-10-05 | Share it with the group once the five-step gate passes (one release for everyone, the automatic checks, the solo checks, an hour with one friend, a quiet evening); then no new rules until the first week's report | Playtesting | The lenses that fit are largely done and each finds less; everything since 0.20 has only run in stubs, and the next answers are in the group's play |
