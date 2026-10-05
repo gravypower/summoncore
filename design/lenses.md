@@ -52,6 +52,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
 | Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
 | Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A built |
+| Pleasure | Which kinds of fun does it give, to whom, and when? The week's triumph and the story's wonder arrive to each person alone | Answered; A and B built, at the weekly raid |
 
 ## Entries
 
@@ -2144,6 +2145,81 @@ being away instead of excusing it. Both wait partly on the open `d-expire` check
 - How often does a summons of him go unanswered, and was he away? (`/sc report` counts unanswered summons.)
 - Does anyone use `/afk` as a shield?
 
+### 2026-10-05 · Lens of Pleasure: the big moments arrive alone
+
+**The questions (paraphrased):** which pleasures does the game give, and which could it give but does not? The book lists kinds of
+pleasure to check against: anticipation, completion, delight in another's misfortune, gift giving, humour, possibility, pride,
+purification, surprise, thrill, triumph over adversity, wonder. For each: does the game deliver it, to whom, and *when*?
+
+**The pleasures, as built**
+
+| Pleasure | Where it comes from | Who gets it | When, and with whom |
+|---|---|---|---|
+| Delight in another's misfortune | Summoning Zennit somewhere unreasonable; the gags | The group | At the cast, together (they are in a party) |
+| Humour | The Index's voice, postcards, his out-of-office | Everyone | As it happens, together |
+| Thrill | The dice: his roll, the caster's roll back | Him and the caster | Live, together, with a real `/roll` the party sees |
+| Possibility | His answers; where to put a writ; his list | Both sides | At the moment of choice |
+| Surprise | The whim, "Darnassus again", the Index today | Everyone | Monday, or as it happens |
+| Completion | Postcards (10), badges, titles | Everyone | Over a season |
+| Pride | Titles, his kind titles, moments named in the keepsake | Named players | At the finale, and `/sc titles` |
+| Anticipation | The last call, the provisional result | Everyone | The week's final day |
+| **Triumph over adversity** | **A week won; a finale** | **The winning side** | **Monday, at each person's own login, alone** |
+| **Wonder** | **The story chapters, narrated and illustrated** | **Everyone** | **Alone, when each person types `/sc intro <key>`** |
+| Gift giving | Silver (to him), cards (from him) | Between him and a caster | When it happens |
+
+**Findings**
+1. **The two biggest moments are delivered to each person alone.** A week's result is said by each client at its first login after
+   the week closes (`checkLastWeek`): one friend reads "The group won the week" at 7am, another at 9pm, and by then it has been said
+   in voice chat. A won week also unlocks a chapter of the story: a narrated, illustrated scene, the most produced thing in the addon.
+   Each person plays it on their own with `/sc intro g2`, if they bother. The triumph and the wonder are the payoff of a whole week of
+   play, and they are the only pleasures the game gives in private.
+2. **Everything played live is shared, and that is the strength.** The summons, the dice, the answer lines, the postcards all
+   arrive in a party at the same moment. The design already knows how to make a moment shared; it just does not do it for the payoff.
+3. **The tools to share it exist.** Sync reaches every addon user in the group; `/sc week say` speaks to the party; the story viewer
+   can play any reached chapter. Nothing joins them up.
+4. **The rest is in good shape.** Thrill and possibility are live and two-sided; completion has its checklists now (Indirect
+   Control); pride is named and kept. Gift giving is narrow (silver and cards), but it is his money and his cards, and the friends give
+   each other the evening; nothing to add.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Watch it together**: when someone in the group plays a chapter (`/sc intro <key>`, or the Story tab), they can **play it for the group**: every addon client in the party gets a prompt ("Al would like to show the group chapter 3: The group wins. Watch now?") and those who accept start it at the same moment. A new message, only for chapters that are reached; nobody is made to watch | 1, 3 | A message, a small prompt, a button in the viewer and the Story tab; timing is "within a second or so", not frame-exact |
+| B | **Say the result in the group**: the week's result line at login ends with "(/sc week say tells the group)", and the first time a group forms after the week closes, the Index suggests it to one person. Speaking in party chat stays a person's choice | 1 | Wording; the "first group of the week" check |
+| C | **Leave it**: people tell each other in voice | | Nothing |
+
+**Recommendation:** A. It turns the most produced part of the addon, the narrated chapters, into the shared payoff of the week, at
+the moment the group chooses, and it is opt-in on both sides. B is a small nudge that can ride along. Both depend on addon messages
+the group already relies on; neither sends chat on its own.
+
+**Our answer (built: A and B, at the weekly raid).** Asked with the answer: the moment to watch it is the start of the group's weekly
+raid, when everyone is there.
+
+**Built**
+- **A, watch it together** (`Intro.PlayForGroup`, `Intro.OnWatch`, message `V`). `/sc intro <key> group` plays a reached chapter
+  and sends its key to the party or raid; every other addon client that has reached it asks "Al would like to show the group chapter
+  3: The group wins. Watch now?", and Watch plays it there. It starts when each person clicks, so it is a shared moment, not a
+  frame-exact one. Only chapters the season has reached can be shown (the sender's client checks; the admin may show any). A client
+  whose log has not caught up yet (a newcomer at their first raid) is asked too and can watch it: nobody has to have watched the
+  earlier chapters, or wait for their log to sync, to see this week's. (Asked while building: chapters are unlocked by the season's
+  race in the synced log, never by what a person has watched, so a newcomer can play any reached chapter as soon as the log arrives.)
+- **At the weekly raid** (`Intro.RaidGathered`). About ten seconds after this client joins a raid, once a week: the raid leader is
+  asked whether to play last week's chapter for the raid; everyone else with the addon is told `/sc intro <key> group`. With no
+  chapter last week, the leader is reminded that `/sc week say` tells the raid where the week stands.
+- **B, saying it in the group.** The week's result line at login now ends "The story: /sc intro g2 group shows it to the group, at
+  the raid perhaps."; the raid prompt mentions `/sc week say`. Speaking in chat stays a person's choice.
+- **Previously on** (asked while building: how does a newcomer catch up?). `/sc intro previously` plays every chapter this season
+  has reached, back to back, in the order the race reached them (`Intro.SeasonSoFar`, `Intro.PreviouslyOn`); each chapter plays to its
+  end and the next starts after a breath; closing the window stops it. The welcome mentions it. `/sc intro` (the setup and "The Index
+  today") stays the four-minute version.
+- **Live checks** `d-watch` and `s-previously`; self-tests of the message, who is asked (a newcomer still syncing included), last
+  week's chapter, the once-a-week raid offer, and the season's chapters in order.
+
+**To watch in playtests**
+- Does the group watch a chapter together? Do they ask for it?
+- When do people hear a week's result: in game, or in voice first?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -2185,3 +2261,4 @@ being away instead of excusing it. Both wait partly on the open `d-expire` check
 | 2026-10-05 | A summons of him on his week off is "disturbing his leave": the lines say the race is off but postcards and titles still count, and the Index counts who disturbed it most; the week off itself stays | Inner Contradiction | About a third of weeks are his weeks off, and the only line the caster read said "do not bother", though most of the game still ran |
 | 2026-10-05 | The far-flung places still missing a postcard are named in `/sc week` and at the Monday login; the helper bonus waits for the report's helper counts; the Index's weekly request is parked | Indirect Control | The place nudges (points, postcards) arrived at the cast, after the group had already travelled; a ritual needs two helpers anyway, so the bonus steers only the bookkeeping |
 | 2026-10-05 | A summons that comes while he has been AFK for five minutes or more is filed as away: free, not his free decline; the caster is warned at the cast; version 0.23.0 | Freedom | Stepping away from the keyboard in the group let summons count as accepted with nothing he could do; silence cannot be free in general (Balance), but an AFK that began before the ritual is not a dodge |
+| 2026-10-05 | A chapter can be shown to the whole group (each person asked "Watch now?"), and the raid leader is offered last week's chapter when the weekly raid gathers | Pleasure | The week's triumph and the story's wonder were the only pleasures delivered alone, at each person's login; the weekly raid is when everyone is there |

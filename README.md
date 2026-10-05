@@ -61,6 +61,8 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). Also the Tools tab's **The rules** |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
 | `/sc welcome` | The three lines a newcomer gets at their first login: taking part needs nothing new, who needs the addon, and where the rules and the story are |
+| `/sc intro previously` | **Previously on**: every chapter this season has reached, back to back, in the order the race reached them; closing the window stops it. For anyone catching up (the welcome mentions it). Nobody has to have watched anything to play any reached chapter |
+| `/sc intro <key> group` | **Show the group a chapter** (design/lenses.md, Pleasure): it plays here, and everyone else in the party or raid who runs the addon is asked "Watch now?" (a newcomer whose log is still syncing too: the sender's client checked the season has reached it). Chapters unlock by the season's race, not by what you have watched, so nobody has to watch the earlier ones first. When a raid gathers (once a week), its leader is offered last week's chapter, and everyone else is told the command |
 | `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
@@ -138,7 +140,7 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts), `X` (a request to reset), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
+alts), `X` (a request to reset), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from

@@ -164,6 +164,7 @@ end
 
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
 local onClose -- runs once when the viewer is next closed (Intro.Play's whenClosed)
+local queue = {} -- chapters still to play after this one ("previously on"); emptied when the viewer closes
 local pictureH, pictureW, buttonsWidth = 300, 533, 700
 local t, playing, shownScene, shownFrame, lastCue = 0, false, 0, -1, nil
 
@@ -616,11 +617,16 @@ local function build()
         if t >= endTime() then
             t = endTime() - 0.01
             setPlaying(false)
+            if #queue > 0 then -- "previously on": the next chapter, after a breath
+                local key = table.remove(queue, 1)
+                C_Timer.After(1.5, function() if frame:IsShown() then Intro.StartChapter(key) end end)
+            end
         end
         show(t)
     end))
     frame:SetScript("OnHide", function()
         setPlaying(false)
+        queue = {}
         local after = onClose
         onClose = nil
         -- One frame later: Esc hides every special frame in one pass, so a window reopened right here (the
@@ -655,6 +661,8 @@ function Intro.Check()
     end
 end
 
+local shownBy -- a chapter a group member is showing: their client checked it is reached, so a log still syncing does not block it
+
 function Intro.Toggle(arg)
     if arg == "check" then return Intro.Check() end
     if not frame then build() end
@@ -671,13 +679,48 @@ function Intro.Toggle(arg)
     si = math.max(1, math.min(#scenes, si)) -- #scenes is the Ledger scene
     -- a chapter can only be played once the season has reached it (the admin can play any)
     local chapterKey = Intro.KeyOf[scenes[si].chapter]
-    if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) then
+    if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) and shownBy ~= chapterKey then
         return ST.print("that chapter of the story has not been reached yet")
     end
     setChapter(scenes[si].chapter)
     shownScene = 0
     seek(starts[si])
     setPlaying(true)
+end
+
+-- Plays a chapter in the open viewer, from its first scene.
+function Intro.StartChapter(key)
+    local si = firstOf[CHAPTER_KEYS[key] or 0]
+    if not si then return end
+    setChapter(scenes[si].chapter)
+    shownScene = 0
+    seek(starts[si])
+    setPlaying(true)
+end
+
+-- This season's chapters so far, in the order the race reached them (the keys), for "previously on".
+function Intro.SeasonSoFar()
+    local season, keys = ST.Week.Season(), {}
+    for _, c in ipairs(season.chapters) do
+        if c.start >= (season.since or 0) and Intro.HasChapter(c.key) then keys[#keys + 1] = c.key end
+    end
+    return keys
+end
+
+-- "Previously on" (design/lenses.md, Pleasure): every chapter this season has reached, back to back, for anyone catching up.
+function Intro.PreviouslyOn()
+    local keys = Intro.SeasonSoFar()
+    if #keys == 0 then
+        return ST.print("Nothing has happened this season yet. |cffffd100/sc intro|r is the story so far.")
+    end
+    ST.print(string.format("Previously, at the Index: %d chapter%s of this season, back to back. Close the window to stop.",
+        #keys, #keys == 1 and "" or "s"))
+    Intro.Play(keys[1])
+    if frame and frame:IsShown() then
+        queue = {}
+        for i = 2, #keys do queue[#queue + 1] = keys[i] end
+    end
+    return keys
 end
 
 -- Starts a chapter (or scene) from the beginning even if the viewer is already open. whenClosed (optional)
@@ -700,7 +743,7 @@ function Intro.WelcomeLines(zennit)
         zennit and "Welcome to Summon Core. You do not have to do anything new: answer summons in the game's own prompt, as you always have, and the Index takes that as your answer."
             or "Welcome to Summon Core. You do not have to do anything new: cast and click portals as usual, and your summons of Zennit count for the group.",
         "Whoever casts the ritual needs Summon Core for the summons to count, and Zennit needs it for his answers to be his. Helpers are credited either way.",
-        "|cffffd100/sc rules|r is the race in a minute, |cffffd100/sc intro|r is the story (about four minutes), and |cffffd100/sc|r opens the window.",
+        "|cffffd100/sc rules|r is the race in a minute, |cffffd100/sc intro|r is the story (about four minutes), |cffffd100/sc intro previously|r catches up on this season, and |cffffd100/sc|r opens the window.",
     }
 end
 
@@ -712,4 +755,94 @@ hint:SetScript("OnEvent", ST.Safe("the welcome", function()
         for _, line in ipairs(Intro.WelcomeLines(ST.Gag.IsZennit())) do ST.print(line) end
         if ST.Check then ST.Check.Seen("s-welcome", "said at the first login") end
     end
+end))
+
+----------------------------------------------------------------------
+-- Watching together (design/lenses.md, Pleasure): a chapter is the week's payoff, so it can be played for the whole group at once.
+-- The one who starts it sends the chapter's key; every addon client in the party or raid that has reached it is asked "Watch now?".
+-- The raid leader is offered last week's chapter when the raid gathers, once a week.
+----------------------------------------------------------------------
+-- "chapter 5: The carbon", from the chapter's first scene.
+function Intro.ChapterTitle(key)
+    local ch = CHAPTER_KEYS[key]
+    local i = ch and firstOf[ch]
+    return i and string.format("chapter %d: %s", ch, scenes[i].label) or nil
+end
+
+-- A seam: how a client is asked (a popup in the game; the self-test answers itself).
+Intro.ask = function(text, onAccept)
+    StaticPopup_Show("SUMMONCORE_ASK", text, nil, onAccept)
+end
+StaticPopupDialogs["SUMMONCORE_ASK"] = {
+    text = "%s", button1 = "Watch", button2 = "Not now",
+    OnAccept = function(_, data) if data then data() end end,
+    timeout = 60, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+}
+
+-- Plays a reached chapter here and asks the rest of the group to watch it too.
+function Intro.PlayForGroup(key)
+    if not (key and key:match("^[zg]%d$") and Intro.HasChapter(key)) then return ST.print("no such chapter: " .. tostring(key)) end
+    if not Intro.Reached(key) and not ST.IsAdmin() then return ST.print("the season has not reached that chapter yet") end
+    if not (IsInGroup() or IsInRaid()) then return ST.print("you are not in a group: /sc intro " .. key .. " plays it for you") end
+    ST.Sync.SendWatch(key)
+    ST.print(string.format("The Index is showing the group %s.", Intro.ChapterTitle(key)))
+    Intro.Play(key)
+    return true
+end
+
+-- Someone in the group is showing a chapter: ask whether to watch. The sender's client checked the season has reached it, so a
+-- client whose log is still catching up (a newcomer at their first raid) is asked too, and can watch it.
+function Intro.OnWatch(sender, key)
+    if not Intro.HasChapter(key) then
+        ST.Trace(string.format("%s showed %s, which this version of the addon does not have", tostring(sender), tostring(key)))
+        return false
+    end
+    Intro.ask(string.format("%s would like to show the group %s. Watch now?", sender, Intro.ChapterTitle(key)),
+        function()
+            shownBy = key
+            Intro.Play(key)
+            shownBy = nil
+        end)
+    return true
+end
+ST.Sync.onWatch = Intro.OnWatch
+
+-- Last week's chapter, if its win unlocked one that is written: the key, else nil.
+function Intro.LastWeeksChapter()
+    local last = ST.Week.Start() - 7 * 86400
+    for _, c in ipairs(ST.Week.Season().chapters) do
+        if c.start == last and Intro.HasChapter(c.key) then return c.key end
+    end
+    return nil
+end
+
+-- When the raid gathers, once a week: the leader is asked whether to play last week's chapter for everyone, and every other addon
+-- user is told how. With no chapter, the leader is reminded that /sc week say tells the raid where the week stands (B).
+function Intro.RaidGathered()
+    local s = ST.db and ST.db.settings
+    if not s or not IsInRaid() then return end
+    local week = ST.Week.Start()
+    if s.raidOffer == week then return end
+    s.raidOffer = week
+    local key = Intro.LastWeeksChapter()
+    local leader = UnitIsGroupLeader and UnitIsGroupLeader("player")
+    if key and leader then
+        Intro.ask(string.format("The raid has gathered. Last week unlocked %s. Play it for the raid? (/sc week say tells them where the week stands.)",
+            Intro.ChapterTitle(key)), function() Intro.PlayForGroup(key) end)
+    elseif key then
+        ST.print(string.format("The raid has gathered. Last week unlocked %s: |cffffd100/sc intro %s group|r plays it for everyone.",
+            Intro.ChapterTitle(key), key))
+    elseif leader then
+        ST.print("The raid has gathered. |cffffd100/sc week say|r tells it where the week stands.")
+    end
+end
+
+local raidWatch = CreateFrame("Frame")
+raidWatch:RegisterEvent("GROUP_ROSTER_UPDATE")
+raidWatch:RegisterEvent("PLAYER_ENTERING_WORLD")
+local inRaid = false
+raidWatch:SetScript("OnEvent", ST.Safe("the raid watch", function()
+    local now = IsInRaid()
+    if now and not inRaid then C_Timer.After(10, function() ST.Guard("the raid gathering", Intro.RaidGathered) end) end -- let it fill
+    inRaid = now
 end))

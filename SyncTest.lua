@@ -2333,6 +2333,81 @@ add("away from his keyboard: an AFK that began well before the summons files it 
     end)
 end)
 
+add("watching together: a chapter shown to the group, asked of those who reached it, and offered when the raid gathers", function()
+    return newRules(function()
+        local a, I, W, out = newClient("Alpha"), ST.Intro, ST.Week, {}
+        local realAsk, realOnWatch, realPlay, realPrint = I.ask, Sync.onWatch, I.Play, ST.print
+        local realRaid, realLeader = IsInRaid, UnitIsGroupLeader
+        local asked, played, watched = {}, {}, {}
+        I.ask = function(text, onAccept) asked[#asked + 1] = text onAccept() end
+        I.Play = function(key) played[#played + 1] = key end
+        ST.print = function() end
+        local ok, err = pcall(with, a, function()
+            local this = W.Start()
+            local last = this - 7 * 86400
+            a.db.events.g = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 3600, points = 10, kind = "remote",
+                response = { result = "accepted", zroll = 0, sroll = 0, time = last + 3700 } }                  -- the group won last week
+            out.key = I.LastWeeksChapter()
+            Sync.onWatch = function(sender, key) watched[#watched + 1] = sender .. ":" .. key end
+            out.party = Sync.OnMessage("1~V~g1", "PARTY", "Bo")
+            out.guild = Sync.OnMessage("1~V~g1", "GUILD", "Bo")
+            out.bad = Sync.OnMessage("1~V~x9", "PARTY", "Bo")
+            Sync.onWatch = realOnWatch
+            out.reached = I.OnWatch("Bo", "g1")
+            out.notReached = I.OnWatch("Bo", "g2")                                             -- not reached here yet: Bo's client checked
+            out.unwritten = I.OnWatch("Bo", "g9")
+            rawset(_G, "IsInRaid", function() return true end)
+            rawset(_G, "UnitIsGroupLeader", function() return true end)
+            I.RaidGathered()
+            I.RaidGathered()                                                                   -- once a week
+        end)
+        I.ask, Sync.onWatch, I.Play, ST.print = realAsk, realOnWatch, realPlay, realPrint
+        rawset(_G, "IsInRaid", realRaid)
+        rawset(_G, "UnitIsGroupLeader", realLeader)
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.key == "g1" and out.party == "asked" and watched[1] == "Bo:g1" and out.guild == "rejected:channel"
+            and out.bad == "bad" and out.reached == true and out.notReached == true and out.unwritten == false
+            and asked[1] and asked[1]:find("Bo would like to show the group chapter 3", 1, true)
+            and asked[2] and asked[2]:find("chapter 5", 1, true)
+            and asked[3] and asked[3]:find("The raid has gathered. Last week unlocked chapter 3", 1, true) and asked[4] == nil
+            and played[1] == "g1" and played[2] == "g2"
+        return good, string.format("key %s; asked: %s", tostring(out.key), tostring(asked[3]))
+    end)
+end)
+
+add("previously on: this season's chapters in the order the race reached them, or a word when there are none", function()
+    return newRules(function()
+        local a, b, I, W, out = newClient("Alpha"), newClient("Beta"), ST.Intro, ST.Week, {}
+        local realPlay, realPrint = I.Play, ST.print
+        local played, printed = {}, {}
+        I.Play = function(key) played[#played + 1] = key end
+        ST.print = function(text) printed[#printed + 1] = text end
+        local ok, err = pcall(function()
+            with(a, function()
+                local this = W.Start()
+                local function week(n, key, result)                                         -- a summons in the week n weeks ago
+                    local at = this - n * 7 * 86400 + 3600
+                    a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = at, points = 10, kind = "remote",
+                        response = { result = result, zroll = 90, sroll = 10, time = at + 60 } }
+                end
+                week(4, "w1", "accepted")                                                   -- the group wins: g1
+                week(3, "w2", "won")                                                        -- Zennit wins: z1
+                week(2, "w3", "accepted")                                                   -- his week off: nobody wins
+                week(1, "w4", "accepted")                                                   -- the group wins: g2
+                out.keys = I.SeasonSoFar()
+                out.started = I.PreviouslyOn()
+            end)
+            with(b, function() out.none = I.PreviouslyOn() end)
+        end)
+        I.Play, ST.print = realPlay, realPrint
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = table.concat(out.keys, ",") == "g1,z1,g2" and played[1] == "g1" and out.started and #out.started == 3
+            and printed[1] and printed[1]:find("3 chapters of this season, back to back", 1, true)
+            and out.none == nil and printed[2] and printed[2]:find("Nothing has happened this season yet", 1, true)
+        return good, string.format("keys %s, played %s", table.concat(out.keys or {}, ","), tostring(played[1]))
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }
