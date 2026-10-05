@@ -40,8 +40,11 @@ end
 -- "excused" is a refusal of a destination on his secret list: no points for the summoner and no penalty for him.
 -- "declined" is what the game itself saw: he declined the summons in the game's own prompt. The summons did not happen, so no
 -- points for the summoner and none for him, unless the group played a writ on it (Week.Writ), which makes it a "refused".
-Store.RESULTS = { accepted = true, refused = true, excused = true, declined = true, owed = true, paid = true, won = true, lost = true }
-local NO_POINTS = { refused = true, excused = true, declined = true, won = true }
+-- "away" is filed by his own client when he was already away from his keyboard as the summons came (design/lenses.md, Freedom):
+-- it did not happen, it is free, and it does not use his free decline.
+Store.RESULTS = { accepted = true, refused = true, excused = true, declined = true, owed = true, paid = true, won = true, lost = true,
+    away = true }
+local NO_POINTS = { refused = true, excused = true, declined = true, won = true, away = true }
 
 function Store.Lands(ev)
     return not (ev.response and NO_POINTS[ev.response.result])

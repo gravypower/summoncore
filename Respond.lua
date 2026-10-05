@@ -77,6 +77,7 @@ function Respond.Describe(ev)
     if r.result == "refused" then return "declined (cost him " .. (ev.points or 0) .. ")" end
     if r.result == "excused" then return "declined (free: his list)" end
     if r.result == "declined" then return "declined (free)" end
+    if r.result == "away" then return "away from his keyboard (free)" end
     if r.result == "owed" then return "owes " .. Respond.AmountOf(r) .. " silver" end
     if r.result == "paid" then return (r.card and "paid by a punch: " or "paid ") .. Respond.AmountOf(r) .. " silver" end
     if r.result == "won" then return string.format("won the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
@@ -130,7 +131,7 @@ local function listNote(ev, resp)
 end
 
 -- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
-local DID = { accepted = "accepted", refused = "declined", excused = "declined", declined = "declined", owed = "put the silver for",
+local DID = { accepted = "accepted", refused = "declined", excused = "declined", declined = "declined", away = "missed", owed = "put the silver for",
     paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
 
 -- One line for the chat window when Zennit has answered.
@@ -160,6 +161,10 @@ function Respond.Announce(ev, resp)
             "%s declined the summon from %s, free: his one free decline this week. It did not happen, so no points for them and none for him.",
             "%s declined the summon from %s and spent his free decline. It did not happen: no points either way, and the Index has no comment.",
             "%s declined the summon from %s. It was his free decline, so it is worth nothing to either side." }, who, ev.caster)
+    end
+    if r == "away" then
+        return string.format("%s was away from his keyboard when the summons from %s came. The Index files it as away: it did not happen, and it costs nobody anything.",
+            who, ev.caster)
     end
     if r == "refused" and ev.writ and ST.Week.WritCounts(ev) then
         return string.format("%s declined the summon from %s, and the group had played a writ on it: it cost him. No points for them, and %s loses %d point%s toward his goal.",
@@ -851,6 +856,8 @@ local function answer(pick, kind)
     local resp, why
     if kind == "accept" then
         resp, why = Respond.Decide(pick.id, "accepted"), "d-accept"
+    elseif kind == "away" then
+        resp, why = Respond.Decide(pick.id, "away"), "d-away"
     else
         local result = Respond.NoResult(pick.ev) -- the same rule as the form's Decline
         if result == "refused" and ST.Week.WritCounts(pick.ev) then
@@ -903,6 +910,45 @@ end
 -- The game puts its prompt in front of him whoever cast the ritual, so his client can file the summons itself. Who cast it comes
 -- from the prompt, or from what a group member's client saw (Detector's witness), or is the only warlock in his group; the helpers
 -- only from a witness; the place from where he arrives when he accepts, else from a helper's note or the prompt's area name.
+
+----------------------------------------------------------------------
+-- Away from the keyboard (design/lenses.md, Freedom)
+----------------------------------------------------------------------
+-- If he was already AFK when a summons came, and had been for AWAY_MARGIN or more, his client files it as "away" a few seconds
+-- later (unless he answers first): it did not happen and costs nothing. Only an AFK that began well before the summons counts, so
+-- typing /afk as a ritual starts is not a dodge. The game's own idle AFK starts after five minutes, hence the margin.
+Respond.AWAY_MARGIN = 300
+local afkSince -- when his AFK flag was set, or nil
+Respond.isAFK = function() local ok, afk = pcall(UnitIsAFK, "player") return ok and afk and not ST.isSecret(afk) and true or false end
+
+-- Sets when he went AFK (his flag watcher does this; the self-test calls it).
+function Respond.SetAFK(since) afkSince = since end
+
+-- Was he away, long enough, at time `at`?
+function Respond.AwayAt(at)
+    return afkSince ~= nil and at - afkSince >= Respond.AWAY_MARGIN and Respond.isAFK()
+end
+
+-- A few seconds after the prompt: still away and nothing pressed, so the Index files the summons as away.
+function Respond.FileAway(summoner)
+    if not ST.Gag.IsZennit() or not promptAt or not Respond.AwayAt(promptAt) then return nil end
+    local now = time()
+    for _, r in ipairs(Respond.Pending()) do
+        local ev = r.ev
+        if not ev.response and not ev.fake and now - ev.time <= SUMMON_WINDOW and (not summoner or ST.baseName(ev.caster) == summoner) then
+            return answer(r, "away")
+        end
+    end
+    return Respond.FileWitnessed("away", summoner) -- a caster without the addon: filed from his side, as away
+end
+
+local afkFrame = CreateFrame("Frame")
+afkFrame:RegisterEvent("PLAYER_LOGIN")
+pcall(afkFrame.RegisterEvent, afkFrame, "PLAYER_FLAGS_CHANGED")
+afkFrame:SetScript("OnEvent", ST.Safe("the AFK watch", function(_, event, unit)
+    if event == "PLAYER_FLAGS_CHANGED" and unit ~= "player" then return end
+    if Respond.isAFK() then afkSince = afkSince or time() else afkSince = nil end
+end))
 
 -- Sets what the game's prompt said (the prompt's own handler does this; the self-test calls it).
 function Respond.SetPrompt(at, area) promptAt, promptArea = at, area end
@@ -1020,6 +1066,10 @@ promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function(_, event)
         lastSummoner = ok and ST.baseName(name) or nil
     end
     ST.Trace("CONFIRM_SUMMON: summoner=" .. (lastSummoner or "hidden"))
+    if Respond.AwayAt(promptAt) then -- he was already away: unless he answers in the next few seconds, the Index files it as away
+        local summoner = lastSummoner
+        Respond.later(function() ST.Guard("the summon prompt", Respond.FileAway, summoner) end)
+    end
     if ST.Check then ST.Check.Seen("d-name", lastSummoner and ("the game named " .. lastSummoner) or "the game hid the name") end
 end))
 

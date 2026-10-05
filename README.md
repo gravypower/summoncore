@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.22.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.23.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -265,7 +265,11 @@ Accept / Decline prompt in front of him at the same moment. If he accepts it, th
 If he declines it, the same rule as the form's Decline applies (`Respond.NoResult`, design/lenses.md, Simplicity/Complexity): the
 summons did not happen, so there are no points for the caster, and it is **free** at a place on his list or as his **first decline of
 the week** (`Week.RULES.declines`); otherwise it **costs him the summons' points** (a free decline with no limit would let him decide
-every week: design/lenses.md, Balance), and a decline of a summons the group played a **writ** on always costs (below). The lines say
+every week: design/lenses.md, Balance), and a decline of a summons the group played a **writ** on always costs (below).
+**Away from his keyboard** (design/lenses.md, Freedom). If he was already AFK when a summons came, and had been for five minutes or
+more (`Respond.AWAY_MARGIN`), his client files it as **away** a few seconds after the prompt, unless he answers first: it did not
+happen, it costs nobody anything, and it does not use his free decline. A `/afk` typed as the ritual starts does not count. The
+caster's briefing warns when he shows as AFK ("It may be worth waiting"). Older clients cannot read the new answer, hence 0.23.0. The lines say
 "declined (free)" or "declined (cost him 3)" whichever way he said it; the log keeps `declined`, `excused` and `refused` as before. His popup and his own "Week:" line say how many free declines he has left. A dice roll in flight is ended by what he presses in the game: that is his answer, and no die is spent. If nothing
 is seen, the form works as above, and an unanswered summons still counts as accepted. This reads the prompt's own buttons
 (`C_SummonInfo.ConfirmSummon` and `CancelSummon`, hooked, not changed), which has never been tried in the live client; where those

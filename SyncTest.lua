@@ -2287,6 +2287,52 @@ add("his week off: summons of him disturb his leave, the briefing says what stil
     end)
 end)
 
+add("away from his keyboard: an AFK that began well before the summons files it as away, free; a fresh /afk does not", function()
+    return newRules(function()
+        local a, R, S, G, W, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, ST.Week, {}
+        local realMe, realIs, realAFK, realLater, realPrint = S.me, G.IsZennit, R.isAFK, R.later, ST.print
+        S.me = function() return "Zennit" end
+        G.IsZennit = function() return true end
+        R.isAFK = function() return true end
+        R.later = function(fn) fn() end
+        ST.print = function() end
+        local ok, err = pcall(with, a, function()
+            local now = time()
+            local function put(key, age)
+                a.db.events[key] = { caster = "Al", target = "Zennit", assistants = {}, time = now - age, points = 3, kind = "zone" }
+                return a.db.events[key]
+            end
+            put("fresh", 2)
+            R.SetPrompt(now - 2, "Westfall")
+            R.SetAFK(now - 60)                                                              -- /afk a minute ago: not honoured
+            out.fresh = R.FileAway("Al")
+            R.SetAFK(now - 600)                                                             -- away ten minutes: honoured
+            out.away = R.FileAway("Al")
+            local ev = a.db.events.fresh
+            out.lands, out.goal = S.Lands(ev), S.Goal(ev)
+            out.free = W.DeclinesLeft(W.Start(now))
+            out.describe = R.Describe(ev)
+            out.announce = R.Announce(ev, ev.response)
+            local _, back = Sync.Decode(Sync.Encode("Al-" .. ev.time, ev))
+            out.wire = back and back.response and back.response.result
+            out.brief = W.Briefing("Zennit", 1436, "Sentinel Hill", false, true)
+            R.isAFK = function() return false end                                           -- he came back before the check
+            put("back", 1)
+            out.back = R.FileAway("Al")
+        end)
+        S.me, G.IsZennit, R.isAFK, R.later, ST.print = realMe, realIs, realAFK, realLater, realPrint
+        R.SetPrompt(nil, nil)
+        R.SetAFK(nil)
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.fresh == nil and out.away and out.away.result == "away" and not out.lands and out.goal == 0
+            and out.free == W.RULES.declines and out.describe == "away from his keyboard (free)"
+            and out.announce:find("was away from his keyboard", 1, true) and out.wire == "away"
+            and out.brief:find("Zennit is away from his keyboard", 1, true) and out.back == nil
+        return good, string.format("fresh %s, away %s, free declines %s, wire %s", tostring(out.fresh),
+            tostring(out.away and out.away.result), tostring(out.free), tostring(out.wire))
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }
