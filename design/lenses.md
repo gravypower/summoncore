@@ -39,6 +39,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
+| The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -1342,6 +1343,58 @@ trade stays a thing friends do for each other.
 - Does anyone run `/sc week` before a cast, or ask in chat where the week stands?
 - Does `/sc week say` actually send? If the game blocks it, it says so in chat and the line is still on `/sc week`.
 - Nothing here has run in the live client.
+
+### 2026-10-05 · Lens of the Toy: is it nice to play with, before the goals?
+
+**The questions (paraphrased):** if you took away the score, the week and the story, would summoning someone, and answering a summons,
+still be pleasant to do? Does it respond when you touch it? Is there something worth doing for its own sake?
+
+**What the toy is.** The goals are the weeks and the season; the *toy* is one cycle: cast the ritual, see what it is worth, hear it,
+watch Zennit's answer arrive, read what it did. Most of that is a recorded line, a dice popup and chat text.
+
+**What one summons costs the reader, in chat** (measured on the stub, from the real functions, in a normal mid-season week)
+
+| Moment | Where | Characters |
+|---|---|---|
+| The briefing as the ritual starts | the caster only | about 335 (about 400 in a week with a whim and a last call) |
+| "Summon logged: Zennit in Sentinel Hill (+3, zone)" | the caster | about 50 |
+| "Week: the group leads by 1, 1 of 10 filed, 2 dice left." | the caster, straight after | about 80 |
+| His answer ("Zennit accepted the summon from Alpha. +3 points.") | everyone | about 75 |
+| "Week: ..." again after the answer | everyone | about 80 |
+| Sometimes: the last-die line, a badge, a list note | varies | 60 to 120 |
+
+That is about 600 characters, or six wrapped chat lines (at an assumed 110 characters a line), for one summons, on the caster's client;
+the others see about three lines. A busy week of ten summons is sixty lines on the caster's chat, and the group plays in raids and
+dungeons where chat is already scrolling.
+
+**Findings**
+1. **The toy is the ritual, the popup and the answer; the chat is the bookkeeping.** The group hates bookkeeping. The recorded lines
+   (his refusal, his dice win, the ritual) and the dice popup are the parts that respond when you touch them; the chat is the part that
+   was added to make the rules visible, and it is now most of the text.
+2. **The longest line arrives at the worst moment.** The briefing prints as the cast begins, when the caster is channelling and
+   watching the helpers, and it is the longest line of the cycle. Most of it is the same every time: "each helper adds +5 to your roll
+   if he suggests dice (two helpers at most)" is true in week one and still printed on the tenth summons of the week.
+3. **Two Week lines per summons, nearly the same.** One prints straight after "Summon logged", the next after his answer. The first
+   repeats the standing the briefing gave a few seconds earlier; only the second changes (the answer moves the points).
+4. **What works as a toy:** the answer lines are pooled and in the Index's voice; the popup is a real choice; the clips play on the
+   best moments. Nothing here needs to be cut, only trimmed.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A short briefing after the first of the week**: the first summons of the week keeps the full text (with the helper rule and the whim), later ones say only what changed: "Summon 4 of 10, Zennit leads by 2, 2 dice left. From here (a zone) worth 3." | 1, 2 | A second form of `Week.Briefing`; its tests |
+| B | **Drop the Week line straight after "Summon logged"** when a briefing has just been printed (the answer's line is the one that moves) | 3 | A few lines in `Detector.lua`; the "Week:" test that reads it |
+| C | **A chat setting**, `/sc chat short`: only "Summon logged", his answer and the standing after it; the rest on `/sc rules` and `/sc week`. Off by default | 1 | A setting, the print sites, tests |
+| D | **Leave it**: the chat is the only place the rules show up, and a new group needs it | | Nothing |
+
+**To decide before building**
+- Is the chat too much, or does the group read it? (A playtest question; the report cannot see it.)
+
+**To watch in playtests**
+- Does anyone mute or move the addon's chat, or stop reading it? Which lines do they still quote?
+- Does the caster read the briefing at all while the ritual is channelling?
+- The measurements above are from stubs; the wrapped-line count depends on the player's chat window.
 
 ## Decisions
 
