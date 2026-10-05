@@ -92,21 +92,49 @@ local function applyFlags(resp, digit)
     return resp
 end
 
--- Zennit's answer to a summon of him travels with the record as "result:zroll:sroll:time[:flags]" (empty if none).
+-- The silver a demand asks for is a whole number of silver, 1 to MAX_SILVER.
+local MAX_SILVER = 100000
+
+-- Flags and the silver asked for, as the optional tail of an answer: ":flags[:silver]" ("" for neither). The flags digit is
+-- always written when there is a silver amount.
+local function respTail(r)
+    local flags = respFlags(r)
+    if r.amount then return ":" .. (flags ~= "" and flags or "0") .. ":" .. r.amount end
+    return flags ~= "" and (":" .. flags) or ""
+end
+
+-- The tail back into flags and an amount. Returns false if it is malformed.
+local function parseTail(tail)
+    if tail == "" then return "", nil end
+    local flags, amount = tail:match("^:(%d)$"), nil
+    if not flags then
+        flags, amount = tail:match("^:(%d):(%d+)$")
+        if not flags then return false end
+        amount = tonumber(amount)
+        if amount < 1 or amount > MAX_SILVER then return false end
+    end
+    return flags, amount
+end
+
+-- Zennit's answer to a summon of him travels with the record as "result:zroll:sroll:time[:flags[:silver]]" (empty if none).
 local function respString(r)
     if not r then return "" end
-    local flags = respFlags(r)
-    return string.format("%s:%d:%d:%d%s", r.result, r.zroll or 0, r.sroll or 0, r.time, flags ~= "" and (":" .. flags) or "")
+    return string.format("%s:%d:%d:%d%s", r.result, r.zroll or 0, r.sroll or 0, r.time, respTail(r))
 end
 
 -- nil for none, false for a malformed answer, otherwise the answer.
 local function parseResp(str)
     if str == "" then return nil end
-    local result, z, r, t, listed = str:match("^(%a+):(%d+):(%d+):(%d+):?(%d?)$")
+    local result, z, r, t, tail = str:match("^(%a+):(%d+):(%d+):(%d+)(.*)$")
     if not result or not ST.Store.RESULTS[result] then return false end
     z, r, t = tonumber(z), tonumber(r), tonumber(t)
     if z > 100 or r > 100 or t <= 0 or t > time() + 86400 then return false end
-    return applyFlags({ result = result, zroll = z, sroll = r, time = t }, listed)
+    local flags, amount = parseTail(tail)
+    if flags == false then return false end
+    if amount and result ~= "owed" and result ~= "paid" then return false end
+    local resp = applyFlags({ result = result, zroll = z, sroll = r, time = t }, flags)
+    resp.amount = amount
+    return resp
 end
 
 -- The later of two answers (an answer can change: owes 50 silver, then paid).
@@ -260,9 +288,9 @@ end
 
 -- Zennit tells everyone how he dealt with a summon of him.
 function Sync.SendResponse(id, resp)
-    local flags = respFlags(resp)
+    -- the same optional tail as the record's answer, with "|" for ":"
     local body = string.format("%s|%s|%d|%d|%d%s", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time,
-        flags ~= "" and ("|" .. flags) or "")
+        (respTail(resp):gsub(":", "|")))
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
 end
 
@@ -431,14 +459,17 @@ function Sync.OnMessage(text, channel, sender)
         return result
     elseif typ == "Z" then
         -- Zennit's answer: only he can answer for himself
-        local rid, result, z, r, rt, listed = body:match("^([^|]+)|(%a+)|(%d+)|(%d+)|(%d+)|?(%d?)$")
+        local rid, result, z, r, rt, tail = body:match("^([^|]+)|(%a+)|(%d+)|(%d+)|(%d+)(.*)$")
         if not rid then return "bad" end
+        local flags, amount = parseTail((tail:gsub("|", ":")))
+        if flags == false or (amount and result ~= "owed" and result ~= "paid") then return "bad" end
         rid = unesc(rid)
         local ev = ST.Store.Get(rid)
         if not ev then return "rejected:unknown" end
         if sender ~= ev.target then return "rejected:sender" end
         if not ST.Store.RESULTS[result] then return "rejected:result" end
-        local resp = applyFlags({ result = result, zroll = tonumber(z), sroll = tonumber(r), time = tonumber(rt) }, listed)
+        local resp = applyFlags({ result = result, zroll = tonumber(z), sroll = tonumber(r), time = tonumber(rt) }, flags)
+        resp.amount = amount
         if resp.zroll > 100 or resp.sroll > 100 or resp.time > time() + 86400 then return "rejected:values" end
         if laterResponse(ev.response, resp) ~= resp then return "kept" end
         local before = ev.response

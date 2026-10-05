@@ -101,13 +101,13 @@ local function base(name)
     return ST.baseName(name) or name or ""
 end
 
--- Zennit's summons that this person owes the silver for, oldest first: { { id, ev } }.
+-- Zennit's summons that this person owes the silver for, oldest first: { { id, ev, amount } }.
 function Silver.OwedBy(payer)
     local list = {}
     for id, ev in pairs(ST.db.events) do
         if not ev.fake and ev.response and ev.response.result == "owed" and ST.Week.IsZennit(ev.target)
             and base(ev.caster) == base(payer) then
-            list[#list + 1] = { id = id, ev = ev }
+            list[#list + 1] = { id = id, ev = ev, amount = ST.Respond.AmountOf(ev.response) }
         end
     end
     table.sort(list, function(a, b)
@@ -117,15 +117,17 @@ function Silver.OwedBy(payer)
     return list
 end
 
--- What `copper` paid by `payer` would settle: { silver, owed = { ids of the oldest summons it covers }, card = an offer or nil,
--- left = the silver nothing claims }. `owed` is Silver.OwedBy(payer), `offers` is Cards.Offers().
-function Silver.Match(copper, owed, offers, price)
+-- What `copper` paid by `payer` would settle: { silver, owed = { ids of the oldest summons it covers }, owedSilver, card = an
+-- offer or nil, left = the silver nothing claims }. Each owed summons is settled in full or not at all, oldest first.
+-- `owed` is Silver.OwedBy(payer), `offers` is Cards.Offers().
+function Silver.Match(copper, owed, offers)
     local silver = math.floor(copper / 100)
-    local out = { silver = silver, owed = {}, left = silver }
+    local out = { silver = silver, owed = {}, owedSilver = 0, left = silver }
     for _, item in ipairs(owed) do
-        if out.left < price then break end
+        if out.left < item.amount then break end
         out.owed[#out.owed + 1] = item.id
-        out.left = out.left - price
+        out.owedSilver = out.owedSilver + item.amount
+        out.left = out.left - item.amount
     end
     local best
     for _, offer in ipairs(offers) do
@@ -156,7 +158,7 @@ function Silver.Paid(payer, copper, via)
     local key = base(payer) .. ":" .. copper .. ":" .. math.floor(time() / 60)
     if seen[key] then return end -- one payment, however many events it raised
     seen[key] = true
-    local m = Silver.Match(copper, Silver.OwedBy(payer), ST.Cards.Offers(), ST.Respond.SILVER)
+    local m = Silver.Match(copper, Silver.OwedBy(payer), ST.Cards.Offers())
     local who = base(payer)
     if #m.owed == 0 and not m.card then
         return ST.print(string.format("%s sent you %s by %s. It does not settle anything owed, and no card costs that much, so the Index has not touched the books.",
@@ -164,7 +166,7 @@ function Silver.Paid(payer, copper, via)
     end
     local parts = {}
     if #m.owed > 0 then
-        parts[#parts + 1] = string.format("mark %d of %s's summons paid (%d silver each)", #m.owed, who, ST.Respond.SILVER)
+        parts[#parts + 1] = string.format("mark %d of %s's summons paid (%d silver)", #m.owed, who, m.owedSilver)
     end
     if m.card then
         parts[#parts + 1] = string.format("sell %s a card of %d punches (%d silver)", who, m.card.punches, m.card.silver)

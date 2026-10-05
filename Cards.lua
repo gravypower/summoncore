@@ -83,6 +83,17 @@ function Cards.PunchesLeft(card)
     return 0
 end
 
+-- What one punch is worth for this holder, in silver: the price of their oldest card with a punch left, per punch.
+function Cards.UnitPrice(holder)
+    local b = Cards.Balances()[base(holder)]
+    if b then
+        for _, entry in ipairs(b.cards) do
+            if entry.left > 0 then return math.max(1, math.floor(entry.card.silver / entry.card.punches + 0.5)) end
+        end
+    end
+    return ST.Respond.SILVER
+end
+
 -- What Zennit sells: a list of { punches, silver }; his own, or one default offer.
 function Cards.Offers()
     local s = ST.db.settings

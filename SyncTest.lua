@@ -544,8 +544,8 @@ add("points only count for summons that land", function()
         tally = ST.Store.Tallies().Alpha
         stats = ST.Store.Stats("Alpha")
     end)
-    -- accepted, paid, lost and the unanswered one land: 4 summons x 3 points
-    return tally.cast == 7 and tally.points == 12 and stats.cast == 4,
+    -- accepted, owed (the silver goes on a tab), paid, lost and the unanswered one land: 5 summons x 3 points
+    return tally.cast == 7 and tally.points == 15 and stats.cast == 5,
         string.format("cast=%d points=%d landed=%d", tally.cast, tally.points, stats.cast)
 end)
 
@@ -1398,8 +1398,8 @@ add("summon cards: sold by Zennit, synced to everyone, punched by his demand for
                 response = { result = "paid", zroll = 0, sroll = 0, time = this + 5, card = true, listed = true } }))
             out.flag = ev and ev.response and ev.response.card and ev.response.listed and not ev.response.closes
         end)
-        local m = ST.Silver.Match(30000, { { id = "s1" }, { id = "s2" } }, { { punches = 5, silver = 200 } }, 50)
-        local m2 = ST.Silver.Match(1200, {}, { { punches = 5, silver = 200 } }, 50)
+        local m = ST.Silver.Match(30000, { { id = "s1", amount = 50 }, { id = "s2", amount = 50 } }, { { punches = 5, silver = 200 } })
+        local m2 = ST.Silver.Match(1200, {}, { { punches = 5, silver = 200 } })
         local ok = out.card and out.card.punches == 2 and out.noOne == "only Zennit can sell cards"
             and out.fromZennit == "card" and out.fromAnyone == "rejected:sender" and out.again == "kept" and out.bad == "rejected:values"
             and out.cards == 1 and out.left == 2 and out.after == 0 and out.lines:find("0 of 2 punches left", 1, true)
@@ -1409,6 +1409,37 @@ add("summon cards: sold by Zennit, synced to everyone, punched by his demand for
         return ok, string.format("sold %s, synced %s/%s, left %s then %s; 300s pays 2 owed + a card: %s", tostring(out.card ~= nil),
             tostring(out.fromZennit), tostring(out.fromAnyone), tostring(out.left), tostring(out.after), tostring(m.card ~= nil))
     end)
+end)
+
+add("silver is a tab, not a veto: the summons counts, Zennit names the price, and the amount travels with the answer", function()
+    local R, Sy = ST.Respond, ST.Sync
+    local a = newClient("Alpha")
+    local out = {}
+    local id = cast(a, 960, true, { target = "Zennit", assistants = {} })
+    with(a, function()
+        local ev = a.db.events[id]
+        -- he asks 200 silver: the summons still lands, and the tab is 200
+        ev.response = { result = "owed", zroll = 0, sroll = 0, time = BASE + 970, amount = 200 }
+        out.lands = ST.Store.Lands(ev)
+        out.describe = R.Describe(ev)
+        out.amount = R.AmountOf(ev.response)
+        out.default = R.AmountOf({ result = "owed" })
+        out.line = R.Announce(ev, ev.response)
+        local rid, back = Sy.Decode(Sy.Encode(id, ev))
+        out.wire = back and back.response and back.response.amount == 200 and back.response.result == "owed"
+        -- an amount on an answer that asks for none is refused
+        local rec = Sy.Encode(id, ev):gsub("owed:0:0:" .. (BASE + 970) .. ":0:200", "accepted:0:0:" .. (BASE + 970) .. ":0:200")
+        out.refused = select(2, Sy.Decode(rec))
+        local rec2 = Sy.Encode(id, ev):gsub(":0:200$", ":0:0")
+        out.zero = select(2, Sy.Decode(rec2))
+    end)
+    local parse = R.ParseSilver
+    local ok = out.lands and out.describe == "owes 200 silver" and out.amount == 200 and out.default == 50
+        and out.line:find("200 silver", 1, true) and out.line:find("The summons counts", 1, true) and out.wire
+        and out.refused == "response" and out.zero == "response"
+        and parse("50") == 50 and parse("2g") == 200 and parse("1g 20s") == 120 and parse("30s") == 30 and parse("0") == nil
+        and parse("abc") == nil and parse("100001") == nil
+    return ok, string.format("lands %s, %s, wire %s, parse 2g=%s", tostring(out.lands), tostring(out.describe), tostring(out.wire), tostring(parse("2g")))
 end)
 
 add("the last die: said once, for everyone, when his third die is spent", function()

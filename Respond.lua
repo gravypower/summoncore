@@ -15,7 +15,28 @@ ST.Respond = Respond
 local T = ST.Theme
 
 local SILVER = 50
-Respond.SILVER = SILVER
+Respond.SILVER = SILVER   -- the usual price: what a demand asks when he does not name another
+Respond.MAX_SILVER = 100000
+
+-- The silver an answer asked for (or was paid): what he named, else the usual price.
+function Respond.AmountOf(resp)
+    return resp and resp.amount or SILVER
+end
+
+-- "50", "2g", "1g 20s" or "20s" as a whole number of silver (100 silver to the gold), or nil.
+function Respond.ParseSilver(text)
+    text = (tostring(text or "")):lower():gsub("%s+", "")
+    local gold, silver = text:match("^(%d+)g(%d*)s?$")
+    local n
+    if gold then
+        n = tonumber(gold) * 100 + (tonumber(silver) or 0)
+    else
+        local only = text:match("^(%d+)s?$")
+        n = only and tonumber(only)
+    end
+    if not n or n < 1 or n > Respond.MAX_SILVER then return nil end
+    return n
+end
 local WAIT = 90         -- seconds to wait for the summoner to roll back
 local ROLL_WINDOW = 15  -- seconds after pressing Roll in which a /roll result is accepted
 
@@ -55,8 +76,8 @@ function Respond.Describe(ev)
     if r.result == "accepted" then return "accepted" end
     if r.result == "refused" then return "refused (-" .. (ev.points or 0) .. ")" end
     if r.result == "excused" then return "refused (on his list)" end
-    if r.result == "owed" then return "owes " .. SILVER .. " silver" end
-    if r.result == "paid" then return "paid " .. SILVER .. " silver" end
+    if r.result == "owed" then return "owes " .. Respond.AmountOf(r) .. " silver" end
+    if r.result == "paid" then return (r.card and "paid by a punch: " or "paid ") .. Respond.AmountOf(r) .. " silver" end
     if r.result == "won" then return string.format("won the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
     if r.result == "lost" then return string.format("lost the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
 end
@@ -108,7 +129,7 @@ local function listNote(ev, resp)
 end
 
 -- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
-local DID = { accepted = "accepted", refused = "refused", excused = "refused", owed = "demanded 50 silver for",
+local DID = { accepted = "accepted", refused = "refused", excused = "refused", owed = "put the silver for",
     paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
 
 -- One line for the chat window when Zennit has answered.
@@ -146,21 +167,24 @@ function Respond.Announce(ev, resp)
             "%s refused the summon from %s at no cost to himself: the destination is on his list. No points.%s" },
             who, ev.caster, listNote(ev, resp))
     end
+    local silver = Respond.AmountOf(resp)
     if r == "owed" then
+        -- the summons counts at once; the silver goes on the caster's tab, so asking for it can never be a way to refuse
         return say("answer.owed", {
-            "%s demands %d silver, in cash, with no receipt. The points land when he says it was paid.",
-            "%s asks for %d silver, in cash, and would prefer no receipt. The points land when he says it was paid.",
-            "%s has named his price: %d silver, in cash, no receipt. The points land when he says it was paid." }, who, SILVER)
+            "%s asks %d silver of %s, in cash, with no receipt. The summons counts: +%d point%s.%s The silver goes on the tab.",
+            "%s would like %d silver from %s, in cash, and would prefer no receipt. The summons counts: +%d point%s.%s It goes on the tab.",
+            "%s has named his price: %d silver from %s, in cash, no receipt. The summons counts: +%d point%s.%s It goes on the tab." },
+            who, silver, ev.caster, pts, plural(pts), bonus)
     end
     if r == "paid" and resp.card then
-        return string.format("%s's card pays the %d silver: a punch used, %d left. +%d point%s.%s", ev.caster, SILVER,
+        return string.format("%s's card pays the %d silver: a punch used, %d left. +%d point%s.%s", ev.caster, silver,
             ST.Cards.Left(ev.caster), pts, plural(pts), bonus)
     end
     if r == "paid" then
         return say("answer.paid", {
             "%s says the %d silver was paid. +%d point%s.%s",
             "%s confirms the %d silver arrived. +%d point%s.%s",
-            "%s has been paid the %d silver, and says so. +%d point%s.%s" }, who, SILVER, pts, plural(pts), bonus)
+            "%s has been paid the %d silver, and says so. +%d point%s.%s" }, who, silver, pts, plural(pts), bonus)
     end
     if r == "won" then
         return say("answer.won", {
@@ -235,12 +259,14 @@ end
 -- Returns the number of summons and the silver, for the summons OF this character (`role` "target": what he is owed) or
 -- cast BY this character ("caster": what they owe).
 function Respond.Owed(role)
-    local me, n = ST.Store.me(), 0
+    local me, n, silver = ST.Store.me(), 0, 0
     for _, ev in pairs(ST.db.events) do
         local who = role == "caster" and ev.caster or ev.target
-        if not ev.fake and who == me and ev.response and ev.response.result == "owed" then n = n + 1 end
+        if not ev.fake and who == me and ev.response and ev.response.result == "owed" then
+            n, silver = n + 1, silver + Respond.AmountOf(ev.response)
+        end
     end
-    return n, n * SILVER
+    return n, silver
 end
 
 -- How many summons of this character have no answer at all (not counting those that only owe the silver).
@@ -286,20 +312,71 @@ local function printWeek(ev, you)
     if last then ST.print(last) end
 end
 
+-- He names the price: a small box asks how much silver, and his last answer is the default. A holder of a card pays with a
+-- punch instead, with no question asked.
+StaticPopupDialogs["SUMMONCORE_ASK_SILVER"] = {
+    text = "%s",
+    button1 = "Ask",
+    button2 = "Cancel",
+    hasEditBox = true,
+    maxLetters = 12,
+    OnShow = function(self, data)
+        local box = self.editBox or self.EditBox
+        if box then
+            box:SetText(tostring(data and data.default or SILVER))
+            box:HighlightText()
+        end
+    end,
+    OnAccept = function(self, data)
+        local box = self.editBox or self.EditBox
+        local n = Respond.ParseSilver(box and box:GetText())
+        if n and data then data.go(n) else ST.print("That is not an amount of silver (try 50, 2g or 1g 20s).") end
+    end,
+    EditBoxOnEnterPressed = function(self)
+        local parent = self:GetParent()
+        local n = Respond.ParseSilver(self:GetText())
+        local data = parent.data
+        parent:Hide()
+        if n and data then data.go(n) else ST.print("That is not an amount of silver (try 50, 2g or 1g 20s).") end
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+function Respond.AskSilver(id, ev)
+    if ST.Cards.Left(ev.caster) > 0 then return Respond.Decide(id, "owed") end -- a card pays: a punch, no question
+    local s = ST.db.settings
+    StaticPopup_Show("SUMMONCORE_ASK_SILVER", string.format("How much silver do you ask of %s, in cash, with no receipt? (50, 2g, 1g 20s.) " ..
+        "The summons counts either way: it goes on their tab.", ev.caster), nil, {
+        default = s and s.silverAsk or SILVER,
+        go = function(n)
+            if s then s.silverAsk = n end
+            Respond.Decide(id, "owed", nil, nil, n)
+        end })
+end
+
 -- Records Zennit's decision on this client and tells everyone (test summons stay local).
-function Respond.Decide(id, result, zroll, sroll)
+function Respond.Decide(id, result, zroll, sroll, amount)
     local ev = ST.Store.Get(id)
     if not ev or not ST.Store.RESULTS[result] then return nil end
     -- that week is over; answers no longer change it, except the silver being paid, which does not move a decided week
     if ST.Week.EventClosed(ev) and not (result == "paid" and ev.response and ev.response.result == "owed") then return nil end
     -- the holder of a card pays the silver with a punch, there and then
     local card
-    if result == "owed" and not ev.fake and ST.Cards.Left(ev.caster) > 0 then result, card = "paid", true end
+    if result == "owed" and not ev.fake and ST.Cards.Left(ev.caster) > 0 then
+        result, card, amount = "paid", true, ST.Cards.UnitPrice(ev.caster)
+    end
+    -- the silver: what he named (or the usual price) for a demand; kept when he later marks it paid
+    if result == "owed" then amount = math.max(1, math.min(Respond.MAX_SILVER, math.floor(amount or SILVER)))
+    elseif result == "paid" then amount = amount or (ev.response and ev.response.amount) or nil
+    else amount = nil end
     -- a new answer is always later than the one it replaces, or other clients keep the old one (sync takes the later)
     local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0,
         time = math.max(time(), ev.response and ev.response.time + 1 or 0),
         listed = Respond.OnList(ev) or nil, closes = ev.response and ev.response.closes or nil,
-        card = card or (ev.response and ev.response.card) or nil }
+        card = card or (ev.response and ev.response.card) or nil, amount = amount }
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
@@ -517,8 +594,8 @@ local function render(s, stage, extra)
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
             { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },
-            { ST.Cards.Left(ev.caster) > 0 and string.format("Take a punch (%d silver; card: %d left)", SILVER, ST.Cards.Left(ev.caster))
-                or ("Demand " .. SILVER .. " silver, in cash, no receipt"), function() Respond.Decide(id, "owed") end },
+            { ST.Cards.Left(ev.caster) > 0 and string.format("Take a punch (card: %d left)", ST.Cards.Left(ev.caster))
+                or "Ask for silver (you name it), no receipt", function() Respond.AskSilver(id, ev) end },
             dice == 0 and { "No dice left this week", function() end, true }
                 or { "Suggest dice (1-100)", function() render(s, "roll") end },
         })

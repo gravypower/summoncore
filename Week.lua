@@ -180,11 +180,13 @@ end
 
 -- Summons of Zennit in the week starting at `start` whose silver he has asked for and not yet had. Returns how many, and the silver.
 function Week.Owed(start)
-    local n = 0
+    local n, silver = 0, 0
     for _, s in ipairs(summonsOfZennit(start)) do
-        if s.ev.response and s.ev.response.result == "owed" then n = n + 1 end
+        if s.ev.response and s.ev.response.result == "owed" then
+            n, silver = n + 1, silver + ST.Respond.AmountOf(s.ev.response)
+        end
     end
-    return n, n * ST.Respond.SILVER
+    return n, silver
 end
 
 -- Waiting for his answer for longer than RULES.overdue.

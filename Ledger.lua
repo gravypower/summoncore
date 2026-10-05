@@ -82,8 +82,9 @@ function Ledger.Collect(events, from, to, ctx)
         for _, helper in ipairs(ev.assistants or {}) do d.present[ctx.name(helper)] = true end
         local r = ev.response
         local result = r and r.result
-        if result == "paid" then d.silverPaid = d.silverPaid + ctx.silver end
-        if result == "owed" then d.silverOwed = d.silverOwed + ctx.silver end
+        local amount = (r and r.amount) or ctx.silver
+        if result == "paid" then d.silverPaid = d.silverPaid + amount end
+        if result == "owed" then d.silverOwed = d.silverOwed + amount end
         if result == "won" or result == "lost" then
             run = result == "won" and run + 1 or 0
             d.streak = math.max(d.streak, run)
