@@ -511,6 +511,16 @@ function commands.errors(rest)
 end
 
 -- The Monday tip on or off.
+-- How people feel about the game: counts for Zennit and the admin; anyone can switch the weekly question off or on.
+function commands.feelings(rest)
+    local s = ST.db.settings
+    if rest == "off" then s.feelOff = true return print_("The weekly question is off. /sc feelings on brings it back.") end
+    if rest == "on" then s.feelOff = nil return print_("The weekly question is on: once a week, at the first login.") end
+    local lines = ST.Feelings.Summary(8)
+    if not lines then return print_("Only Zennit and the admin see how the group feels, as counts. /sc feelings off stops the weekly question.") end
+    for _, l in ipairs(lines) do print_(l) end
+end
+
 function commands.tips(rest)
     local s = ST.db.settings
     if rest == "off" then s.tipsOff = true elseif rest == "on" then s.tipsOff = nil end
@@ -621,6 +631,7 @@ local HELP = {
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
     "/sc respond [test] - Zennit answers a summon of him (accept, decline, ask for silver, dice); test tries it",
     "/sc tips [on|off] - the one-line tip about a command, at the Monday login",
+    "/sc feelings [on|off] - the weekly one-click question about how the week felt (Zennit and the admin see the counts)",
     "/sc errors [clear] - problems the addon caught in itself this session (tell Aaron what they say)",
     "/sc gag - preview the Zennit gag",
     "/sc comic [256|512|1024|2048] - large-image test pattern viewer",

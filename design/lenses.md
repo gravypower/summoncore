@@ -2233,7 +2233,7 @@ not a design change.
 - **Built and self-tested:** the race, the answers, the story, sync, and every change in this journal. The self-test (`/sc synctest`,
   100 tests) passes in the stub except the window test, which needs the real UI.
 - **Confirmed in the game:** ritual detection, the addon messages, the solo tools (from earlier versions). Nothing from 0.20 on.
-- **The live checklist** (`/sc check`) has 41 checks: 9 run by themselves, 12 need one person, 20 need a friend.
+- **The live checklist** (`/sc check`) has 42 checks: 9 run by themselves, 12 need one person, 21 need a friend.
 
 **Ready to share when** (in order; stop at the first failure and send `/sc check report`)
 
@@ -2252,6 +2252,15 @@ Phase 3 of `design/verification.md` and `design/playtest.md` take over from ther
 **A freeze.** From the moment it is shared, no new rules until the first week's report is read. Fixes for what the checks find, and
 wording, are fine. The open decisions that wait on data are already named: the helper bonus (Indirect Control, B), the head start
 (Elegance, Simplicity/Complexity), what an expired prompt does (`d-expire`), and whether five weekly wins is the right season.
+
+**Built with it: the weekly question** (asked after the entry: should the game ask how people feel?). The Monday questions in
+`design/playtest.md` are asked out loud, which misses the two people who matter most: Zennit (the game is aimed at him, and he is the
+least likely to say "too much" in front of everyone) and the quiet ones (who stop logging in rather than complain). So, once a week,
+at the first login after a week with summons, the Index asks one question with three buttons ("How was last week?": Good fun / It
+was fine / Not for me; Zennit: "How was being summoned?": Bring it on / Fine / Too much). One click, or close it to skip;
+`/sc feelings off` stops it. **Only Zennit's and the admin's clients keep the answers** (message `F`; each client re-sends its own with
+its hello so they catch up), and `/sc feelings` there shows counts per week, never names. It is a playtest tool, not a rule, so it
+fits the freeze. The cue to act: a "Too much" from Zennit, or "Not for me" twice running from anyone. Live check `d-feelings`.
 
 **Lenses left for after the first week**, when there is something to look at: Expected Value (the writ and the free decline,
 with real numbers), the Interest Curve again (how a real season felt), and Balance again (whatever the group found).
@@ -2299,3 +2308,4 @@ with real numbers), the Interest Curve again (how a real season felt), and Balan
 | 2026-10-05 | A summons that comes while he has been AFK for five minutes or more is filed as away: free, not his free decline; the caster is warned at the cast; version 0.23.0 | Freedom | Stepping away from the keyboard in the group let summons count as accepted with nothing he could do; silence cannot be free in general (Balance), but an AFK that began before the ritual is not a dodge |
 | 2026-10-05 | A chapter can be shown to the whole group (each person asked "Watch now?"), and the raid leader is offered last week's chapter when the weekly raid gathers | Pleasure | The week's triumph and the story's wonder were the only pleasures delivered alone, at each person's login; the weekly raid is when everyone is there |
 | 2026-10-05 | Share it with the group once the five-step gate passes (one release for everyone, the automatic checks, the solo checks, an hour with one friend, a quiet evening); then no new rules until the first week's report | Playtesting | The lenses that fit are largely done and each finds less; everything since 0.20 has only run in stubs, and the next answers are in the group's play |
+| 2026-10-05 | A one-click weekly question on how the week felt (Zennit asked his own); answers only reach Zennit's and the admin's clients, shown as counts, never names | Playtesting | The Monday questions are asked out loud, which misses Zennit and the quiet ones; a "Too much" or a run of "Not for me" is the cue to change something |

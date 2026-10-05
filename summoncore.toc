@@ -21,6 +21,7 @@ Gag.lua
 Respond.lua
 Week.lua
 Ledger.lua
+Feelings.lua
 LedgerClips.lua
 Report.lua
 Cards.lua

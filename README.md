@@ -32,6 +32,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc help` | Five lines: the commands a player needs (the window, rules, week, tab, cards, titles, report, seasons). `/sc help all` lists every command |
 | `/sc errors [clear]` | The problems the addon caught in itself this session. Every slash command, event handler, login step and hub tab runs under a guard: a bug no longer fails silently (WoW shows nothing by default) or stops the steps after it; it is said once in chat, kept here, and still passed to the game's own error handler. Tell Aaron what it says |
 | `/sc tips [on\|off]` | The one-line tip about a command, said once a Monday at login (they go round in order; two are for Zennit's client only). `/sc tips off` stops it |
+| `/sc feelings [on\|off]` | **The weekly question**: once a week, at the first login after a week with summons, the Index asks "How was last week?" with three buttons (Good fun / It was fine / Not for me); Zennit is asked "How was being summoned?" (Bring it on / Fine / Too much). Close it to skip; `off` stops it. Answers go only to Zennit's and the admin's clients (each client re-sends its own with its hello, so they catch up), where `/sc feelings` (and Tools > General > How it felt, for the admin) shows **counts per week, never names** |
 | `/sc panel` | Open the window on the Party tab |
 | `/sc log [n]` | Recent summons |
 | `/sc tally` | Cast, received and assisted counts and points per player, ranked by summons of Zennit this season (what the race counts), then points. The Party tab's Tally is the same list, with an "Of Zennit" column |
@@ -140,7 +141,7 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts), `X` (a request to reset), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
+alts), `X` (a request to reset), `F` (how a player felt about a week, kept only by Zennit's and the admin's clients), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from

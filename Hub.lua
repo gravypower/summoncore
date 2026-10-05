@@ -673,6 +673,10 @@ local function buildTools(f)
         show(#seasons > 0 and "The Index's keepsake of each finished season is in the chat window." or
             "No season has finished yet. The Index is keeping the file open.")
     end)
+    tool(record, "HOW IT FELT", function() -- the weekly question's counts: the admin's (and Zennit's) eyes only
+        for _, line in ipairs(ST.Feelings.Summary(8) or {}) do ST.print(line) end
+        show("How the group felt, week by week, is in the chat window. Counts only, never names.")
+    end, true)
     tool(record, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
         for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
         show("What the log says about how the race is being played is in the chat window.")
