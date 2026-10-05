@@ -31,6 +31,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; A, C built and D worded (audio pending); B (the head start) left |
 | Playtesting | Every lens ended with questions for a playtest; the first new-rules week starts today | Answered; the report and the script built |
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
+| Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -825,6 +826,61 @@ will show how many he leaves, and for how long.
 - How many summons does he leave unanswered, and for how long? (`/sc report` shows both.)
 - Does the group chase him when they can see the number, or does it feel like nagging?
 - Has a Monday announcement ever changed by Wednesday?
+
+### 2026-10-05 · Lens of Economy: the silver, the cards and the points
+
+**The questions (paraphrased):** what does the game count as currency, where does it come from, where does it go, and what keeps
+it in balance? Is there a price players can anchor on? Can anyone create or destroy value without limit? Until now the game's
+only currency was imaginary (points); the silver and the cards put **real in-game money** into it.
+
+**The flows, as built** (`Respond.lua`, `Cards.lua`, `Scoring.lua`, `Store.lua`)
+
+| Currency | Comes from | Goes to | Limit |
+|---|---|---|---|
+| **Points** (1, 3, 5 or 10 a summons) | A summons that lands, to the caster | The tally, the six badges, the race | None; they cannot be spent on anything |
+| **Silver** (real) | The caster, when Zennit asks | Zennit, in cash | **None**: he names it, up to 100,000 silver (1,000 gold) |
+| **Punches** (a card) | Bought once from Zennit | Spent one at a time against his asks | The card's size; they never expire |
+| **A tab** | His asking for silver | The caster, until he marks it paid | None |
+
+**How much, in a season** (about 20 summons of him over 11 weeks at normal effort, three warlocks, so about 7 each)
+
+| If he asks | Silver a season (whole group) | A warlock's share |
+|---|---|---|
+| The usual 50 every time | 1,000 (10 gold) | about 350 |
+| 200 every time | 4,000 (40 gold) | about 1,400 |
+| 50, with a card of 5 for 200 (40 a punch) | 800 | about 280 |
+
+**Findings**
+1. **The silver is the only unbounded currency.** Points have a rate that is set by the places; punches are limited by what was
+   bought; but how much silver he asks is up to Zennit alone, to 1,000 gold a summons. Nothing in the race depends on it (a summons
+   counts either way), so it cannot hurt the balance, but it can hurt the mood.
+2. **There is no anchor.** "The usual 50" is only the default of the box. A card of 5 for 200 is a bargain only compared with a
+   price Zennit can change: if he asks 500, the card is a protection racket, and if he asks 20 it is a rip-off. Cards and asks are
+   priced independently by the same person.
+3. **Nothing enforces the tab, which is right, and nothing shows it.** An unpaid tab changes nothing in the game; it is trust
+   between friends. But the only places the tab is seen are the "Week:" line (this week, in total) and one line at login. No
+   statement says who owes what across the season.
+4. **Points are a currency with nothing to buy.** They feed the tally and six badges; a warlock reaches Fifty Summons in about
+   seven seasons. Helpers earn none, on purpose (the Player entry: the group likes banter, not badges).
+5. **The story's silver is not this silver.** In chapters g4 and g5 the group pays the Ritual fifty silver. The silver the
+   group has really paid appears only on the tooltips and in the keepsake.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Bound the ask**: no more than 5 times the usual price per summons (250 silver) | 1 | A constant and a check |
+| B | **A statement**: `/sc tab` lists who owes what, to Zennit across the season, and to each caster for themselves; and the tab is in the Tools tab | 3 | A function and a button |
+| C | **Cards are always a discount**: a card's price per punch may not be above the usual 50 (so a card never costs more than asking), and an ask without a card may not be more than five times the card's price per punch | 2 | Two checks on his client |
+| D | **Spend points**: points buy something small (a point towards a helper's bonus, or a reduction of his edge for one summons) | 4 | A rule, and balance |
+
+**To decide before building**
+- Is 250 silver a summons the right top, or should the ask be bounded some other way (or not at all)?
+- Do points need a use, or are they only a score?
+
+**To watch in playtests**
+- What does Zennit ask, and what do the casters say about it? (`/sc report` does not show it yet.)
+- Does anyone buy a card, and at what price?
 
 ## Decisions
 
