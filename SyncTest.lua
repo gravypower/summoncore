@@ -603,6 +603,31 @@ add("a refusal costs Zennit the points unless the place is on his list", functio
         and won ~= nil, string.format("Zennit points=%d (expected %d), off-list=%s", tally.points, want, tostring(offList))
 end)
 
+add("the secret list box suggests known places, sorted, without the ones already on the list", function()
+    local a = newClient("Alpha")
+    cast(a, 960, true, { target = "Zennit", subzone = "Mudsprocket" })
+    local got
+    with(a, function()
+        ST.Respond.ListClear()
+        ST.Respond.ListAdd("Silithus")
+        got = ST.Respond.ListSuggestions()
+        ST.Respond.ListClear()
+    end)
+    local has, problems = {}, {}
+    for i, name in ipairs(got) do
+        local key = name:lower()
+        if has[key] then problems[#problems + 1] = "twice: " .. name end
+        if #name < ST.Respond.LIST_MIN then problems[#problems + 1] = "too short: " .. name end
+        if i > 1 and got[i - 1]:lower() > key then problems[#problems + 1] = "out of order: " .. name end
+        has[key] = true
+    end
+    for _, want in ipairs({ "stormwind city", "winterspring", "wailing caverns", "the temple of atal'hakkar", "mudsprocket" }) do
+        if not has[want] then problems[#problems + 1] = "missing: " .. want end
+    end
+    if has["silithus"] then problems[#problems + 1] = "suggests Silithus, already on the list" end
+    return #problems == 0, #problems == 0 and string.format("%d places", #got) or table.concat(problems, "; ")
+end)
+
 add("the week: Zennit's head start wins small weeks, the group needs more, and a win is a week off", function()
     local a = newClient("Alpha")
     local W = ST.Week

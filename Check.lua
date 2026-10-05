@@ -76,6 +76,18 @@ Check.LIST = {
           end
           return false, last .. (#wrong > 0 and (" Wrong: " .. table.concat(wrong, "; ") .. ".") or "")
       end },
+    { id = "a-zones", kind = "auto", title = "The client lists the world's zones for the secret list box",
+      fails = "the secret list box only suggests the Index's own places and where summons have landed",
+      run = function()
+          local names, has = ST.Respond.WorldZoneNames(), {}
+          for _, n in ipairs(names) do has[n:lower()] = true end
+          local missing = {}
+          for _, n in pairs(ST.Scoring.remoteNames) do -- every far-flung place is a zone, so the client must list it
+              if not has[n:lower()] then missing[#missing + 1] = n end
+          end
+          table.sort(missing)
+          return #names > 0 and #missing == 0, string.format("%d zones from the client; far-flung places missing: %s", #names, joined(missing))
+      end },
     { id = "a-selftest", kind = "auto", title = "The self-tests (/sc synctest) pass in the game",
       fails = "a rule or the sync format behaves differently in the game than in the stubs",
       run = function()
