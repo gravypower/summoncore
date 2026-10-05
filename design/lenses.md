@@ -37,7 +37,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
-| Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; the change waits for a decision (below) |
+| Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
 
 ## Entries
 
@@ -1256,7 +1256,7 @@ see what a choice is worth when they make it?
    checked in the game; everything else is a zone (3). A far-flung place missing from the table scores 3, quietly, and nobody is told.
    `/sc where` shows the kind of the place you stand in, but nothing asks anyone to use it.
 
-**Proposed changes** (none built yet)
+**Proposed changes**
 
 | # | Change | Fixes | Cost |
 |---|---|---|---|
@@ -1264,14 +1264,24 @@ see what a choice is worth when they make it?
 | B | **Check the place table in the playtest script**: stand in each far-flung zone and dungeon entrance you pass, run `/sc where`, and note any that read "zone". `design/playtest.md` says how and what to fix | 4 | A paragraph |
 | C | **Leave the numbers alone** (1, 3, 5, 10): the stakes are doing their job, and a rebalance without a real week is a guess | 1, 2 | Nothing; recorded as a decision |
 
-**To decide before building**
-- Should the briefing name the stakes for Zennit's side too ("his roll could take 10")? It helps the group choose, and it tells him what
-  he is risking, but it is one more sentence in a line that is already long.
+**Our answer (built: A, with B as a lookup, and C)**
+- **A.** The ritual briefing on Zennit now says what the place is worth and what rides on it, with both sides named (the answer to the
+  question below): "From here (a far-flung place) the summons is worth 10: his roll could take 10, and so could yours." A second wording
+  says the same ("The Index values this place (a zone) at 3: that is 3 on his roll, or 3 on yours."). In a city it says it is worth less
+  than his head start of 2 and that "the Index would not call that a plan." Nothing is said when the place is unknown.
+- **B, as asked ("we should be able to look this up").** Instead of a manual checklist, **`/sc places`** prints what a place is worth and
+  asks the game for the name of every map ID in the table (`C_Map.GetMapInfo`). A city or far-flung ID the client does not know, or
+  names differently, is flagged as a guess to fix. Dungeon entrances are matched by subzone text, which the game cannot look up, so
+  those stay a `/sc where` job. The smoke test in `design/playtest.md` now starts with it.
+- **C.** The numbers (1, 3, 5, 10) are unchanged.
+
+**Decided:** the briefing names both sides of the stakes; the place table is checked by the game, not by memory; no rebalance before a
+real week.
 
 **To watch in playtests**
 - Does the group choose where to summon, or only whom? (If they do not, A is only noise.)
 - Does anyone say "that should have been worth more"? That is a table entry to fix.
-- Nothing here has run in the live client.
+- Does `/sc places` flag anything? (It has never run in the live client, and neither has the lookup it relies on.)
 
 ## Decisions
 
@@ -1299,3 +1309,4 @@ see what a choice is worth when they make it?
 | 2026-10-05 | The week's turnover stays at Monday 00:00 UTC (11:00 on the east coast of Australia in summer); the week's close is said in the player's time, and the last day of a week has a last call | Time | Nothing said when a week ends, and the deadline was never felt; the group's evenings fit the UTC week |
 | 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |
 | 2026-10-05 | The lines read while playing, the silver and card lines and the badge names are in the Index's voice; a plain `how` line says what each badge takes; `design/voice.md` is the house style | Unification | The theme was strong in the story and thin in the play; the newest systems had no voice, and the badges read as any game's |
+| 2026-10-05 | The ritual briefing says what the place is worth and what it puts at stake for both sides; `/sc places` checks every map ID against the game's own name; the point values stay | Endogenous Value | A place's worth is the stake of a summons and was invisible when the choice was made; the place table was from memory and never checked |

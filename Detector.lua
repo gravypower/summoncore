@@ -116,7 +116,7 @@ local function startPending(target)
     end)
     ST.Clips.Play("ritual") -- a recorded line as the ritual begins
     -- a ritual on Zennit: tell the caster whether it will count, where the week stands, and what helpers add
-    local brief = pending.target and ST.Week.Briefing(pending.target)
+    local brief = pending.target and ST.Week.Briefing(pending.target, mapID, pending.subzone)
     if brief then ST.print(brief) end
     dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))

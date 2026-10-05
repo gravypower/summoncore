@@ -27,6 +27,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc tally` | Cast, received and assisted counts and points per player |
 | `/sc badges` | Badge list |
 | `/sc where` | Current map ID, subzone and how it scores |
+| `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
 | `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
 | `/sc admin` | What the game reports as this account's BattleTag, and whether it is the admin's or Zennit's |
 | `/sc reset [all]` | Wipe this client's summons, badges and story (it asks first). `all` is admin only: it asks everyone else to do the same |
@@ -280,7 +281,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
-| Scoring tables | Ten far-flung places are marked `remote` from memory (Silithus, Winterspring and so on) and the dungeon entrance subzone strings are guesses; confirm each with `/sc where` |
+| Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (never run live yet). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |
 | Gag and voice clips | Not recorded yet; the gag is still the placeholder sheet |
 | Release | None published yet (no git tags); a release zip carries whatever clips are committed |
 

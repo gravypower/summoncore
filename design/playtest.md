@@ -11,13 +11,15 @@ Several things have only been run in a stub, never in the game. Fix these before
 1. `/sc synctest`: every test should pass. Paste any failure.
 2. After a full WoW restart: `/sc intro check` (every sound file plays), then `/sc intro`: scene 10 should run on into **The
    Index today**, typed out under the key clicks, with no voice. `/sc intro now` plays it alone.
-3. `/sc rules` (the whole race on one card), `/sc report` and `/sc seasons` (empty until a finale) print to chat; the same three
+3. `/sc places`: every city and far-flung map should read as found; any line saying "the client has no such map" or "calls it" is a
+   wrong ID in `Scoring.lua` (fix it and say which). Then stand at a dungeon entrance you pass and run `/sc where`: it should say `dungeon`.
+4. `/sc rules` (the whole race on one card), `/sc report` and `/sc seasons` (empty until a finale) print to chat; the same three
    are buttons on the Tools tab.
-4. About a minute after login, the chat should say how the last week ended (if it did) and **this week's whim** (if it has one).
+5. About a minute after login, the chat should say how the last week ended (if it did) and **this week's whim** (if it has one).
    This is the first real Monday rollover.
-5. A summon of Zennit with two friends helping: the briefing, "Summon logged", "Week:", his popup and the answer line all appear,
+6. A summon of Zennit with two friends helping: the briefing, "Summon logged", "Week:", his popup and the answer line all appear,
    and the dice reach both clients (the `/roll` parsing and `RandomRoll` have never been tried between two real clients).
-6. The Zennit tab's list refuses a one-letter entry and a sixth place.
+7. The Zennit tab's list refuses a one-letter entry and a sixth place.
 
 ## While playing: say nothing, watch
 

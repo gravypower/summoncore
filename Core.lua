@@ -195,6 +195,15 @@ function commands.where()
     print_(string.format("mapID=%s zone=%s subzone='%s' -> %s (%d pts)", ST.safe(mapID), GetZoneText(), sub, kind, pts))
 end
 
+-- What each place is worth, with every map ID checked against the game's own name for it.
+function commands.places()
+    local lines = ST.Scoring.Places(function(id)
+        local ok, info = pcall(C_Map.GetMapInfo, id)
+        return ok and type(info) == "table" and type(info.name) == "string" and info.name or nil
+    end)
+    for _, l in ipairs(lines) do print_(l) end
+end
+
 -- Adds a test summon at your current location. It is never put on the network.
 function ST.AddFake(target, assistants)
     local _, ev, badges = ST.Store.Add({
@@ -496,7 +505,7 @@ local HELP = {
     "/sc test - diagnostics panel (/sc test ping <name>)",
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
     "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",
-    "/sc where - current map, subzone and how it scores",
+    "/sc where - current map, subzone and how it scores    /sc places - what every place is worth, checked against the game",
     "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
     "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",
     "/sc export / /sc import - copy-paste strings of the summon log",
