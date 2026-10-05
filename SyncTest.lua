@@ -2454,6 +2454,38 @@ add("feelings: one answer a week, sent to everyone, kept and counted only by Zen
     end)
 end)
 
+add("titles for being a good sport and for clever writs: the Good Sport and the Process Server", function()
+    return newRules(function()
+        local a, L, W, out = newClient("Alpha"), ST.Ledger, ST.Week, {}
+        local ok, err = pcall(with, a, function()
+            local this = W.Start()
+            local n = 0
+            local function put(caster, result, mapID, points, writ, weeksAgo)
+                n = n + 1
+                local at = this - (weeksAgo or 0) * 7 * 86400 + n * 600
+                a.db.events["e" .. n] = { caster = caster, target = "Zennit", assistants = {}, time = at, mapID = mapID, subzone = "",
+                    points = points or 3, kind = "zone", writ = writ or nil, response = { result = result, zroll = 0, sroll = 0, time = at + 30 } }
+            end
+            for i = 1, 8 do put("Bo", "accepted", nil, 3, nil, 1) end                      -- last week: he went eight times
+            put("Bo", "accepted", 1451, 10, nil, 1)                                         -- and to Silithus
+            put("Cy", "owed", nil, 3)                                                        -- this week: a tenth, with silver named
+            put("Al", "refused", 1436, 3, true)                                              -- two writs that bit
+            put("Al", "refused", 1451, 10, true)
+            put("Cy", "refused", nil, 3)                                                     -- a costed decline with no writ
+            out.titles = L.Titles(L.Collect(a.db.events, 0, math.huge, L.Context()))
+            a.db.events.e10 = nil                                                            -- nine: not yet
+            out.fewer = L.Titles(L.Collect(a.db.events, 0, math.huge, L.Context()))
+        end)
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local by, fewer = {}, {}
+        for _, t in ipairs(out.titles) do by[t.id] = t.text end
+        for _, t in ipairs(out.fewer) do fewer[t.id] = true end
+        local good = by.sport == "The Good Sport: Zennit, who went where he was sent 10 times, including Silithus."
+            and by.server == "The Process Server: Al, whose writs cost him 13 points." and not fewer.sport
+        return good, string.format("%s | %s", tostring(by.sport), tostring(by.server))
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }

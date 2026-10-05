@@ -54,6 +54,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A built |
 | Pleasure | Which kinds of fun does it give, to whom, and when? The week's triumph and the story's wonder arrive to each person alone | Answered; A and B built, at the weekly raid |
 | Playtesting, revisited | Every lens now ends in "watch in playtests", and nothing since 0.20 has run in the game. When is it ready to share? | A five-step gate; then a freeze until the first week's report |
+| Judgment | What does the game praise each of them for? Nothing praises Zennit for being a good sport, or the group for being clever | Answered; A and B built |
 
 ## Entries
 
@@ -2265,6 +2266,63 @@ fits the freeze. The cue to act: a "Too much" from Zennit, or "Not for me" twice
 **Lenses left for after the first week**, when there is something to look at: Expected Value (the writ and the free decline,
 with real numbers), the Interest Curve again (how a real season felt), and Balance again (whatever the group found).
 
+### 2026-10-05 · Lens of Judgment: what the game praises each of them for
+
+**The questions (paraphrased):** what does the game judge about the players, and how does it tell them? Is the judgment fair and
+visible? Is it judging what the players want to be judged on, and what the designer wants them to do more of? Players do more of
+what a game praises.
+
+**What the game judges, as built** (`Scoring.lua` badges, `Ledger.Titles`, the report, the leave count)
+
+| Who | Praised for | Kind of thing | Where it is said |
+|---|---|---|---|
+| A caster | Volume (Entered, Filed in Triplicate, A Volume of Their Own, the Heaviest Hand, most disturbing of his leave); places (Below Stairs, Beyond the Jurisdiction, Five Places); regularity (Known to the Clerk) | Effort | Badges as earned; titles at the finale and `/sc titles` |
+| A helper | Helping (the Best Supporting Role) | Effort | Titles |
+| A pair | Their bonus tipping a roll (the Lucky Pair, Countersigned by Witnesses) | **Luck** | Titles, a badge |
+| A caster | Paying his silver (the Prompt Payer, Paid in Full, Stamped to the Last Punch) | Good conduct | Titles, badges |
+| Zennit | Winning the dice in a row (the Dice Goblin) | **Luck** | His titles |
+| Zennit | Asking a high price (the Hard Bargain) | Mischief | His titles |
+| Zennit | Answering quickly (the Quick Reply) | Good conduct | His titles |
+
+**Findings**
+1. **Nothing praises Zennit for being a good sport.** His three titles are for luck, for mischief and for speed. The thing the
+   whole game hopes he does, going where he is sent and laughing about it, is the one thing nothing ever praises. Every rule
+   pays him for avoiding summons (dice he wins, declines that cost the group), and the only "kind" judgment of him is about
+   speed. The Griefing lens worried about the game staying fun for him; the judgment does not help, because it never thanks him.
+2. **Nothing praises the group's skill.** The group's real decisions are the writ (where to play it) and the order of summons
+   (Skill and Chance, Secrets). A writ that bites, costing him a decline he would have taken for free, is the cleverest move the group
+   can make, and it goes unremarked. Everything the group is praised for is effort or luck.
+3. **The judgment is fair and agreed.** Every title and badge is worked out from the synced log, so every client says the same, and
+   none of it moves the score. Nothing to change.
+4. **The report judges in public.** `/sc report` (pasted to the group chat on Mondays) shows his median time to answer and how many
+   summons went unanswered. That is the playtest's data, and the Community lens chose to make the waiting visible; but it is the one
+   place the game judges him in front of everyone without a joke attached. Watch how it lands; the weekly question will say.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **The Good Sport**, one of Zennit's titles: the summons of him he went on this season (accepted, or the silver named), from about ten: "The Good Sport: Zennit, who went where he was sent 14 times, including Silithus." In `/sc titles` and the keepsake like the others | 1 | A count and a line in `Ledger.Titles` |
+| B | **The Process Server**, a group title: the caster whose writs cost him the most ("The Process Server: Al, whose writs cost him 13 points."), so the group's cleverest move has a name | 2 | A count of writs that bit, per caster, and a line |
+| C | **Leave it** | | Nothing |
+
+**Recommendation:** A and B. They are titles, not rules (no points, nothing to learn), so they fit before the freeze; and they
+praise the two things the judgment now misses: him being a good sport, and the group being clever.
+
+**Our answer (built: A and B).**
+
+**Built** (`Ledger.Collect`, `Ledger.Titles`)
+- **A, the Good Sport.** The season's summons of him that he went on (accepted, or the silver named or paid) are counted, with the
+  first far-flung place among them. From ten (`Ledger.GOOD_SPORT`) he holds it: "The Good Sport: Zennit, who went where he was sent
+  14 times, including Silithus."
+- **B, the Process Server.** Each caster's writs that bit (a writ that counted, on a summons he declined at a cost) add up its points:
+  "The Process Server: Al, whose writs cost him 13 points.", with who is close behind, like the other titles.
+- Both appear in `/sc titles` and the season's keepsake, with the other titles; no points. A self-test covers both, and the threshold.
+
+**To watch in playtests**
+- Does Zennit care about his titles? Does the group compete for the Process Server?
+- How does the report's "time to answer" land with him?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -2309,3 +2367,4 @@ with real numbers), the Interest Curve again (how a real season felt), and Balan
 | 2026-10-05 | A chapter can be shown to the whole group (each person asked "Watch now?"), and the raid leader is offered last week's chapter when the weekly raid gathers | Pleasure | The week's triumph and the story's wonder were the only pleasures delivered alone, at each person's login; the weekly raid is when everyone is there |
 | 2026-10-05 | Share it with the group once the five-step gate passes (one release for everyone, the automatic checks, the solo checks, an hour with one friend, a quiet evening); then no new rules until the first week's report | Playtesting | The lenses that fit are largely done and each finds less; everything since 0.20 has only run in stubs, and the next answers are in the group's play |
 | 2026-10-05 | A one-click weekly question on how the week felt (Zennit asked his own); answers only reach Zennit's and the admin's clients, shown as counts, never names | Playtesting | The Monday questions are asked out loud, which misses Zennit and the quiet ones; a "Too much" or a run of "Not for me" is the cue to change something |
+| 2026-10-05 | Two titles: the Good Sport (Zennit, ten summons he went on in a season) and the Process Server (the caster whose writs cost him the most) | Judgment | The game praised the group for effort and luck and him for luck, mischief and speed; never him for being a good sport, or the group for being clever |
