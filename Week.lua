@@ -677,9 +677,25 @@ function Week.StatusLine(start, you)
         table.concat(parts, ", "))
 end
 
+-- What the place the caster stands in is worth, and what is at stake in it: a summons is worth P to the group if he
+-- accepts, to him if he wins the roll, and P comes off him if he refuses. A city is worth less than his head start.
+function Week.PlaceLine(mapID, subzone, start)
+    local pts, kind = ST.Scoring.Score(mapID, subzone)
+    local place = ST.Scoring.kindText[kind] or kind
+    local head = Week.Rule("headstart", start)
+    if pts < head then
+        return string.format("From here (%s) the summons is worth %d, which is less than his head start of %d. " ..
+            "The Index would not call that a plan.", place, pts, head)
+    end
+    return ST.Voice.Say("briefing.place", {
+        "From here (%s) the summons is worth %d: his roll could take %d, and so could yours.",
+        "The Index values this place (%s) at %d: that is %d on his roll, or %d on yours.",
+    }, place, pts, pts, pts)
+end
+
 -- What the caster should know as a ritual on `target` begins, or nil when it is not Zennit or the old rules apply:
 -- whether it will count, where the week stands, his dice, and what helpers add.
-function Week.Briefing(target)
+function Week.Briefing(target, mapID, subzone)
     if not isZennit(target) then return nil end
     local now = time()
     local start = Week.Start(now)
@@ -698,6 +714,7 @@ function Week.Briefing(target)
     local text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
         Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
         string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.Rule("helperBonus", start)))
+    if mapID ~= nil or subzone ~= nil then text = text .. " " .. Week.PlaceLine(mapID, subzone, start) end
     if moved ~= 0 and dice > 0 then
         text = text .. string.format(" The Index, which takes no sides, has %s his edge on the dice to +%d this week.",
             moved < 0 and "cut" or "raised", edge)

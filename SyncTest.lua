@@ -826,6 +826,26 @@ add("scoring: cities, far-flung maps and dungeon entrances score by kind, and a 
     return ok, string.format("%s %s %s %s", tostring(city), tostring(remote), tostring(dungeon), tostring(wc))
 end)
 
+add("places: /sc places checks each map ID against the game's name for it, and flags a wrong or missing one", function()
+    local S = ST.Scoring
+    local function nameOf(wrong)
+        return function(id)
+            if id == wrong.missing then return nil end
+            if id == wrong.renamed then return "Somewhere Else" end
+            return S.cityNames[id] or S.remoteNames[id]
+        end
+    end
+    local good = table.concat(S.Places(nameOf({})), "\n")
+    local bad = table.concat(S.Places(nameOf({ missing = 1451, renamed = 1453 })), "\n")
+    local ok = good:find("a city 1, a dungeon entrance 5, a far-flung place 10, anywhere else 3", 1, true)
+        and good:find("Cities: ", 1, true) and good:find("Silithus", 1, true) and good:find("wailing caverns", 1, true)
+        and good:find("The client knows every map above", 1, true) and not good:find("client has no such map", 1, true)
+        and bad:find("Silithus (1451: the client has no such map)", 1, true)
+        and bad:find("Stormwind (1453: the client calls it 'Somewhere Else')", 1, true)
+        and bad:find("2 maps above did not match the client", 1, true)
+    return ok, bad:sub(1, 160)
+end)
+
 add("voice clips: a refusal and a dice win each play their own category, other answers are silent", function()
     local a = newClient("Alpha")
     local id = cast(a, 950, true, { target = "Zennit" })
@@ -1748,6 +1768,27 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
             and out.brief ~= nil and out.brief:find("summon 3 of 10", 1, true) ~= nil and out.brief:find("+5", 1, true) ~= nil
             and out.notHim == nil and out.old == nil and out.oldBrief == nil
         return ok, string.format("%s | %s | %s | %s", tostring(out.empty), tostring(out.tie), tostring(out.ahead), tostring(out.brief))
+    end)
+end)
+
+add("the briefing says what the place is worth: both sides of the stakes, and a city is worth less than his head start", function()
+    return newRules(function()
+        local W, a = ST.Week, newClient("Alpha")
+        local out = {}
+        with(a, function()
+            out.zone = W.Briefing("Zennit", 1436, "Sentinel Hill")
+            out.remote = W.Briefing("Zennit", 1451, "Cenarion Hold")
+            out.city = W.Briefing("Zennit", 1453, "Trade District")
+            out.dungeon = W.Briefing("Zennit", 1451, "The Deadmines")
+            out.noPlace = W.Briefing("Zennit")
+        end)
+        local ok = out.zone:find("From here (a zone) the summons is worth 3: his roll could take 3, and so could yours.", 1, true)
+            and out.remote:find("(a far-flung place) the summons is worth 10: his roll could take 10", 1, true)
+            and out.dungeon:find("(a dungeon entrance) the summons is worth 5", 1, true)
+            and out.city:find("(a city) the summons is worth 1, which is less than his head start of 2", 1, true)
+            and not out.city:find("his roll could take", 1, true)
+            and not out.noPlace:find("From here", 1, true)
+        return ok, tostring(out.remote)
     end)
 end)
 
