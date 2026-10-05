@@ -33,6 +33,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
 | Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
 | Reward | What does each member get, and when? | Answered; A, B, C and D built |
+| Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; B to D wait for a decision |
 
 ## Entries
 
@@ -963,6 +964,57 @@ happens to someone who fails: is there a punishment, and is it one the friends w
 **To watch in playtests**
 - Which titles does the group argue about, and which does nobody care for?
 - Does anyone ask where they stand before the season ends?
+
+### 2026-10-05 · Lens of the Interface: finding and reading what you need
+
+**The questions (paraphrased):** what does the player see, and what can they do, at each moment? Is each piece of information where
+the player is looking when they need it? Is it easy to find the thing you do not know the name of? Does the interface grow in a
+way that still reads, or does it only accrete? Every lens since Visible Progress has added a command or a button.
+
+**The surfaces, as built** (`Core.lua`, `Hub.lua`, `Respond.lua`, `Silver.lua`)
+
+| Surface | What it carries | How many |
+|---|---|---|
+| Chat | The moments of play (a briefing, "Summon logged", "Week:", his answer), reports, diagnostics | About 5 lines per summons of him, and the reports below |
+| The hub (`/sc`) | The season band above six tabs: Party, Zennit, Log, Story, Sync, Tools | 6 tabs; Tools has 5 columns |
+| Popups | Zennit's answer, the dice, the assistants prompt, the silver confirmation, the price box, reset | 6 |
+| Slash commands | Everything above, again | 33 commands, 25 lines of `/sc help` |
+
+**Findings**
+1. **The Tools tab overflowed for the admin.** One column ("Try things") had grown to 15 buttons at 30 px each: 482 px down a 458 px
+   tab, so for the admin the rows under it ran off the bottom and the output box had no height. It was my own doing: every lens
+   added a button. (A non-admin column of 10 fit, with an output box of 80 px.)
+2. **The reports are long and go to chat, where they scroll away.** The rules card is nine lines, the report ten, a season's
+   keepsake seven or more, the titles up to seven. Chat is right for the moments of play and for pasting a report to the group; it is
+   a poor place to *read* a rules card at leisure, and the Tools tab's output box is too small to hold one.
+3. **The useful commands are the ones nobody knows to type.** `/sc rules`, `/sc tab`, `/sc titles` and `/sc cards` answer the
+   questions players will actually have, and the only place they are listed is `/sc help`: 25 lines long.
+4. **What is on screen all the time is right.** The season band shows the lead, the filed count and the dice; the briefing and the
+   "Week:" line say the rest at the moment it matters. Nothing there needs changing.
+5. **The silver takes two steps.** The button, then a small box for the price. That is the right size for a decision he makes
+   rarely; a card holder skips it.
+
+**Built: the Tools tab.** The reports moved into a column of their own, **The record** (week and season, the rules, the titles, the
+tab, the cards, past seasons, the playtest report), so there are five columns of at most eight buttons: the admin's tallest column
+now ends at 272 px and leaves an output box of about 110 px (it was 482 px and none). The button width went from 180 to 142 px, so the
+longest labels were shortened ("Preview Zennit gag" is "Zennit gag", "Resets everyone..." is "Reset all..."). **Not seen in the
+client**: the layout is worked out from the numbers, and the first thing to check at the smoke test is that the Tools tab fits.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A weekly tip**: one line at the Monday login that names a command players may not know ("Tip: /sc rules prints the race with this week's numbers"), rotating through five or six and never repeating one in a row | 3 | Wording and a counter |
+| B | **A Record tab** in the hub: the same reports in a scrolling text area, so a rules card or a keepsake can be read at leisure without chat | 2 | A new tab, to be checked in the client |
+| C | **A short `/sc help`**: five lines for players (`/sc`, rules, tab, titles, report) and `/sc help all` for the rest | 3 | Wording |
+| D | **Reports pasteable**: `/sc report say` (and the same for rules, tab, titles) sends the report to party chat instead of the local window, so the Monday report reaches the group without copying it | 2 | A channel check |
+
+**To decide before building**
+- Do players need a hint, or will the group learn the commands from each other?
+
+**To watch in playtests**
+- Which commands does the group actually type? Does anyone ask "how do I see..."?
+- Does the Tools tab fit, for the admin and for the others?
 
 ## Decisions
 

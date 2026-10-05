@@ -559,7 +559,7 @@ end
 -- Tools: four columns of buttons. Admin-only tools are hidden for everyone else, and the columns close up
 -- around them, so nobody sees gaps.
 local function buildTools(f)
-    local COL_W, STEP = 180, 30
+    local COL_W, STEP = 142, 30 -- five columns of buttons across the 776 px tab; each has room for 12 or so before the output box
     local columns = {}
     local function column(x, title)
         local col = { x = x, items = {} }
@@ -586,9 +586,11 @@ local function buildTools(f)
     tool(windows, "DIAGNOSTICS", function() ST.ToggleTests("") end, true)
     tool(windows, "LARGE-IMAGE TEST", function() ST.Comic.Toggle("") end, true)
 
-    local try = column(204, "TRY THINGS")
+    -- the reports have a column of their own: with them in "try things" the admin's column ran 482 px down a 458 px tab
+    local record = column(164, "THE RECORD")
+    local try = column(312, "TRY THINGS")
     tool(try, "WHERE AM I?", function() show(whereText()) end)
-    tool(try, "WEEK AND SEASON", function()
+    tool(record, "WEEK AND SEASON", function()
         local W = ST.Week
         local season = W.Season()
         local immune, untilT = W.Immune(time())
@@ -600,27 +602,27 @@ local function buildTools(f)
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
         }, "\n"))
     end)
-    tool(try, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
+    tool(record, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
         for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
         show("What the log says about how the race is being played is in the chat window.")
     end)
-    tool(try, "THE TITLES", function()
+    tool(record, "THE TITLES", function()
         for _, line in ipairs(ST.Ledger.Standings()) do ST.print(line) end
         show("Who leads each of the season's titles is in the chat window.")
     end)
-    tool(try, "THE TAB", function()
+    tool(record, "THE TAB", function()
         for _, line in ipairs(ST.Silver.Lines()) do ST.print(line) end
         show("The tab, who owes what, is in the chat window.")
     end)
-    tool(try, "SUMMON CARDS", function()
+    tool(record, "SUMMON CARDS", function()
         for _, line in ipairs(ST.Cards.Lines()) do ST.print(line) end
         show("Who holds a summon card, and the punches left, are in the chat window.")
     end)
-    tool(try, "THE RULES", function() -- long: it goes to the chat window, which scrolls
+    tool(record, "THE RULES", function() -- long: it goes to the chat window, which scrolls
         for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
         show("The rules of the race, with this week's numbers, are in the chat window.")
     end)
-    tool(try, "PAST SEASONS", function() -- a few lines for each season: they go to the chat window, which scrolls
+    tool(record, "PAST SEASONS", function() -- a few lines for each season: they go to the chat window, which scrolls
         local seasons = ST.Ledger.Seasons()
         for _, s in ipairs(seasons) do
             for _, line in ipairs(s.lines) do ST.print(line) end
@@ -640,17 +642,17 @@ local function buildTools(f)
         show("Voice clips: " .. table.concat(lines, ",  "))
     end)
     tool(try, "TEST A SUMMONING", function() ST.Respond.Test() end, true)
-    tool(try, "ASSISTANTS PROMPT", function()
+    tool(try, "HELPERS PROMPT", function()
         ST.Prompt.Ask("Target", { "Alice", "Bob", "Cara" }, {}, function(names, confirmed)
             show(string.format("Prompt result: %s (%s)", #names > 0 and table.concat(names, ", ") or "nobody",
                 confirmed and "confirmed" or "unconfirmed"))
         end)
     end, true)
-    tool(try, "PREVIEW ZENNIT GAG", function() ST.Gag.Play() end, true)
-    tool(try, "PREVIEW PARTY GAG", function() ST.Gag.PlayParty() end, true)
-    tool(try, "INTRO SOUND CHECK", function() ST.Intro.Check() end, true)
+    tool(try, "ZENNIT GAG", function() ST.Gag.Play() end, true)
+    tool(try, "PARTY GAG", function() ST.Gag.PlayParty() end, true)
+    tool(try, "SOUND CHECK", function() ST.Intro.Check() end, true)
 
-    local switches = column(392, "SWITCHES")
+    local switches = column(460, "SWITCHES")
     local paints = {} -- every switch repaints after any click, because the two test modes turn each other off
     local function switch(name, get, set, adminOnly)
         local b
@@ -674,10 +676,10 @@ local function buildTools(f)
             ST.db.settings.partyTest = v
             if v then ST.db.settings.zenitTest = false end
         end, true)
-    switch("DETECTOR MSGS", function() return ST.db.settings.debug == true end,
+    switch("DETECTOR", function() return ST.db.settings.debug == true end,
         function(v) ST.db.settings.debug = v end, true)
 
-    local data = column(580, "YOUR DATA")
+    local data = column(608, "YOUR DATA")
     tool(data, "UNDO LAST SUMMON", function()
         local last = ST.Store.RemoveLast()
         show(last and string.format("Removed %s -> %s (badges already earned are kept).", last.ev.caster, last.ev.target) or
@@ -685,7 +687,7 @@ local function buildTools(f)
         Hub.Refresh()
     end)
     tool(data, "RESET MY DATA...", function() ST.Reset.Ask(false) end, nil, "danger")
-    tool(data, "RESET EVERYONE...", function() ST.Reset.Ask(true) end, true, "danger")
+    tool(data, "RESET ALL...", function() ST.Reset.Ask(true) end, true, "danger")
     tool(data, "ADD TEST SUMMON", function()
         local ev = ST.AddFake("Tester", {})
         show(string.format("Test summon saved: %s in %s (+%d, %s). It stays on this client.", ev.target, ev.subzone ~= "" and ev.subzone or "nowhere", ev.points, ev.kind))
