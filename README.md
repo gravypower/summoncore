@@ -64,7 +64,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
-| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting |
+| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting. The list is **set for the week**: a place he adds counts from the next Monday (marked "from Monday"), and removing one takes effect at once, so it cannot be changed with a summons on screen |
 | `/sc respond [test]` | Zennit answers a summon of him (accept, decline, ask for silver or dice); `test` tries it on a pretend summon |
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
@@ -332,10 +332,11 @@ six cities by map ID (Stormwind, Ironforge, Darnassus and the three Horde ones),
 thing; it could ride on the log (a summons of Zennit whose place is in the list), the way the badges "Stamped in Five Places" and
 "Beyond the Index's Jurisdiction" do, with the Index's voice ("filed in the capital of the Dwarves"). Open questions: which
 capitals count on the client's Alliance side (the Exodar, if the client has it), whether it runs inside a season or beside it, and
-whether his answer matters (a refused summons is not a stop on the tour).
+whether his answer matters (a refused summons is not a stop on the tour). **Partly done:** postcards (design/lenses.md, Secrets) are the same idea aimed at the ten far-flung places, which pull with
+the race (10 points) where the capitals (1 point) pull against it; the capitals tour stays parked.
 
-Challenge import strings, emote bonus challenges, Zennit's objective, a notice when a summon is declined in game, and
-catching summons by warlocks who do not run the addon (the target's client could use `CONFIRM_SUMMON`).
+Challenge import strings, emote bonus challenges and Zennit's objective. (Catching summons by warlocks who do not run the addon is
+built: Accessibility, G.)
 
 ## The weekly contest
 
@@ -370,6 +371,14 @@ numbers behind it, is in `design/lenses.md`):
   and the group scores the summons as it would have. A writ costs the group nothing, so the only choice is which summons to put it on. Only the first two writs of a week count, worked out the same way on every client. A record
   carrying a writ has an 11th field (`w`), and a decline is a new answer (`declined`), so this needs everyone on 0.20 (a friend on 0.19
   is told once, and cannot read those records).
+- **A writ only bites where a decline would have been free**: while his free decline is unspent, or at a place on his list. Once his
+  free decline is used, the briefing says so ("a writ only bites if this place is on his list"), and where to put one is a guess at his
+  secret list.
+- **Postcards.** The first summons of him to each far-flung place (`Scoring.remoteNames`, 10 points) in a season that lands (he went:
+  accepted, silver, or lost the dice) earns the Index a postcard from him, said on every client ("The Index has filed a postcard from
+  Zennit, in Silithus: 'Sand. Also insects. Mostly sand.' Stamped: 1 of 10 far-flung places this season."). No points: the 10 are the
+  reason to go, the postcard is the joke. `/sc week` ends with the season's postcards, the rules card counts them, and the season's
+  keepsake lists them. A second trip to the same place that season sends none, and a decline is not a trip.
 - **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the
   briefing as a ritual on him begins ends "Last call: the week closes in 9 hours (Monday 11:00).", and a login in that stretch says it
   once with the standing ("The group leads by 1, 2 of 10 summons filed"). Not in a week off.

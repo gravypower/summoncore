@@ -47,6 +47,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; A, B and C built |
 | Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B, C and G built; D waits on audio |
 | Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
+| Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
 
 ## Entries
 
@@ -1791,6 +1792,84 @@ largest single cut available. B is wording that follows from it. C is still opti
 - Does Zennit ever use the form to say no, or only the game's prompt?
 - Can the group say what a no costs him, without the card?
 
+### 2026-10-05 · Lens of Secrets: who knows what, and when
+
+**The questions (paraphrased):** what does each player know that the others do not? What is hidden from everyone? Would the game be
+better if something public were hidden, or something hidden were made public? Secrets make guessing, bluffing and surprise; open
+information makes planning. The lens asks whether each piece is on the right side of that line.
+
+**What is known, by whom** (`Respond.lua`, `Week.lua`, `Detector.lua`)
+
+| Information | The group | Zennit | When it comes out |
+|---|---|---|---|
+| The score, the lead, summons filed, his dice left, the whim, his edge with the catch-up | Yes | Yes | Always (the band, the briefing, the rules card) |
+| His free declines left | Only by `/sc week` | Yes (his popup and Week line) | Never said at the moment it matters |
+| A writ armed for the next ritual | The caster | No | His popup says so **before** he answers |
+| **His list** (five places) | **No** | Yes | A place leaks the first time a summons there is answered: "It is on his list", or "declined (free: his list)" |
+| How many places are on his list | No | Yes | Never |
+| The dice rolls | Yes | Yes | As rolled (`/roll`) |
+
+There is one real secret: **his list**. Everything that decides the dice is open, which suits a race between friends (Fairness).
+
+**Findings**
+1. **His list can be changed in the middle of a summons, and that makes every no free.** The list is read when he answers
+   (`Respond.OnList`), and he can edit it at any time (`/sc zennit list add`, or the Zennit tab). The prompt and his form both name
+   the place. So he can see the place, add it to his list (removing another to stay under five), and decline for free, or accept and
+   take the points himself. Either way the summons is worth nothing to the group. Repeated, it gives him unlimited free declines: the
+   dominant strategy Balance closed, back through a side door. It takes about ten seconds of typing, so nobody would do it by accident,
+   but it is one button away in the Zennit tab, and the secret list exists to give him something to *plan*, not to react with.
+2. **The value of a writ depends on two facts, and the group sees neither when it decides.** After Simplicity/Complexity, a decline
+   costs him unless it is his free one or the place is on his list, and a writ makes it cost anyway. So a writ only matters while his
+   free decline is unspent, or at a place on his list. The briefing offers "/sc writ (2 left) makes a decline of this one cost him"
+   on every first summons of a week, whether or not it can bite. One of those two facts is meant to be secret (the list), and guessing
+   it is a good game: "is Silithus on his list?". The other (has he spent his free decline?) is public on `/sc week`, but nobody types
+   that while channeling.
+3. **The secret wears out over a season.** Each place leaks the first time it is answered. A known listed place is dead for the
+   group: if he accepts, both sides score P, and if he declines it is free, so it moves the gap by nothing and uses one of the week's
+   ten slots. With five places and a few hits a week, the group knows the whole list within two or three weeks unless he changes it.
+   Changing it is what keeps the secret alive, so changing it should be a choice he makes at a set time, not something he does with a
+   summons on screen (finding 1).
+4. **The writ is shown to him before he answers, and that is right.** If a writ were hidden until after his answer, it would turn a
+   decline he thought was free into a cost: a gotcha, not a bluff (Griefing). Open, it is a forcing move he can see coming. No change.
+5. **The list's size is hidden too.** The group does not know whether he has five places or none. It adds a little to the guessing
+   and costs nothing. No change.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **The list is set for the week**: a place added during a week counts from the next Monday; removing one takes effect at once (that only costs him). The Zennit tab and `/sc zennit list` mark new places "from Monday". A summons is judged against the list as it stood when its week began, so every answer in a week uses the same list | 1, 3 | A time on each entry (old entries count at once), a check in `Respond.OnList` against the summons' week, a test |
+| B | **The briefing says whether a writ can bite**: while his free decline is unspent, as now; once it is spent, "His free decline is used: a writ only bites if this place is on his list." The writ's place in the decision is then the guessing game, and the public half is said where the decision is made | 2 | A clause in `Week.Briefing` |
+| C | **Leave it** and trust the friendship: nobody would really edit the list mid-summons | | Nothing; the hole stays one button away |
+
+**Recommendation:** A and B. A closes a dominant strategy and turns changing the list into a weekly decision, which is what keeps the
+secret alive. B is one clause that tells the group the half of the writ decision it is allowed to know.
+
+**Our answer (built: A and B), and postcards.** Asked with the answer: the group also needs a reason to go to places like Silithus,
+and it should add to the joke. The 10 points are a reason, but with a secret list the far-flung places are the ones he is most
+likely to list, so going there is a guess at his secret; the trip itself should leave a mark.
+
+**Built**
+- **A, the list is set for the week** (`Respond.ListActive(at)`, `Respond.ListPending`). Each place he adds is stamped with the time;
+  a summons is judged against the list as it stood when its week began (`Respond.OnList` passes the summons' time), so a place added
+  this week counts from the next Monday. Removing one takes effect at once. Entries from before the rule count as they did. The Zennit
+  tab and `/sc zennit list` mark new places "(from Monday)", and the rules card says the list is set for the week.
+- **B, when a writ can bite.** Once his free decline is used, the first briefing says "His free decline is used: a writ (/sc writ,
+  2 left) only bites if this place is on his list", and an armed writ says the same; the rules card adds it to the writs line.
+- **Postcards** (`Ledger.PostcardFor`, `Ledger.POSTCARDS`). The first summons of him to each of the ten far-flung places in a season
+  that lands earns the Index a postcard from him, in his words and the Index's voice ("...in Silithus: 'Sand. Also insects. Mostly
+  sand.' Stamped: 1 of 10 far-flung places this season."), said on every client when his answer arrives. A decline is not a trip, a
+  second trip that season sends none, and a summons that already landed (silver paid later) does not send another. The tenth adds
+  "The Index has run out of stamps, and has sent for more." No points: the 10 are the reason to go, the postcard is the joke, and the
+  set of ten is a season-long thing to collect. `/sc week`, the rules card and the season's keepsake list them. It is also the world
+  tour that was parked, aimed at the far-flung places instead of the capitals (a city is worth 1, so a capital tour would pull against
+  the race; the far-flung tour pulls with it).
+- **Live checks** `s-list` and `d-postcard` (marks itself); self-tests for the weekly list, the writ clause and the postcards.
+
+**To watch in playtests**
+- How often does he change his list, and does the group track which places have leaked?
+- Do writs end up on guesses ("Silithus must be on it"), or only on his free decline?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1827,3 +1906,4 @@ largest single cut available. B is wording that follows from it. C is still opti
 | 2026-10-05 | A welcome at the first login (nothing new to do, who needs the addon, the rules card); the rules card and README say who needs it; a caster's first summons of Zennit gets the full briefing whatever the day | Accessibility | A newcomer was pointed at four minutes of out-of-date story, nothing said that a caster without the addon logs nothing, and their first briefing assumed they knew the race |
 | 2026-10-05 | When the caster has no addon, Zennit's client files the summons from the game's prompt, with the caster, place and helpers that clients in the group saw (a witness note); the caster's own record replaces it if it arrives; version 0.21.0 | Accessibility | A warlock without the addon logged nothing, so their summons of him did not count; his client always sees the prompt, and anyone in the group can see who channels the ritual |
 | 2026-10-05 | One rule for no: a decline in the game or on the form is free at a place on his list or with his free decline, otherwise it costs, and a writ always costs; every no reads as "declined (free)" or "declined (cost him N)" | Simplicity/Complexity | The two surfaces followed different rules, so a form refusal at a list place dodged a writ and the form's Refuse could only hurt him; three words for one act |
+| 2026-10-05 | His list is set for the week (a new place counts from Monday); the briefing says a writ only bites at his list once his free decline is used; postcards from far-flung places, once each a season, no points | Secrets | The list could be changed with a summons on screen, which made every decline free; the group could not see when a writ mattered; the far-flung trips earned points but no part in the joke |

@@ -2096,6 +2096,89 @@ add("one rule for no, in the game or on the form: free on his list or with his f
     end)
 end)
 
+add("his list is set for the week: a place added counts from next Monday, an old entry at once, and a removal at once", function()
+    local a, R, W, out = newClient("Zennit"), ST.Respond, ST.Week, {}
+    local ok, err = pcall(with, a, function()
+        local now = time()
+        local start = W.Start(now)
+        a.db.settings.zennitList = { "Westfall" }                                        -- an entry from before the rule: counts at once
+        out.old = R.OnList({ subzone = "Westfall Farms", time = now })
+        R.ListAdd("Silithus")                                                            -- added with a summons on screen
+        out.now = R.OnList({ subzone = "Silithus", time = now })
+        out.nextWeek = R.OnList({ subzone = "Silithus", time = start + 7 * 86400 + 60 })
+        out.lastWeek = R.OnList({ subzone = "Silithus", time = start - 60 })            -- not backwards either
+        out.pending = R.ListPending("Silithus")
+        out.active = #R.ListActive(now)
+        R.ListRemove(1)
+        out.removed = R.OnList({ subzone = "Westfall Farms", time = now })
+    end)
+    if not ok then return false, "ERROR " .. tostring(err) end
+    local good = out.old == true and out.now == false and out.nextWeek == true and out.lastWeek == false and out.pending == true
+        and out.active == 1 and out.removed == false
+    return good, string.format("old %s, added now %s, next week %s, removed %s", tostring(out.old), tostring(out.now),
+        tostring(out.nextWeek), tostring(out.removed))
+end)
+
+add("the briefing says when a writ can bite: while his free decline is left, else only at a place on his list", function()
+    return newRules(function()
+        local W, a, out = ST.Week, newClient("Alpha"), {}
+        with(a, function()
+            local now = time()
+            out.fresh = W.Briefing("Zennit", 1436, "Sentinel Hill")
+            out.armed = W.Briefing("Zennit", 1436, "Sentinel Hill", true)
+            out.card = table.concat(W.RulesCard(), "\n")
+        end)
+        local b = newClient("Alpha")                                                        -- his free decline is spent this week
+        out.now = time()
+        with(b, function()
+            local now = out.now
+            b.db.events.d = { caster = "Bo", target = "Zennit", assistants = {}, time = now - 60, points = 3, kind = "zone",
+                response = { result = "declined", zroll = 0, sroll = 0, time = now - 50 } }
+            out.spentArmed = W.Briefing("Zennit", 1436, "Sentinel Hill", true)
+            out.spentFirst = W.Briefing("Zennit", 1436, "Sentinel Hill")                  -- Alpha's first ever: the long one
+        end)
+        local good = out.fresh:find("/sc writ (2 left) makes a decline of this one cost him.", 1, true)
+            and out.armed:find("A writ is played: if he declines this summons in the game, it costs him 3 points.", 1, true)
+            and out.spentArmed:find("His free decline is used, so it only bites if this place is on his list: then a decline costs him 3 points.", 1, true)
+            and out.spentFirst:find("His free decline is used: a writ (/sc writ, 2 left) only bites if this place is on his list.", 1, true)
+            and out.card:find("Once his free decline is used, a writ only bites at a place on his list.", 1, true)
+            and out.card:find("set for the week", 1, true)
+        return good, tostring(out.spentFirst)
+    end)
+end)
+
+add("postcards: the first landed summons of him to each far-flung place in a season, once, and in the keepsake", function()
+    return newRules(function()
+        local a, L, out = newClient("Alpha"), ST.Ledger, {}
+        with(a, function()
+            local now = time()
+            local function put(key, age, mapID, result)
+                a.db.events[key] = { caster = "Al", target = "Zennit", assistants = {}, time = now - age, mapID = mapID, subzone = "",
+                    points = 10, kind = "remote", response = result and { result = result, zroll = 0, sroll = 0, time = now - age + 5 } or nil }
+                return a.db.events[key]
+            end
+            local declined = put("x", 50, 1451, "declined")                                -- he did not go: no postcard
+            local first = put("a", 40, 1451, "accepted")
+            local again = put("b", 30, 1451, "accepted")                                   -- Silithus again: no second postcard
+            local moon = put("c", 20, 1450, "owed")
+            out.declined = L.PostcardFor(declined, nil)
+            out.first = L.PostcardFor(first, nil)
+            out.again = L.PostcardFor(again, nil)
+            out.moon = L.PostcardFor(moon, nil)
+            moon.response = { result = "paid", zroll = 0, sroll = 0, time = now }
+            out.paid = L.PostcardFor(moon, { result = "owed" })                            -- paid later: it had landed already
+            out.zone = L.PostcardFor(put("z", 10, 1436, "accepted"), nil)                  -- not far-flung
+            out.count = #L.Postcards()
+            out.line = L.PostcardsLine(L.Facts())
+        end)
+        local good = out.declined == nil and out.first and out.first:find("in Silithus: 'Sand.", 1, true)
+            and out.first:find("Stamped: 1 of 10", 1, true) and out.again == nil and out.moon and out.moon:find("2 of 10", 1, true)
+            and out.paid == nil and out.zone == nil and out.count == 2
+            and out.line == "Postcards from Zennit: Silithus and Moonglade (2 of 10)."
+        return good, tostring(out.first)
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }

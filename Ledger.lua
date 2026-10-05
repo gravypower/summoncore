@@ -96,9 +96,16 @@ function Ledger.Collect(events, from, to, ctx)
         return tostring(a.id) < tostring(b.id)
     end)
     local run = 0
+    d.postcards = {} -- the first landed summons of him to each far-flung place, in order (design/lenses.md, Secrets)
+    local stamped = {}
     for _, item in ipairs(list) do
         local ev = item.ev
         local caster = ctx.name(ev.caster)
+        local place = ctx.remote and ev.mapID and ctx.remote(ev.mapID)
+        if place and not stamped[ev.mapID] and ctx.lands(ev) then
+            stamped[ev.mapID] = true
+            d.postcards[#d.postcards + 1] = { place = place, mapID = ev.mapID, caster = caster, time = ev.time }
+        end
         d.summons = d.summons + 1
         d.casters[caster] = (d.casters[caster] or 0) + 1
         d.present[caster] = true
@@ -291,6 +298,8 @@ function Ledger.Keepsake(number, finale, d)
     end
     local silver = Ledger.SilverLine(d)
     if silver then out[#out + 1] = silver end
+    local cards = Ledger.PostcardsLine(d)
+    if cards then out[#out + 1] = cards end
     for _, m in ipairs(Ledger.Moments(d)) do out[#out + 1] = m.text end
     for _, t in ipairs(Ledger.Titles(d)) do out[#out + 1] = t.text end
     return out
@@ -311,7 +320,65 @@ function Ledger.Context()
             if not edges[start] then edges[start] = (W.Edge(start)) end
             return edges[start]
         end,
-        resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax, weekStart = W.Start }
+        resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax, weekStart = W.Start,
+        remote = function(id) return ST.Scoring.remoteNames[id] end, lands = ST.Store.Lands }
+end
+
+----------------------------------------------------------------------
+-- Postcards (design/lenses.md, Secrets): a reason to drag him somewhere far-flung beyond the points, and part of the joke. The first
+-- time in a season a summons of him to a far-flung place lands (he went), the Index files a postcard from him.
+----------------------------------------------------------------------
+Ledger.POSTCARDS = {
+    [1451] = "Sand. Also insects. Mostly sand.",
+    [1452] = "Cold. A yeti was polite about it.",
+    [1447] = "Ruins, naga and a view. The view was fine.",
+    [1448] = "Everything here is the wrong colour, now including me.",
+    [1449] = "Something large has been following me. It is not the party.",
+    [1423] = "The locals are dead, and still more welcoming than the Index.",
+    [1428] = "It is on fire. All of it. Do not send a coat.",
+    [1419] = "The name was accurate.",
+    [1430] = "Nobody is here, and nobody wants to be. I have joined them.",
+    [1450] = "Peaceful. I was summoned out of a nap to be told so.",
+}
+
+-- How many far-flung places there are to collect.
+function Ledger.PostcardPlaces()
+    local n = 0
+    for _ in pairs(ST.Scoring.remoteNames) do n = n + 1 end
+    return n
+end
+
+-- This season's postcards, oldest first.
+function Ledger.Postcards(season)
+    return Ledger.Facts(season).postcards
+end
+
+-- The keepsake's line: "Postcards from Zennit: Silithus and Moonglade (2 of 10)." Nil when there are none.
+function Ledger.PostcardsLine(d)
+    if #d.postcards == 0 then return nil end
+    local names = {}
+    for i, p in ipairs(d.postcards) do names[i] = p.place end
+    return string.format("Postcards from Zennit: %s (%d of %d).", joined(names), #names, Ledger.PostcardPlaces())
+end
+
+-- The line for a summons of him that has just landed, if it is this season's first to its far-flung place; else nil.
+-- before: the answer it had until now, so a summons that already landed (silver later paid) does not send a second postcard.
+function Ledger.PostcardFor(ev, before)
+    if ev.fake or not ev.mapID or not ST.Scoring.remoteNames[ev.mapID] or not ST.Store.Lands(ev) then return nil end
+    if before and ST.Store.Lands({ response = before }) then return nil end
+    local cards = Ledger.Postcards()
+    for i, p in ipairs(cards) do
+        if p.mapID == ev.mapID then
+            if p.time ~= ev.time then return nil end -- he has been there already this season
+            local line = string.format("The Index has filed a postcard from %s, in %s: '%s' Stamped: %d of %d far-flung places this season.",
+                ev.target, p.place, Ledger.POSTCARDS[ev.mapID] or "Wish you were here. I was.", i, Ledger.PostcardPlaces())
+            if i == Ledger.PostcardPlaces() then
+                line = line .. " That is every one. The Index has run out of stamps, and has sent for more."
+            end
+            return line
+        end
+    end
+    return nil
 end
 
 -- The facts for the season in progress.

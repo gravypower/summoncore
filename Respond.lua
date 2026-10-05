@@ -224,11 +224,27 @@ end
 -- match most places and decide every week. Only the first LIST_MAX entries count, and only those of LIST_MIN letters or more.
 Respond.LIST_MAX, Respond.LIST_MIN = 5, 4
 
--- The entries that count, in order.
-function Respond.ListActive()
-    local out = {}
+-- When each place was added (lowercase text -> time). A place counts from the Monday after it was added, so the list is set for the
+-- week and cannot be changed with a summons on screen (design/lenses.md, Secrets). Older entries have no time and count at once.
+local function addedAt()
+    ST.db.settings.zennitListAdded = ST.db.settings.zennitListAdded or {}
+    return ST.db.settings.zennitListAdded
+end
+
+-- Whether an entry is still waiting for its first Monday at time `at` (default: now).
+function Respond.ListPending(word, at)
+    local t = addedAt()[word:lower()]
+    return t ~= nil and t >= ST.Week.Start(at or time())
+end
+
+-- The entries that count, in order: the first five long enough, and (with `at`) only those that had a Monday before `at`.
+function Respond.ListActive(at)
+    local out, n = {}, 0
     for _, word in ipairs(Respond.List()) do
-        if #out < Respond.LIST_MAX and #word >= Respond.LIST_MIN then out[#out + 1] = word end
+        if n < Respond.LIST_MAX and #word >= Respond.LIST_MIN then
+            n = n + 1
+            if not at or not Respond.ListPending(word, at) then out[#out + 1] = word end
+        end
     end
     return out
 end
@@ -245,6 +261,7 @@ function Respond.ListAdd(text)
         return false, string.format("the list holds %d places: remove one first", Respond.LIST_MAX)
     end
     list[#list + 1] = text
+    addedAt()[text:lower()] = time()
     return true
 end
 
@@ -282,7 +299,7 @@ end
 function Respond.OnList(ev)
     local zone = ev.mapID and C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(ev.mapID)
     local where = ((ev.subzone or "") .. " " .. ((zone and zone.name) or "")):lower()
-    for _, word in ipairs(Respond.ListActive()) do
+    for _, word in ipairs(Respond.ListActive(ev.time)) do -- the list as it stood when the summons' week began
         if where:find(word:lower(), 1, true) then return true end
     end
     return false
@@ -410,9 +427,15 @@ function Respond.Decide(id, result, zroll, sroll, amount)
         time = math.max(time(), ev.response and ev.response.time + 1 or 0),
         listed = Respond.OnList(ev) or nil, closes = ev.response and ev.response.closes or nil,
         card = card or (ev.response and ev.response.card) or nil, amount = amount }
+    local before = ev.response
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
+    local postcard = ST.Ledger.PostcardFor(ev, before)
+    if postcard then
+        ST.print(postcard)
+        if ST.Check then ST.Check.Seen("d-postcard", "a postcard was filed") end
+    end
     printWeek(ev, true)
     playAnswerClip(resp)
     refreshSurfaces(id, "done")
@@ -559,6 +582,11 @@ function Respond.OnResponse(id, ev, resp, before)
     end
     playAnswerClip(resp)
     if line then ST.print(line) end
+    local postcard = ST.Ledger.PostcardFor(ev, before)
+    if postcard then
+        ST.print(postcard)
+        if ST.Check then ST.Check.Seen("d-postcard", "a postcard was filed") end
+    end
     printWeek(ev, false)
     ST.Scoring.Announce() -- his answer may have earned me a badge (a tipped roll, a clean tab, a card used up)
     if ST.Hub then ST.Hub.Refresh() end

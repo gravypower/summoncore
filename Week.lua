@@ -557,11 +557,14 @@ function Week.RulesCard(start)
         string.format("Dice: he has %d a week and adds +%d to his roll; each helper (two at most) adds +%d to the summoner's. " ..
             "When they are gone he can only accept, decline or ask for the silver.", Week.Rule("dice", start), edge, bonus),
         string.format("Writs: the group has %d a week. Played with /sc writ before a ritual on him, a writ makes his decline of that summons " ..
-            "in the game cost him its points.", R.writs),
+            "cost him its points. Once his free decline is used, a writ only bites at a place on his list.", R.writs),
         string.format("Declines: in the game's prompt or on the Index's form, a declined summons does not happen. It is free at a place on " ..
             "his list, and his first decline of a week is free (%d); every other one costs him its points, and one with a writ always does.", R.declines),
-        string.format("His list: up to %d places of %d letters or more. Accepting a summon there earns him the points; declining it is free (unless the group played a writ).",
+        string.format("His list: up to %d places of %d letters or more, set for the week (a place he adds counts from the next Monday). " ..
+            "Accepting a summon there earns him the points; declining it is free (unless the group played a writ).",
             ST.Respond.LIST_MAX, ST.Respond.LIST_MIN),
+        string.format("Postcards: the first summons of him to each far-flung place (%d points) in a season that lands earns the Index a " ..
+            "postcard from him. This season: %d of %d.", kinds.remote, #ST.Ledger.Postcards(), ST.Ledger.PostcardPlaces()),
         string.format("Catch-up: when a side leads the season by two wins, his edge moves %d toward the side that is behind; by three, %d.%s",
             R.catchup[2] or 0, R.catchup[3] or 0, moved ~= 0 and string.format(" This week it has moved %+d.", moved) or ""),
         string.format("The clock: this week closes %s, your time (answers stop %s). A week is Monday to Monday, UTC.",
@@ -816,12 +819,17 @@ function Week.Briefing(target, mapID, subzone, writ)
     end
     local whim = first and Week.WhimLine(start)
     if whim then text = text .. " This week's whim: " .. whim end
+    -- a writ only changes a decline that would have been free: his free decline, or a place on his list. Once his free decline is
+    -- spent, only the list is left, and that is his secret, so the briefing says so (design/lenses.md, Secrets)
+    local spent = Week.DeclinesLeft(start) == 0
     if writ then
         local pts = (mapID ~= nil or subzone ~= nil) and (ST.Scoring.Score(mapID, subzone))
-        text = text .. (pts and string.format(" A writ is played: if he declines this summons in the game, it costs him %d point%s.", pts,
-            pts == 1 and "" or "s") or " A writ is played: if he declines this summons in the game, it costs him its points.")
+        local cost = pts and string.format("%d point%s", pts, pts == 1 and "" or "s") or "its points"
+        text = text .. (spent and string.format(" A writ is played. His free decline is used, so it only bites if this place is on his list: then a decline costs him %s.", cost)
+            or string.format(" A writ is played: if he declines this summons in the game, it costs him %s.", cost))
     elseif first and Week.WritsLeft(start) > 0 then
-        text = text .. string.format(" /sc writ (%d left) makes a decline of this one cost him.", Week.WritsLeft(start))
+        text = text .. (spent and string.format(" His free decline is used: a writ (/sc writ, %d left) only bites if this place is on his list.", Week.WritsLeft(start))
+            or string.format(" /sc writ (%d left) makes a decline of this one cost him.", Week.WritsLeft(start)))
     end
     local left = Week.LastCall(now)
     if left then text = text .. string.format(" Last call: the Index closes the week in %s (%s).", leftText(left), (Week.ClosesText(start))) end
