@@ -570,7 +570,11 @@ local function buildTools(f)
     end
 
     local out = bodyText(f, 16, -300, 740, 140)
-    local function show(text) out:SetText(text) end
+    local shown = "" -- what the output box says, so COPY can hand it over: the box itself cannot be selected
+    local function show(text, full) -- full: the longer text COPY hands over, when the box only has room for a summary
+        shown = full or text
+        out:SetText(text)
+    end
 
     local windows = column(16, "WINDOWS")
     tool(windows, "IMPORT / EXPORT", function() ST.Export.Open("import") end)
@@ -720,7 +724,59 @@ local function buildTools(f)
         show("Ping sent. Replies appear in Diagnostics > Addon messages.")
     end)
 
+    -- the live checks (design/verification.md): run the automatic ones, then step through the rest with the buttons
+    local checkRow = CreateFrame("Frame", nil, f)
+    checkRow:SetSize(740, 24)
+    local checkLabel = label(checkRow, "CHECKS", 0, -3)
+    local current -- the check on show
+    local function paintChecks()
+        checkLabel:SetText("CHECKS " .. (ST.Check.Summary()))
+    end
+    -- the output box has room for a few lines, so the steps and the results go to the chat window, which scrolls, with a headline here
+    local function tellChat(lines, headline)
+        for _, l in ipairs(lines) do ST.print(l) end
+        show(headline .. " The details are in the chat window; COPY copies them.", table.concat(lines, "\n"))
+    end
+    local function showCheck(id)
+        current = id
+        if not id then
+            return show("Every check that needs a person has a result. REPORT opens the report to send back.")
+        end
+        local lines = ST.Check.Detail(id)
+        tellChat(lines, lines[1]:sub(1, 150))
+    end
+    local function mark(status)
+        if not current then return showCheck((ST.Check.Next())) end
+        ST.Check.Record(current, status, "")
+        showCheck((ST.Check.Next()))
+        paintChecks()
+    end
+    button(checkRow, "RUN AUTO", 112, 0, 90, function()
+        local lines, bad = {}, {}
+        for _, r in ipairs(ST.Check.RunAuto()) do
+            if not r.ok then bad[#bad + 1] = r.id end
+            lines[#lines + 1] = string.format("%s %s: %s (%s)", r.ok and "PASS" or "FAIL", r.id, r.title, tostring(r.detail))
+        end
+        tellChat(lines, #bad == 0 and "Automatic checks: all passed." or ("Automatic checks: " .. #bad .. " FAIL (" .. table.concat(bad, ", ") .. ")."))
+        paintChecks()
+    end)
+    button(checkRow, "NEXT", 206, 0, 56, function() showCheck((ST.Check.Next())) end)
+    button(checkRow, "PASS", 266, 0, 56, function() mark("pass") end)
+    button(checkRow, "FAIL", 326, 0, 56, function() mark("fail") end)
+    button(checkRow, "SKIP", 386, 0, 56, function() mark("skip") end)
+    button(checkRow, "TRACE", 446, 0, 64, function()
+        local lines = {}
+        for i = math.max(1, #ST.trace - 11), #ST.trace do
+            lines[#lines + 1] = date("%H:%M:%S", ST.trace[i].time) .. " " .. ST.trace[i].text
+        end
+        if #lines == 0 then return show("Nothing traced yet: it records the summon prompt and the answers as they happen.") end
+        tellChat(lines, "The last " .. #lines .. " things the summon prompt and the answers did.")
+    end)
+    button(checkRow, "REPORT", 514, 0, 80, function() ST.Check.Command("report") end)
+    button(checkRow, "COPY", 598, 0, 60, function() ST.Check.Copy(shown) end)
+
     return function()
+        paintChecks()
         local admin = ST.IsAdmin()
         local lowest = 0
         for _, col in ipairs(columns) do
@@ -746,6 +802,9 @@ local function buildTools(f)
             pingRow:SetPoint("TOPLEFT", 16, y)
             y = y - STEP
         end
+        checkRow:ClearAllPoints()
+        checkRow:SetPoint("TOPLEFT", 16, y)
+        y = y - STEP
         out:ClearAllPoints()
         out:SetPoint("TOPLEFT", 16, y - 8)
         out:SetPoint("BOTTOMRIGHT", -16, 4)
