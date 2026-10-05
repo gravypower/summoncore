@@ -1216,6 +1216,37 @@ add("the rules card: this week's live numbers, the whim, and the old rules when 
     end)
 end)
 
+add("the playtest report: weeks, answers, dice, the list and the helpers, counted from the log", function()
+    local D = 7 * 86400
+    local base = 100 * D
+    local function ev(week, n, caster, helpers, points, result, listed)
+        local t = base + week * D + n * 60
+        return { caster = caster, target = "Zennit", assistants = helpers or {}, time = t, points = points,
+            response = result and { result = result, zroll = 40, sroll = 60, time = t + 30, listed = listed } }
+    end
+    local events = {
+        a = ev(0, 1, "Al", { "Cy", "Di" }, 3, "lost"), b = ev(0, 2, "Bo", {}, 3, "won", true), c = ev(0, 3, "Al", {}, 5, "accepted"),
+        d = ev(2, 1, "Di", { "Al" }, 3, nil),                                           -- the current week, unanswered
+        f = { caster = "Al", target = "Zennit", assistants = {}, time = base + 5, points = 9, fake = true },
+        g = { caster = "Al", target = "Someone", assistants = {}, time = base + 6, points = 9 },
+    }
+    local lines = ST.Report.Build({
+        events = events, isZennit = function(n) return n == "Zennit" end,
+        weekStart = function(t) return t - (t % D) end, nowStart = base + 2 * D,
+        score = function(start) return start == base and { winner = "group", counted = 3 } or { counted = 0 } end,
+        whim = function() return nil end, dice = 3, tipped = 2 })
+    local text = table.concat(lines, "\n")
+    -- 4 real summons of Zennit: the test summon and the one of someone else are left out
+    local ok = text:find("3 weeks of the log (the current one included), 4 summons of Zennit", 1, true)
+    ok = ok and text:find("2 with a summons of him, 1 without", 1, true) and text:find("the group won 1", 1, true)
+        and text:find("3 or 4: 1 of 1", 1, true) and text:find("unanswered 1", 1, true)
+        and text:find("Dice: 2 rolled", 1, true) and text:find("Rolls the helpers tipped: 2", 1, true)
+        and text:find("33% of his answers were on it", 1, true)
+    local none = ST.Report.Build({ events = {}, isZennit = function() return false end, weekStart = function(t) return t end,
+        nowStart = 0, score = function() return {} end, whim = function() end, dice = 3 })
+    return ok and #none == 1, "weeks, answers, dice, the list and the helpers read from the log; an empty log says so"
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

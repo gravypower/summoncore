@@ -333,6 +333,11 @@ function commands.week(rest)
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
 
+-- What the log says about how the race is being played (for a playtest).
+function commands.report()
+    for _, line in ipairs(ST.Report.Lines()) do print_(line) end
+end
+
 -- The rules of the race, with this week's live numbers.
 function commands.rules()
     for _, line in ipairs(ST.Week.RulesCard()) do print_(line) end
@@ -401,6 +406,7 @@ local HELP = {
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc report - what the log says about how the race is being played (for a playtest)",
     "/sc rules - the rules of the race, with this week's live numbers",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
     "/sc respond [test] - Zennit answers a summon of him (accept, refuse, 50 silver, dice); test tries it",

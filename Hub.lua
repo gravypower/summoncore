@@ -600,6 +600,10 @@ local function buildTools(f)
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
         }, "\n"))
     end)
+    tool(try, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
+        for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
+        show("What the log says about how the race is being played is in the chat window.")
+    end)
     tool(try, "THE RULES", function() -- long: it goes to the chat window, which scrolls
         for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
         show("The rules of the race, with this week's numbers, are in the chat window.")

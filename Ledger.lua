@@ -90,6 +90,7 @@ function Ledger.Collect(events, from, to, ctx)
             local bonus = ctx.bonus(ev)
             -- his roll would have won without the helpers: they tipped it
             if result == "lost" and bonus > 0 and ctx.resolve(r.zroll, r.sroll, 0, ctx.edge(ev)) == "won" then
+                d.tippedCount = (d.tippedCount or 0) + 1
                 local names = {}
                 for i = 1, math.min(#(ev.assistants or {}), ctx.helpersMax) do names[i] = ctx.name(ev.assistants[i]) end
                 d.tipped = { caster = caster, helpers = names, bonus = bonus, sroll = r.sroll, zroll = r.zroll, edge = ctx.edge(ev) }
@@ -163,7 +164,7 @@ function Ledger.Keepsake(number, finale, d)
     return out
 end
 
-local function context()
+function Ledger.Context()
     local W, R = ST.Week, ST.Respond
     local edges = {}
     return { isZennit = W.IsZennit, name = function(n) return ST.baseName(n) or n end, bonus = W.HelperBonus,
@@ -178,13 +179,13 @@ end
 -- The facts for the season in progress.
 function Ledger.Facts(season)
     season = season or ST.Week.Season()
-    return Ledger.Collect(ST.db.events, season.since or 0, math.huge, context())
+    return Ledger.Collect(ST.db.events, season.since or 0, math.huge, Ledger.Context())
 end
 
 -- Past seasons, newest first: { { number, side, lines } }.
 function Ledger.Seasons()
     local out, finales = {}, ST.Week.Season().finales
-    local ctx = context()
+    local ctx = Ledger.Context()
     for i = #finales, 1, -1 do
         local f = finales[i]
         local d = Ledger.Collect(ST.db.events, f.from, f.start + 7 * 86400, ctx)
