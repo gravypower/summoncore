@@ -2354,7 +2354,8 @@ add("watching together: a chapter shown to the group, asked of those who reached
             out.bad = Sync.OnMessage("1~V~x9", "PARTY", "Bo")
             Sync.onWatch = realOnWatch
             out.reached = I.OnWatch("Bo", "g1")
-            out.notReached = I.OnWatch("Bo", "g2")
+            out.notReached = I.OnWatch("Bo", "g2")                                             -- not reached here yet: Bo's client checked
+            out.unwritten = I.OnWatch("Bo", "g9")
             rawset(_G, "IsInRaid", function() return true end)
             rawset(_G, "UnitIsGroupLeader", function() return true end)
             I.RaidGathered()
@@ -2365,11 +2366,12 @@ add("watching together: a chapter shown to the group, asked of those who reached
         rawset(_G, "UnitIsGroupLeader", realLeader)
         if not ok then return false, "ERROR " .. tostring(err) end
         local good = out.key == "g1" and out.party == "asked" and watched[1] == "Bo:g1" and out.guild == "rejected:channel"
-            and out.bad == "bad" and out.reached == true and out.notReached == false
+            and out.bad == "bad" and out.reached == true and out.notReached == true and out.unwritten == false
             and asked[1] and asked[1]:find("Bo would like to show the group chapter 3", 1, true)
-            and asked[2] and asked[2]:find("The raid has gathered. Last week unlocked chapter 3", 1, true) and asked[3] == nil
-            and played[1] == "g1"
-        return good, string.format("key %s; asked: %s", tostring(out.key), tostring(asked[2]))
+            and asked[2] and asked[2]:find("chapter 5", 1, true)
+            and asked[3] and asked[3]:find("The raid has gathered. Last week unlocked chapter 3", 1, true) and asked[4] == nil
+            and played[1] == "g1" and played[2] == "g2"
+        return good, string.format("key %s; asked: %s", tostring(out.key), tostring(asked[3]))
     end)
 end)
 

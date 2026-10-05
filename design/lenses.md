@@ -2200,7 +2200,10 @@ raid, when everyone is there.
 - **A, watch it together** (`Intro.PlayForGroup`, `Intro.OnWatch`, message `V`). `/sc intro <key> group` plays a reached chapter
   and sends its key to the party or raid; every other addon client that has reached it asks "Al would like to show the group chapter
   3: The group wins. Watch now?", and Watch plays it there. It starts when each person clicks, so it is a shared moment, not a
-  frame-exact one. Only chapters the season has reached (the admin may show any); a client that has not reached it is not asked.
+  frame-exact one. Only chapters the season has reached can be shown (the sender's client checks; the admin may show any). A client
+  whose log has not caught up yet (a newcomer at their first raid) is asked too and can watch it: nobody has to have watched the
+  earlier chapters, or wait for their log to sync, to see this week's. (Asked while building: chapters are unlocked by the season's
+  race in the synced log, never by what a person has watched, so a newcomer can play any reached chapter as soon as the log arrives.)
 - **At the weekly raid** (`Intro.RaidGathered`). About ten seconds after this client joins a raid, once a week: the raid leader is
   asked whether to play last week's chapter for the raid; everyone else with the addon is told `/sc intro <key> group`. With no
   chapter last week, the leader is reminded that `/sc week say` tells the raid where the week stands.

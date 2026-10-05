@@ -247,7 +247,7 @@ Check.LIST = {
       steps = { "In a party, one of you runs /sc intro g1 group (any chapter the season has reached; the admin may show any).",
           "The other gets 'X would like to show the group chapter 3: ... Watch now?'; Watch starts it there too.",
           "At the weekly raid, the raid leader (with the addon) is offered last week's chapter about ten seconds after the raid forms; the others are told the command." },
-      expect = "the prompt, and the chapter on both", fails = "no prompt (check both are on the same version, and the chapter is reached on both)" },
+      expect = "the prompt, and the chapter on both (a newcomer whose log is still syncing too)", fails = "no prompt (check both are on the same version)" },
     { id = "d-say", kind = "duo", title = "/sc week say sends one line to the group", 
       steps = { "In a party or raid, either person runs /sc week say.", "The other sees 'Summon Core: Week: ...' in party chat." },
       expect = "the line arrives", fails = "SendChatMessage is blocked; the addon says so" },

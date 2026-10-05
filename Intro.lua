@@ -655,6 +655,8 @@ function Intro.Check()
     end
 end
 
+local shownBy -- a chapter a group member is showing: their client checked it is reached, so a log still syncing does not block it
+
 function Intro.Toggle(arg)
     if arg == "check" then return Intro.Check() end
     if not frame then build() end
@@ -671,7 +673,7 @@ function Intro.Toggle(arg)
     si = math.max(1, math.min(#scenes, si)) -- #scenes is the Ledger scene
     -- a chapter can only be played once the season has reached it (the admin can play any)
     local chapterKey = Intro.KeyOf[scenes[si].chapter]
-    if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) then
+    if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) and shownBy ~= chapterKey then
         return ST.print("that chapter of the story has not been reached yet")
     end
     setChapter(scenes[si].chapter)
@@ -747,14 +749,19 @@ function Intro.PlayForGroup(key)
     return true
 end
 
--- Someone in the group is showing a chapter: ask whether to watch, if this client has reached it.
+-- Someone in the group is showing a chapter: ask whether to watch. The sender's client checked the season has reached it, so a
+-- client whose log is still catching up (a newcomer at their first raid) is asked too, and can watch it.
 function Intro.OnWatch(sender, key)
-    if not (Intro.HasChapter(key) and Intro.Reached(key)) then
-        ST.Trace(string.format("%s showed %s, which this client has not reached", tostring(sender), tostring(key)))
+    if not Intro.HasChapter(key) then
+        ST.Trace(string.format("%s showed %s, which this version of the addon does not have", tostring(sender), tostring(key)))
         return false
     end
     Intro.ask(string.format("%s would like to show the group %s. Watch now?", sender, Intro.ChapterTitle(key)),
-        function() Intro.Play(key) end)
+        function()
+            shownBy = key
+            Intro.Play(key)
+            shownBy = nil
+        end)
     return true
 end
 ST.Sync.onWatch = Intro.OnWatch
