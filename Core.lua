@@ -385,6 +385,7 @@ end
 function commands.week(rest)
     local W = ST.Week
     if rest == "victory" or rest == "group" or rest:match("^[zg]%d$") then return ST.Intro.Toggle(rest) end
+    if rest == "login" then return W.Replay() end
     if rest == "say" then
         local ok, text = W.SayWeek({
             channel = function() return IsInRaid() and "RAID" or IsInGroup() and "PARTY" or nil end,
@@ -555,7 +556,7 @@ local HELP = {
     "/sc zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
-    "/sc week [say|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, a key plays that chapter of the story",
+    "/sc week [say|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, login says this week's login lines again, a key plays that chapter of the story",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",

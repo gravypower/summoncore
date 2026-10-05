@@ -594,6 +594,7 @@ function Week.AnnounceClock()
             side == "group" and string.format("The group leads by %d", by) or
                 (by == 0 and "It is level, and a tie goes to Zennit" or string.format("Zennit leads by %d", by)),
             r.counted, Week.RULES.cap))
+        if ST.Check then ST.Check.Seen("s-lastcall", "said at login with " .. leftText(left) .. " left") end
     end
 end
 
@@ -643,6 +644,15 @@ function Week.Check()
     ST.Guard("the week's clock", Week.AnnounceClock)
     ST.Guard("the Monday tip", Week.AnnounceTip)
     ST.Guard("the waiting summons", Week.AnnounceWaiting)
+end
+
+-- Says this week's login lines again (/sc week login): the whim, the clock, a last call, a tip, and what is waiting or owed.
+-- Last week's result is left alone, since announcing it also plays the week's opening and records the result.
+function Week.Replay()
+    local s = ST.db and ST.db.settings
+    if not s then return end
+    s.whimSeen, s.clockSeen, s.lastCallSeen, s.tipSeen = nil, nil, nil, nil
+    Week.Check()
 end
 
 -- Zennit's client says what is waiting for him; everyone else's says what they owe.

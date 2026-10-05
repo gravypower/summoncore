@@ -11,6 +11,8 @@ here; read the lens in the book first.
 3. Write down the gap between the answer and the build, and anything that surprised us.
 4. Turn one finding into one change (or a decision not to change), and log it under Decisions.
 5. Playtest with the group, and come back to the lens with what happened.
+6. Add a live check (`Check.lua`, `design/verification.md`) for anything the change does that only the game can confirm: a call
+   the stubs fake, a line said at login, a layout. Rules logic belongs in the self-tests instead, which `a-selftest` runs in the game.
 
 Lenses will disagree with each other. Choosing between them is the design work, so the reasoning goes in here too.
 
@@ -33,7 +35,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
 | Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
 | Reward | What does each member get, and when? | Answered; A, B, C and D built |
-| Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
+| Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed (now three sections); the tip and the short help built; B and D left |
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
@@ -1626,3 +1628,4 @@ top of it. So the sharpest form of the question is: *how often does the addon ma
 | 2026-10-05 | What he presses at the game's own summon prompt is his answer (accept: accepted; decline: declined, worth nothing either way); the group has two writs a week that make a decline of one summons cost him its points; the version is 0.20.0 | Resonance | The addon asked him to answer a summons he had already taken or declined for real, and could not tell the two apart; a decline needed to be a move the group could price, not a punishment for real life |
 | 2026-10-05 | His first decline of a week in the game is free; every later one, and any on a writ, costs him the summons' points; the popup and his own Week line say how many free declines are left | Balance | A free decline with no limit was better than refusing every time and let him win every week he chose to (simulated: the group won 0% against 63% on the old rules); one a week leaves about 43% |
 | 2026-10-05 | Dice are one click; a key binding arms a writ; what he presses at the game's prompt ends a roll in flight | Flow | The ordinary summons needed nothing from anyone, but dice cost three clicks across two people and a writ had to be typed mid-play; a roll and the game's prompt could give two answers to one summons |
+| 2026-10-05 | The Tools tab is three sections (General, Testing, Checks) and opens on the one used last; each lens now ends with a live check for what only the game can confirm, and the earlier lenses have theirs (`s-login`, `s-band`, `s-lastcall`, and `/sc week login` to say the login lines again) | Interface, the method | Five columns and three rows left the output box three lines; the live checks arrived after Flow, so the lenses before it had no way to be confirmed in the game beyond the rules the self-tests cover |

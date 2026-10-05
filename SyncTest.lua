@@ -1634,7 +1634,7 @@ add("the Monday tip: they go round without repeating, once a week, and can be sw
     return good, string.format("%d different tips in a round, printed %d then %d, %s", out.seen, out.once, out.off, tostring(out.line))
 end)
 
-add("the week's clock in the player's time, and a last call in the final day", function()
+add("the week's clock in the player's time, a last call in the final day, and /sc week login says them again", function()
     return newRules(function()
         local W = ST.Week
         local a = newClient("Alpha")
@@ -1655,6 +1655,11 @@ add("the week's clock in the player's time, and a last call in the final day", f
                 W.AnnounceClock()
                 W.AnnounceClock()                                                            -- once a week
                 out.printed = table.concat(printed, " | ")
+                out.seen = ST.Check.Status("s-lastcall")                                     -- the live check marks itself
+                local errors = #ST.errors
+                W.Replay()                                                                   -- /sc week login: said again
+                out.replayed = select(2, table.concat(printed, " | "):gsub("closes this week on", ""))
+                out.replayErrors = #ST.errors - errors
                 rawset(_G, "time", function() return start + 2 * 86400 end)                  -- early in the week: no last call
                 out.early = W.LastCall()
                 out.earlyStatus = W.StatusLine(start)
@@ -1674,7 +1679,9 @@ add("the week's clock in the player's time, and a last call in the final day", f
             and select(2, out.printed:gsub("closes this week on", "")) == 1 and select(2, out.printed:gsub("Last call", "")) == 1
             and out.early == nil and not out.earlyStatus:find("closes in", 1, true)
             and out.card:find("this week closes " .. out.closes .. ", your time", 1, true)
-        return good, string.format("closes %s, answers until %s; %s", tostring(out.closes), tostring(out.answers), tostring(out.status))
+            and out.seen == "pass" and out.replayed == 2 and out.replayErrors == 0
+        return good, string.format("closes %s, answers until %s; %s; s-lastcall %s, replayed %s, %s errors", tostring(out.closes),
+            tostring(out.answers), tostring(out.status), tostring(out.seen), tostring(out.replayed), tostring(out.replayErrors))
     end)
 end)
 
