@@ -177,7 +177,7 @@ function Respond.Announce(ev, resp)
             who, silver, ev.caster, pts, plural(pts), bonus)
     end
     if r == "paid" and resp.card then
-        return string.format("%s's card pays the %d silver: a punch used, %d left. +%d point%s.%s", ev.caster, silver,
+        return string.format("%s's card pays the %d silver: the Index stamps it, %d punches left. +%d point%s.%s", ev.caster, silver,
             ST.Cards.Left(ev.caster), pts, plural(pts), bonus)
     end
     if r == "paid" then
@@ -348,8 +348,8 @@ StaticPopupDialogs["SUMMONCORE_ASK_SILVER"] = {
 function Respond.AskSilver(id, ev)
     if ST.Cards.Left(ev.caster) > 0 then return Respond.Decide(id, "owed") end -- a card pays: a punch, no question
     local s = ST.db.settings
-    StaticPopup_Show("SUMMONCORE_ASK_SILVER", string.format("How much silver do you ask of %s, in cash, with no receipt? (50, 2g, 1g 20s.) " ..
-        "The summons counts either way: it goes on their tab.", ev.caster), nil, {
+    StaticPopup_Show("SUMMONCORE_ASK_SILVER", string.format("The Index asks how much silver you ask of %s, in cash, with no receipt. (50, 2g, 1g 20s.) " ..
+        "The summons counts either way; the silver goes on the tab.", ev.caster), nil, {
         default = s and s.silverAsk or SILVER,
         go = function(n)
             if s then s.silverAsk = n end
@@ -595,8 +595,8 @@ local function render(s, stage, extra)
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
             { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },
-            { ST.Cards.Left(ev.caster) > 0 and string.format("Take a punch (card: %d left)", ST.Cards.Left(ev.caster))
-                or "Ask for silver (you name it), no receipt", function() Respond.AskSilver(id, ev) end },
+            { ST.Cards.Left(ev.caster) > 0 and string.format("Stamp the card (%d left)", ST.Cards.Left(ev.caster))
+                or "Name a price, in silver (no receipt)", function() Respond.AskSilver(id, ev) end },
             dice == 0 and { "No dice left this week", function() end, true }
                 or { "Suggest dice (1-100)", function() render(s, "roll") end },
         })

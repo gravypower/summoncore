@@ -533,14 +533,14 @@ function Week.AnnounceClock()
     if s.clockSeen ~= start then
         s.clockSeen = start
         local closes, answers = Week.ClosesText(start)
-        ST.print(string.format("This week closes %s, your time; he can still answer until %s.", closes, answers))
+        ST.print(string.format("The Index closes this week on %s, your time, and takes late answers until %s.", closes, answers))
     end
     local left = Week.LastCall()
     if left and s.lastCallSeen ~= start then
         s.lastCallSeen = start
         local r = Week.Score(start)
         local side, by = Week.Lead(r)
-        ST.print(string.format("|cffffd100Last call:|r the week closes in %s. %s, %d of %d summons filed.", leftText(left),
+        ST.print(string.format("|cffffd100Last call:|r the Index closes the week in %s. %s, %d of %d summons filed.", leftText(left),
             side == "group" and string.format("The group leads by %d", by) or
                 (by == 0 and "It is level, and a tie goes to Zennit" or string.format("Zennit leads by %d", by)),
             r.counted, Week.RULES.cap))
@@ -600,12 +600,11 @@ function Week.AnnounceWaiting()
     if ST.Gag.IsZennit() then
         local waiting = ST.Respond.Waiting()
         if waiting > 0 then
-            ST.print(string.format("%d summons %s waiting for your answer. |cffffd100/sc respond|r opens the latest.", waiting,
-                waiting == 1 and "is" or "are"))
+            ST.print(string.format("The Index is holding %d summons for your answer. |cffffd100/sc respond|r opens the latest.", waiting))
         end
         local n, silver = ST.Respond.Owed("target")
         if n > 0 then
-            ST.print(string.format("You are owed %d silver for %d summons (in cash, with no receipt). Mark each paid in the Answer tab.", silver, n))
+            ST.print(string.format("The Index shows %d silver owed to you on %d summons, in cash, with no receipt. Mark each paid in the Answer tab.", silver, n))
         end
     else
         local n, silver = ST.Respond.Owed("caster")
@@ -706,7 +705,7 @@ function Week.Briefing(target)
     local whim = Week.WhimLine(start)
     if whim then text = text .. " This week's whim: " .. whim end
     local left = Week.LastCall(now)
-    if left then text = text .. string.format(" Last call: the week closes in %s (%s).", leftText(left), (Week.ClosesText(start))) end
+    if left then text = text .. string.format(" Last call: the Index closes the week in %s (%s).", leftText(left), (Week.ClosesText(start))) end
     local waiting = Week.Overdue(start)
     if waiting > 0 then
         text = text .. string.format(" %d earlier summons of him %s still waiting for his answer: a word to him might help.", waiting,

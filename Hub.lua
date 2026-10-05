@@ -328,13 +328,13 @@ local function buildTally(f)
 end
 
 local function buildBadges(f)
-    local list = scrollList(f, { { "Badge", 260 }, { "Status", 110 }, { "Earned", 180 } })
+    local list = scrollList(f, { { "Badge", 270 }, { "Status", 90 }, { "Earned, or what it takes", 380 } })
     return function()
         local rows = {}
         for _, b in ipairs(ST.Scoring.badges) do
             local got = ST.db.badges[b.id]
             rows[#rows + 1] = { got and ("[X] " .. b.name) or T.Paint("dim", "[ ] " .. b.name),
-                got and "EARNED" or T.Paint("dim", "LOCKED"), got and T.Paint("dim", fmtTime(got.earned)) or "" }
+                got and "EARNED" or T.Paint("dim", "LOCKED"), got and T.Paint("dim", fmtTime(got.earned)) or T.Paint("dim", b.how or "") }
         end
         list.Set(rows)
     end

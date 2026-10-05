@@ -172,16 +172,16 @@ function Silver.Statement(events, ctx, viewer)
     local lines, owed, paid = {}, 0, 0
     for _, e in ipairs(order) do
         owed, paid = owed + e.owed, paid + e.paid
-        local subject = viewer and "You owe Zennit" or (e.name .. " owes")
+        local subject = viewer and "The Index has you down for" or ("The Index has " .. e.name .. " down for")
         if e.owed > 0 then
-            lines[#lines + 1] = string.format("%s %d silver on %d summons (the oldest from %s); paid so far %d.", subject, e.owed, e.n,
+            lines[#lines + 1] = string.format("%s %d silver on %d summons (the oldest from %s); %d paid so far.", subject, e.owed, e.n,
                 date("%d %b", e.oldest), e.paid)
         elseif e.paid > 0 then
-            lines[#lines + 1] = string.format("%s nothing now; paid %d silver so far.", viewer and "You owe" or (e.name .. " owes"), e.paid)
+            lines[#lines + 1] = string.format("The Index has %s down for nothing now, with %d silver paid so far.", viewer and "you" or e.name, e.paid)
         end
     end
     if #lines == 0 then
-        lines[1] = viewer and "You owe Zennit nothing." or "Nobody owes anything."
+        lines[1] = viewer and "The Index has you down for nothing." or "The Index has nobody down for anything."
     elseif not viewer then
         table.insert(lines, 1, string.format("The tab: %d silver owed to Zennit, %d paid so far.", owed, paid))
     end
@@ -229,9 +229,9 @@ function Silver.Paid(payer, copper, via)
     if m.card then
         parts[#parts + 1] = string.format("sell %s a card of %d punches (%d silver)", who, m.card.punches, m.card.silver)
     end
-    local text = string.format("%s paid you %s by %s. %s?%s", who, coin(copper), via,
-        (parts[1]:gsub("^%l", string.upper)) .. (parts[2] and (" and " .. parts[2]) or ""),
-        m.left > 0 and string.format(" (%d silver is left over.)", m.left) or "")
+    local text = string.format("%s has paid you %s by %s. The Index would like to %s.%s", who, coin(copper), via,
+        parts[1] .. (parts[2] and (" and " .. parts[2]) or ""),
+        m.left > 0 and string.format(" (%d silver is left over, and the Index has not asked what for.)", m.left) or "")
     StaticPopup_Show("SUMMONCORE_SILVER", text, nil, function()
         for _, id in ipairs(m.owed) do ST.Respond.Decide(id, "paid") end
         if m.card then ST.Cards.Issue(who, m.card.punches, m.card.silver) end

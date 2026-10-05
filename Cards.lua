@@ -161,7 +161,7 @@ function Cards.Lines(holder)
     for _, who in ipairs(names) do
         if not holder or base(holder) == who then
             local b = balances[who]
-            lines[#lines + 1] = string.format("%s: %d of %d punches left (%d used)", b.name, b.left, b.bought, b.used)
+            lines[#lines + 1] = string.format("%s: %d of %d punches left, %d already stamped.", b.name, b.left, b.bought, b.used)
         end
     end
     if #lines == 0 then
@@ -173,6 +173,6 @@ end
 -- A card has arrived from Zennit (Sync): say who now holds one.
 ST.Sync.onCard = function(card)
     if ST.Sync.quiet then return end
-    ST.print(string.format("Zennit has sold %s a card: %d punches, paid %d silver.", card.holder, card.punches, card.silver))
+    ST.print(string.format("The Index records that Zennit has sold %s a card: %d punches, paid %d silver.", card.holder, card.punches, card.silver))
     if ST.Hub then ST.Hub.Refresh() end
 end

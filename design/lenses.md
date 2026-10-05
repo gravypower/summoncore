@@ -36,7 +36,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
-| Unification | Is everything we have added still one game with one voice? | Answered; the change waits for a decision (below) |
+| Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 
 ## Entries
 
@@ -1195,7 +1195,7 @@ its vocabulary). Most of the rest are diagnostics and labels, where a plain voic
    things in different places. Nothing is wrong; it is a style guide that does not exist yet.
 5. **The gag is the one deliberate exception**, and should stay.
 
-**Proposed changes** (none built yet)
+**Proposed changes**
 
 | # | Change | Fixes | Cost |
 |---|---|---|---|
@@ -1203,11 +1203,23 @@ its vocabulary). Most of the rest are diagnostics and labels, where a plain voic
 | B | **Index names for the badges**: display names only, ids unchanged ("First Summon" becomes "Entered in the Index", "Ten Summons" becomes "Filed in Triplicate"...), so what is on the Badges tab and in chat reads as the Index's | 3 | A names table |
 | C | **A house style page** (`design/voice.md`): the words to use and avoid, five examples, so later text keeps one voice | 4 | One page |
 
-**To decide before building**
-- How far should the voice go in rewards (the badges): witty, or leave them readable at a glance?
+**Our answer (built: A, B and C)**
+- **A.** The lines read while playing are in the Index's voice with the same facts: the silver confirmation and the price box, the
+  card lines, the waiting and tab lines, the last call and `/sc tab` ("The Index has Bo down for 250 silver on 2 summons...").
+  The self-tests that read exact words were updated to match.
+- **B.** Witty, in the Index's voice (the answer to the question below): "Entered in the Index", "Filed in Triplicate", "Known to the
+  Clerk", "Paid in Full, No Receipt", "Stamped to the Last Punch" and so on. Ids are unchanged, so earned badges carry over. Because
+  a witty name no longer says what it takes, each badge has a plain `how` line, shown next to a locked badge on the Badges tab and in
+  `/sc badges`.
+- **C.** `design/voice.md`: the words to use, what stays plain on purpose (labels, errors, anything the player must act on exactly),
+  five before-and-after examples and a checklist for new lines.
+
+**Decided:** the voice goes as far as the badges, and witty beats readable at a glance, because the plain `how` line carries the meaning.
 
 **To watch in playtests**
 - Which lines does the group quote? Are they the voiced ones?
+- Does anyone ask what a badge is for? (The `how` line should answer it.)
+- Nothing here has run in the live client; the voiced lines are checked only against stubs.
 
 ## Decisions
 
@@ -1234,3 +1246,4 @@ its vocabulary). Most of the rest are diagnostics and labels, where a plain voic
 | 2026-10-05 | The Tools tab is five columns (the reports have their own, The record); a one-line command tip each Monday (`/sc tips off`); `/sc help` is five lines and `/sc help all` is the rest | Interface | One Tools column had grown past the tab for the admin; the useful commands were listed only in a 25-line help |
 | 2026-10-05 | The week's turnover stays at Monday 00:00 UTC (11:00 on the east coast of Australia in summer); the week's close is said in the player's time, and the last day of a week has a last call | Time | Nothing said when a week ends, and the deadline was never felt; the group's evenings fit the UTC week |
 | 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |
+| 2026-10-05 | The lines read while playing, the silver and card lines and the badge names are in the Index's voice; a plain `how` line says what each badge takes; `design/voice.md` is the house style | Unification | The theme was strong in the story and thin in the play; the newest systems had no voice, and the badges read as any game's |
