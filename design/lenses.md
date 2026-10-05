@@ -48,6 +48,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B, C and G built; D waits on audio |
 | Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
 | Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
+| Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B proposed |
 
 ## Entries
 
@@ -1869,6 +1870,62 @@ likely to list, so going there is a guess at his secret; the trip itself should 
 **To watch in playtests**
 - How often does he change his list, and does the group track which places have leaked?
 - Do writs end up on guesses ("Silithus must be on it"), or only on his free decline?
+
+### 2026-10-05 · Lens of Character: who writes Zennit?
+
+**The questions (paraphrased):** who are the characters, and what makes each one interesting? What do they want, and what do they
+do about it? Do they speak in their own voice, and is it consistent? Do the players get to shape the characters they play, or only
+watch them?
+
+**How to read it.** This game has an unusual character: **Zennit is a real friend playing a version of himself.** The addon draws him
+three ways: the story's Licensed Summoning Liaison, Third Class, looking for Form 27B slash 6 (narrated); the Index's lines about what
+he did ("Zennit declined the summon from Al, and it cost him"); and, since Secrets, postcards in his own words. The lens asks who
+writes each of those, and whether the real Zennit gets a say.
+
+**Who writes Zennit, as built**
+
+| Where he appears | Who wrote it | Whose voice |
+|---|---|---|
+| The intro and the chapters | Us, narrated by a synthetic voice | The narrator's, about him |
+| The answer lines, the briefings, the Week lines | Us | The Index's, about him (third person, by the house style) |
+| The postcards | Us (Secrets, a day ago) | **His, in quotes, but written for him** |
+| The gags (`gag_zennit.ogg`, `gag_party.ogg`) | His recordings | **His own** |
+| The surprise clips when he is summoned (`zenit_land`, `zenit_refuse`, `zenit_win`) | The group, recorded for him | The group's. One clip so far (`Media/clips`), so none of these play |
+| The price of the silver | Him, each time | His only written word in the game |
+
+**Findings**
+1. **Zennit is written by everyone but him.** His only authored text is a number (the silver price), and his only voice is two gag
+   recordings. Everything else about him is our wording. For a game whose premise is teasing a friend, that is a gap: the
+   best version of the joke is the one he is in on, and a character he can add to is one he will defend.
+2. **The postcards put words in his mouth.** They are in quotes and signed with his name, but he did not write them. They are a
+   decent default, and they are exactly the place where his own line would be funnier than ours.
+3. **His week off is told entirely by the Index.** When a caster summons him on leave, the Index says it "is not hopeful". That is the
+   moment a real person would have an out-of-office reply, and the joke writes itself if he writes it.
+4. **The story's Zennit and the game's Zennit agree.** The weary liaison who wants the paperwork to end, and the answer lines ("with
+   some dignity"), are one character. Nothing to change. The surprises he hears are the group's lines for him, which is the group's
+   character work, and that is right as it is. It is just not recorded yet.
+5. **The group is "the party" in the story and named people everywhere else** (titles, moments, helpers). That split works: the
+   story is about the Index and him; the play is about the friends.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **His own postcards**: `/sc zennit postcard <place> <text>` sets what his postcard from that far-flung place says (a line, 80 letters at most); his client sends it to everyone (a new message, only from his characters, like his cards and alts), and every client uses his words instead of ours from then on. Ours stay as the default for places he has not written | 1, 2 | A message type, a store of his lines, a command, a test |
+| B | **His out-of-office**: `/sc zennit away <text>` sets a line that a caster sees when summoning him on his week off ("Zennit's out-of-office: '...'"), in place of the Index's "not hopeful". Sent the same way as A | 1, 3 | The same mechanism, one more key |
+| C | **A recording evening** for the three empty surprise categories (`zenit_land`, `zenit_refuse`, `zenit_win`), from `design/recording-sheet.md` | 4 | No code; the group's time |
+| D | **Leave it**: we write him, and he reacts in voice chat | | Nothing |
+
+**Recommendation:** A and B, built on one mechanism (his short lines, sent from his client like his alts). They give him two places
+to write his own character, at the two moments the joke is about him: where he was dragged, and where he went on leave. C is worth
+doing whenever the group has an evening; it needs no code.
+
+**Live checks with whatever is built** (step 6): on Zennit's client set a postcard and an away line; a friend's client shows them
+(`d-` checks, since they need two clients).
+
+**To watch in playtests**
+- Does he write any? Are his funnier than ours?
+- Does the group ask for lines of their own (a caster's signature on a summons)?
 
 ## Decisions
 
