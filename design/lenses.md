@@ -31,7 +31,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; A, C built and D worded (audio pending); B (the head start) left |
 | Playtesting | Every lens ended with questions for a playtest; the first new-rules week starts today | Answered; the report and the script built |
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
-| Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; the change waits for a decision (below) |
+| Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
 
 ## Entries
 
@@ -874,9 +874,16 @@ only currency was imaginary (points); the silver and the cards put **real in-gam
 | C | **Cards are always a discount**: a card's price per punch may not be above the usual 50 (so a card never costs more than asking), and an ask without a card may not be more than five times the card's price per punch | 2 | Two checks on his client |
 | D | **Spend points**: points buy something small (a point towards a helper's bonus, or a reduction of his edge for one summons) | 4 | A rule, and balance |
 
+**Our answer:** build **B**. On bounding the ask (A) the answer was **no bound: trust the group**, so the ask stays up to 1,000 gold and
+nothing is built for A. C (cards always a discount) and D (spend points) were not chosen.
+
+**Built: B, the statement.** `/sc tab` (and the Tools tab's **The tab**) prints the tab as a statement. On Zennit's client: the total owed
+to him and the total paid so far, then one line per payer, largest debt first ("Bo owes 250 silver on 2 summons (the oldest from 12 Oct);
+paid so far 150"), across every week. On anyone else's: only their own tab ("You owe Zennit 250 silver on 2 summons...") and their card's
+punches. Test summons and summons of other people are left out.
+
 **To decide before building**
-- Is 250 silver a summons the right top, or should the ask be bounded some other way (or not at all)?
-- Do points need a use, or are they only a score?
+- Do points need a use, or are they only a score? (Not chosen for now.)
 
 **To watch in playtests**
 - What does Zennit ask, and what do the casters say about it? (`/sc report` does not show it yet.)
@@ -902,3 +909,4 @@ only currency was imaginary (points); the silver and the cards put **real in-gam
 | 2026-10-05 | Playtest from the log: `/sc report` counts the numbers, `design/playtest.md` is the script (smoke test, Monday routine, questions for people, what settles each open decision) | Playtesting | The group dislikes bookkeeping; most of the open questions are numbers the log already holds, and nothing had ever been run live |
 | 2026-10-05 | The group sees how many summons are waiting for his answer; Monday's result is provisional while he can still answer; unanswered still counts as accepted for now | Community | The balance is hostage to his attendance (a quarter skipped doubles a normal week's chance), nothing reminded him, and a late answer could reverse an announced win |
 | 2026-10-05 | A demand for silver no longer holds the summons back: it counts at once and the silver goes on a tab; Zennit names the price, and a card's punch pays it | Meaningful Choices | Under the new rules a silver demand cost him nothing and blocked the group's points until paid, so it beat refusing, had no weekly limit, and put the blame for paying late on the group |
+| 2026-10-05 | A `/sc tab` statement of who owes what; the ask is not bounded (trust the group); cards are not forced to be a discount and points stay a score | Economy | The tab was only visible as a total and a login line; the silver cannot hurt the race, so a bound would only police the mood of friends |

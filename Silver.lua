@@ -140,6 +140,64 @@ function Silver.Match(copper, owed, offers)
     return out
 end
 
+-- The tab as a statement: who owes Zennit what, and what has been paid, across every week (design/lenses.md, Economy).
+-- ctx: { isZennit(name), name(name), amount(resp) }. `viewer` limits it to one caster (nil: everyone, for Zennit).
+-- Returns { lines, owed (silver) }.
+function Silver.Statement(events, ctx, viewer)
+    local who, order = {}, {}
+    for _, ev in pairs(events) do
+        local r = ev.response
+        if not ev.fake and r and ctx.isZennit(ev.target) and (r.result == "owed" or r.result == "paid") then
+            local name = ctx.name(ev.caster)
+            if not viewer or ctx.name(viewer) == name then
+                local entry = who[name]
+                if not entry then
+                    entry = { name = name, owed = 0, n = 0, paid = 0, oldest = nil }
+                    who[name] = entry
+                    order[#order + 1] = entry
+                end
+                if r.result == "owed" then
+                    entry.owed, entry.n = entry.owed + ctx.amount(r), entry.n + 1
+                    entry.oldest = (not entry.oldest or ev.time < entry.oldest) and ev.time or entry.oldest
+                else
+                    entry.paid = entry.paid + ctx.amount(r)
+                end
+            end
+        end
+    end
+    table.sort(order, function(a, b)
+        if a.owed ~= b.owed then return a.owed > b.owed end
+        return a.name < b.name
+    end)
+    local lines, owed, paid = {}, 0, 0
+    for _, e in ipairs(order) do
+        owed, paid = owed + e.owed, paid + e.paid
+        local subject = viewer and "You owe Zennit" or (e.name .. " owes")
+        if e.owed > 0 then
+            lines[#lines + 1] = string.format("%s %d silver on %d summons (the oldest from %s); paid so far %d.", subject, e.owed, e.n,
+                date("%d %b", e.oldest), e.paid)
+        elseif e.paid > 0 then
+            lines[#lines + 1] = string.format("%s nothing now; paid %d silver so far.", viewer and "You owe" or (e.name .. " owes"), e.paid)
+        end
+    end
+    if #lines == 0 then
+        lines[1] = viewer and "You owe Zennit nothing." or "Nobody owes anything."
+    elseif not viewer then
+        table.insert(lines, 1, string.format("The tab: %d silver owed to Zennit, %d paid so far.", owed, paid))
+    end
+    return { lines = lines, owed = owed }
+end
+
+-- The statement for this client: everyone's tab on Zennit's, your own on anyone else's (and your card, if you hold one).
+function Silver.Lines()
+    local ctx = { isZennit = ST.Week.IsZennit, name = base, amount = ST.Respond.AmountOf }
+    local me = ST.Store.me()
+    if ST.Gag.IsZennit() then return Silver.Statement(ST.db.events, ctx).lines end
+    local lines = Silver.Statement(ST.db.events, ctx, me).lines
+    for _, line in ipairs(ST.Cards.Lines(me)) do lines[#lines + 1] = line end
+    return lines
+end
+
 StaticPopupDialogs["SUMMONCORE_SILVER"] = {
     text = "%s",
     button1 = "Yes",
