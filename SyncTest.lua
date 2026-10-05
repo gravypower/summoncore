@@ -1442,6 +1442,36 @@ add("silver is a tab, not a veto: the summons counts, Zennit names the price, an
     return ok, string.format("lands %s, %s, wire %s, parse 2g=%s", tostring(out.lands), tostring(out.describe), tostring(out.wire), tostring(parse("2g")))
 end)
 
+add("the tab as a statement: per payer for Zennit, and only your own for a caster", function()
+    local D = 86400
+    local base = 100 * 7 * D
+    local function ev(caster, at, result, amount, target)
+        return { caster = caster, target = target or "Zennit", assistants = {}, time = at,
+            response = { result = result, zroll = 0, sroll = 0, time = at + 1, amount = amount } }
+    end
+    local events = {
+        a = ev("Bo-Realm", base + 10, "owed", 200), b = ev("Bo", base + D, "owed", 50), c = ev("Bo", base + 2 * D, "paid", 150),
+        d = ev("Cy", base + 20, "owed", 50), e = ev("Di", base + 30, "paid", 50), f = ev("Al", base + 40, "accepted"),
+        g = ev("Bo", base + 50, "owed", 999, "Someone"),                       -- not a summons of Zennit
+        h = { caster = "Bo", target = "Zennit", assistants = {}, time = base + 60, fake = true,
+            response = { result = "owed", zroll = 0, sroll = 0, time = base + 61, amount = 999 } },
+    }
+    local ctx = { isZennit = function(n) return n == "Zennit" end, name = function(n) return (n:gsub("%-.*", "")) end,
+        amount = function(r) return r.amount or 50 end }
+    local all = ST.Silver.Statement(events, ctx)
+    local mine = ST.Silver.Statement(events, ctx, "Bo-Realm")
+    local nobody = ST.Silver.Statement({}, ctx)
+    local none = ST.Silver.Statement(events, ctx, "Al")
+    local text = table.concat(all.lines, " | ")
+    local ok = all.owed == 300 and text:find("The tab: 300 silver owed to Zennit, 200 paid so far", 1, true)
+        and text:find("Bo owes 250 silver on 2 summons", 1, true) and text:find("Cy owes 50 silver on 1 summons", 1, true)
+        and text:find("Di owes nothing now; paid 50 silver so far", 1, true) and not text:find("999", 1, true)
+        and all.lines[2]:find("^Bo owes") and mine.lines[1]:find("You owe Zennit 250 silver on 2 summons", 1, true)
+        and mine.lines[1]:find("paid so far 150", 1, true) and #mine.lines == 1
+        and nobody.lines[1] == "Nobody owes anything." and none.lines[1] == "You owe Zennit nothing."
+    return ok, text:sub(1, 120)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

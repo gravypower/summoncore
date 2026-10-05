@@ -37,6 +37,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
 | `/sc intro [scene\|z1..z5\|g1..g5\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter, `now` plays only "The Index today", `check` tests the sound files |
+| `/sc tab` | The silver tab as a statement: on Zennit's client, who owes him what across every week and what has been paid; on anyone else's, what you owe him and your card's punches. Also the Tools tab's **The tab** |
 | `/sc cards` | Who holds a summon card and how many punches are left. `/sc card` explains cards; Zennit's own: `/sc card sell <name> [punches [silver]]` and `/sc card offer <punches> <silver>`. Also the Tools tab's **Summon cards** |
 | `/sc probe` | Listens to trade and mail events and prints what the client lets an addon see (who, how much, or a secret value), to learn how the fifty silver could be detected. Run it again to stop |
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. Paste it into the group chat. Also the Tools tab's **Playtest report**; the script is `design/playtest.md` |
