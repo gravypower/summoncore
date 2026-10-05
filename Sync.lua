@@ -6,6 +6,7 @@
 --   E  EVENT    body: record               (live broadcast of a new summon; sender must be the caster)
 --   R  REQUEST  body: since                (asks the whisper target for events with time > since)
 --   B  BATCH    body: record               (one record per message, whispered in reply to R)
+--   L  LINE     body: key|time|text        (a line Zennit wrote for himself: a postcard "pc:<mapID>" or his out-of-office "away")
 --   W  WITNESS  body: caster|target|helpers|mapID|subzone|time|helping   (what a group member saw of a ritual, for Zennit's client)
 -- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote[|answer[|w[|by]]]
 -- A record filed by Zennit's client for a caster without the addon carries "by" (his name): its id starts with it, and only he
@@ -307,6 +308,7 @@ function Sync.Hello(channel, target)
         if ST.IsZennitAccount() then
             Sync.SendAlt()
             Sync.SendCards()
+            Sync.SendLines()
         end
     end
 end
@@ -414,6 +416,64 @@ end
 -- so this is how they learn his alts. The sender is the character; nothing else is claimed.
 function Sync.SendAlt()
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "A", "1") end
+end
+
+----------------------------------------------------------------------
+-- His own lines (design/lenses.md, Character): short texts Zennit writes for himself, a postcard per far-flung place and an
+-- out-of-office for his week off. Kept on every client (settings.zennitLines), sent from his client only, the newest wins.
+----------------------------------------------------------------------
+Sync.LINE_MAX = 80
+
+-- Whether `key` names a line he may write: "away", or "pc:<mapID>" for a far-flung place.
+function Sync.LineKey(key)
+    if key == "away" then return true end
+    local id = tonumber((key or ""):match("^pc:(%d+)$"))
+    return id ~= nil and ST.Scoring.remoteNames[id] ~= nil
+end
+
+-- A line as he would type it, made safe to show: no escape codes, one line, at most LINE_MAX letters.
+function Sync.CleanLine(text)
+    text = tostring(text or ""):gsub("|", ""):gsub("%c", " "):match("^%s*(.-)%s*$")
+    return text:sub(1, Sync.LINE_MAX)
+end
+
+local function lines()
+    ST.db.settings.zennitLines = ST.db.settings.zennitLines or {}
+    return ST.db.settings.zennitLines
+end
+
+-- His line for `key`, or nil (none written, or cleared).
+function Sync.ZennitLine(key)
+    local l = lines()[key]
+    return l and l.text ~= "" and l.text or nil
+end
+
+-- Keeps a line if it is newer than the one held. Returns true when it changed.
+function Sync.PutLine(key, text, t)
+    if not Sync.LineKey(key) then return false end
+    local cur = lines()[key]
+    if cur and cur.t >= t then return false end
+    lines()[key] = { text = Sync.CleanLine(text), t = t }
+    return true
+end
+
+local function sendLine(key, l, channel, target)
+    enqueue(channel, target, "L", string.format("%s|%d|%s", key, l.t, esc(l.text)))
+end
+
+-- His client: writes a line (empty text clears it back to the default) and tells everyone.
+function Sync.SetLine(key, text)
+    local t = math.max(time(), (lines()[key] and lines()[key].t or 0) + 1)
+    if not Sync.PutLine(key, text, t) then return false end
+    for _, ch in ipairs(Sync.channels()) do sendLine(key, lines()[key], ch) end
+    return true
+end
+
+-- His client sends every line he has written (with his hello).
+function Sync.SendLines()
+    for key, l in pairs(lines()) do
+        for _, ch in ipairs(Sync.channels()) do sendLine(key, l, ch) end
+    end
 end
 
 -- A deleted summon: only its caster can say so. `T` carries the id.
@@ -606,6 +666,14 @@ function Sync.OnMessage(text, channel, sender)
         if #s.zenitAlts >= MAX_ALTS then return "rejected:full" end
         s.zenitAlts[#s.zenitAlts + 1] = sender
         return "learned"
+
+    elseif typ == "L" then
+        -- a line Zennit wrote for himself: only his characters may send one
+        if not ST.Week.IsZennit(sender) then return "rejected:sender" end
+        local key, t, text = body:match("^([%w:]+)|(%d+)|(.*)$")
+        t = tonumber(t)
+        if not key or not Sync.LineKey(key) or not t or t > time() + 86400 or #unesc(text) > Sync.LINE_MAX * 2 then return "bad" end
+        return Sync.PutLine(key, unesc(text), t) and "stored" or "kept"
 
     elseif typ == "W" then
         -- what a group member saw of a ritual: kept a few minutes on Zennit's client, for a summons whose caster has no addon

@@ -370,8 +370,10 @@ function Ledger.PostcardFor(ev, before)
     for i, p in ipairs(cards) do
         if p.mapID == ev.mapID then
             if p.time ~= ev.time then return nil end -- he has been there already this season
+            -- his own words when he has written them (design/lenses.md, Character), else ours
+            local words = ST.Sync.ZennitLine("pc:" .. ev.mapID) or Ledger.POSTCARDS[ev.mapID] or "Wish you were here. I was."
             local line = string.format("The Index has filed a postcard from %s, in %s: '%s' Stamped: %d of %d far-flung places this season.",
-                ev.target, p.place, Ledger.POSTCARDS[ev.mapID] or "Wish you were here. I was.", i, Ledger.PostcardPlaces())
+                ev.target, p.place, words, i, Ledger.PostcardPlaces())
             if i == Ledger.PostcardPlaces() then
                 line = line .. " That is every one. The Index has run out of stamps, and has sent for more."
             end

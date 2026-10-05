@@ -65,6 +65,8 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting. The list is **set for the week**: a place he adds counts from the next Monday (marked "from Monday"), and removing one takes effect at once, so it cannot be changed with a summons on screen |
+| `/sc zennit postcard [<place>: <line>\|clear]` | Zennit writes his own postcard from a far-flung place (80 letters at most), used on every client instead of the Index's default; `clear` puts the default back. Anyone can read them with `/sc zennit postcard [<place>]`; only his characters can write them |
+| `/sc zennit away [<line>\|clear]` | His out-of-office: whoever summons him on his week off sees "His out-of-office says: '...'" in the briefing, instead of the Index's "not hopeful" |
 | `/sc respond [test]` | Zennit answers a summon of him (accept, decline, ask for silver or dice); `test` tries it on a pretend summon |
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
@@ -136,7 +138,7 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts), `X` (a request to reset) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
+alts), `X` (a request to reset), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from
@@ -378,7 +380,8 @@ numbers behind it, is in `design/lenses.md`):
   accepted, silver, or lost the dice) earns the Index a postcard from him, said on every client ("The Index has filed a postcard from
   Zennit, in Silithus: 'Sand. Also insects. Mostly sand.' Stamped: 1 of 10 far-flung places this season."). No points: the 10 are the
   reason to go, the postcard is the joke. `/sc week` ends with the season's postcards, the rules card counts them, and the season's
-  keepsake lists them. A second trip to the same place that season sends none, and a decline is not a trip.
+  keepsake lists them. A second trip to the same place that season sends none, and a decline is not a trip. **Zennit can write his own**
+  (`/sc zennit postcard Silithus: ...`), and his words replace the Index's on every client.
 - **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the
   briefing as a ritual on him begins ends "Last call: the week closes in 9 hours (Monday 11:00).", and a login in that stretch says it
   once with the standing ("The group leads by 1, 2 of 10 summons filed"). Not in a week off.

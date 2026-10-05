@@ -291,9 +291,46 @@ function commands.hub()
     ST.Hub.Toggle()
 end
 
+-- His own lines (design/lenses.md, Character): /sc zennit postcard [<place> [<text>|clear]] and /sc zennit away [<text>|clear].
+local function zennitLine(sub, arg)
+    local S, L = ST.Sync, ST.Ledger
+    local mine = ST.Gag.IsZennit() -- anyone may read his lines; only he may write them
+    local function show(key, name, default)
+        local his = S.ZennitLine(key)
+        print_(string.format("%s: '%s'%s", name, his or default, his and "" or " (the Index's default)"))
+    end
+    if sub == "away" then
+        if arg ~= "" then
+            if not mine then return print_("only Zennit writes his own lines") end
+            S.SetLine("away", arg == "clear" and "" or arg)
+        end
+        show("away", "His out-of-office (said to whoever summons him on his week off)", "none: the Index says it is not hopeful")
+        return
+    end
+    local place, text = arg:match("^(.-)%s*:%s*(.*)$")
+    if not place then place, text = arg, "" end
+    local id
+    if place ~= "" then
+        for mid, name in pairs(ST.Scoring.remoteNames) do
+            if name:lower():sub(1, #place) == place:lower() then id = mid end
+        end
+        if not id then return print_("no far-flung place called '" .. place .. "' (/sc places lists them)") end
+    end
+    if id and text ~= "" then
+        if not mine then return print_("only Zennit writes his own lines") end
+        S.SetLine("pc:" .. id, text == "clear" and "" or text)
+    end
+    local ids = {}
+    for mid in pairs(ST.Scoring.remoteNames) do if not id or mid == id then ids[#ids + 1] = mid end end
+    table.sort(ids, function(a, b) return ST.Scoring.remoteNames[a] < ST.Scoring.remoteNames[b] end)
+    for _, mid in ipairs(ids) do show("pc:" .. mid, "Postcard from " .. ST.Scoring.remoteNames[mid], L.POSTCARDS[mid] or "") end
+    if not id and mine then print_("/sc zennit postcard <place>: <your line> writes one (80 letters); 'clear' puts the Index's back.") end
+end
+
 -- Test switch: makes this character behave as Zennit's so the gag can be tried solo.
 function commands.zenit(rest)
     local sub, arg = (rest or ""):match("^(%S*)%s*(.-)$")
+    if sub == "postcard" or sub == "away" then return zennitLine(sub, arg) end
     if sub ~= "list" and not ST.IsAdmin() then return print_("that is an admin tool") end
     if sub == "list" then
         -- his secret list: /sc zennit list [add <place> | remove <n> | clear]
@@ -563,6 +600,7 @@ local HELP = {
     "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files)    /sc welcome - the newcomer's welcome again",
     "/sc clip [category|file] - list or play voice clips from Media/clips",
     "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)",
+    "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office",
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [say|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, login says this week's login lines again, a key plays that chapter of the story",
