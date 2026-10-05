@@ -24,8 +24,9 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc tips [on\|off]` | The one-line tip about a command, said once a Monday at login (they go round in order; two are for Zennit's client only). `/sc tips off` stops it |
 | `/sc panel` | Open the window on the Party tab |
 | `/sc log [n]` | Recent summons |
-| `/sc tally` | Cast, received and assisted counts and points per player |
+| `/sc tally` | Cast, received and assisted counts and points per player, ranked by summons of Zennit this season (what the race counts), then points. The Party tab's Tally is the same list, with an "Of Zennit" column |
 | `/sc badges` | Badge list |
+| `/sc week say` | Tell the group (party or raid chat) where the week stands, in one line: the lead, his dice left, the last call. It uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
 | `/sc where` | Current map ID, subzone and how it scores |
 | `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
 | `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |

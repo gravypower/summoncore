@@ -293,17 +293,12 @@ commands.zennit = commands.zenit -- either spelling works
 
 function commands.tally()
     if ST.Gag.Blocked() then return end
-    local rows = {}
-    for name, t in pairs(ST.Store.Tallies()) do rows[#rows + 1] = { name = name, t = t } end
-    table.sort(rows, function(a, b)
-        if a.t.points ~= b.t.points then return a.t.points > b.t.points end
-        return a.name < b.name
-    end)
+    local rows = ST.Store.Ranked(ST.Store.Tallies(), ST.Ledger.Facts().casters)
     if #rows == 0 then return print_("no summons logged yet") end
     for i = 1, math.min(#rows, 15) do
-        local r = rows[i]
-        print_(string.format("%s: cast %d, received %d, assisted %d, %d pts", r.name, r.t.cast, r.t.received,
-            r.t.assisted, r.t.points))
+        local name, t, ofZennit = rows[i][1], rows[i][2], rows[i][3]
+        print_(string.format("%s: cast %d (%d of Zennit this season), received %d, assisted %d, %d pts", name, t.cast, ofZennit,
+            t.received, t.assisted, t.points))
     end
 end
 
@@ -359,6 +354,13 @@ end
 function commands.week(rest)
     local W = ST.Week
     if rest == "victory" or rest == "group" or rest:match("^[zg]%d$") then return ST.Intro.Toggle(rest) end
+    if rest == "say" then
+        local ok, text = W.SayWeek({
+            channel = function() return IsInRaid() and "RAID" or IsInGroup() and "PARTY" or nil end,
+            send = function(msg, channel) SendChatMessage(msg, channel) end,
+        })
+        return print_(ok and ("Told the group: " .. text) or text)
+    end
     local this, last = W.Score(W.Start()), W.Score(W.Start() - 7 * 86400)
     print_("This week: " .. W.Describe(this))
     print_("Last week: " .. W.Describe(last))
@@ -494,7 +496,7 @@ end
 -- What a player needs: five lines. /sc help all has the rest (design/lenses.md, Interface).
 local HELP_SHORT = {
     "/sc - the Summon Core window: the party's tally and badges, Zennit's answers, the log, the story and the tools",
-    "/sc rules - the rules of the race, with this week's live numbers    /sc week - how this week and the season stand",
+    "/sc rules - the rules of the race, with this week's live numbers    /sc week - how this week and the season stand (/sc week say tells the group)",
     "/sc tab - what is owed in silver    /sc cards - who holds a summon card    /sc titles - who leads the season's titles",
     "/sc report - how the race is going (paste it to the group)    /sc seasons - the record of every finished season",
     "/sc help all - every command (the rest are for setting up, testing and Zennit)    /sc tips off - stop the Monday tip",
@@ -514,7 +516,7 @@ local HELP = {
     "/sc zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
-    "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc week [say|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, a key plays that chapter of the story",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",

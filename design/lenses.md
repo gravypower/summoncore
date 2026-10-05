@@ -38,7 +38,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
-| Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; the change waits for a decision (below) |
+| Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
 
 ## Entries
 
@@ -1315,7 +1315,7 @@ and can they talk enough to cooperate? Where a team contains a ranking, do the t
    who would plan the order, "you take the cheap one, then I go to Silithus", do it in voice chat from memory unless each runs
    `/sc week`.
 
-**Proposed changes** (none built yet)
+**Proposed changes**
 
 | # | Change | Fixes | Cost |
 |---|---|---|---|
@@ -1323,12 +1323,24 @@ and can they talk enough to cooperate? Where a team contains a ranking, do the t
 | B | **A way to say the week to the group**: `/sc week say` sends the "Week:" line (the lead, his dice left, the last call) to party chat, so the plan starts from one shared line | 4 | One argument; it uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
 | C | **Do nothing about the order**: it is a good tension (a friend takes the cheap slot for the team, and that is a story), and the group may have one warlock | 3 | Nothing; recorded as a decision |
 
-**To decide before building**
-- How many warlocks does the group have? If one, A matters less and C is the answer for finding 3.
+**Our answer (built: A and B; C is the decision on the order)**
+- **Warlocks:** two or more (the answer to the question above), so the cheap-slot tension is real and A is worth having.
+- **A.** The Party tab's Tally has an **Of Zennit** column, the summons of him each person has cast this season, and is ranked by it,
+  then by points, then by name. `/sc tally` prints the same list with "(N of Zennit this season)". The count is the Ledger's
+  season facts, so it follows the season and the same names the titles use (`Store.Ranked`).
+- **B.** `/sc week say` sends the "Week:" line (the lead, his dice left, the last call) to party or raid chat as "Summon Core: Week: ...".
+  Anyone can run it; it says why when it cannot (not in a group, the old rules, or the game refusing the message). It uses
+  `SendChatMessage`, which has never been tried in the live client under the 12.0 chat rules, so it is the first thing to try there.
+- **C.** The order is left to the group: nobody is made to take the cheap slot, and nothing advises them (the Skill entry: the best
+  order depends on how he rolls).
+
+**Decided:** the Party tab ranks by what the race counts; the group can say the week to itself in one command; the cheap-slot
+trade stays a thing friends do for each other.
 
 **To watch in playtests**
 - Does anyone say "I'll take the cheap one"? That is the cooperation working, and a line for the Index to quote.
 - Does anyone run `/sc week` before a cast, or ask in chat where the week stands?
+- Does `/sc week say` actually send? If the game blocks it, it says so in chat and the line is still on `/sc week`.
 - Nothing here has run in the live client.
 
 ## Decisions
@@ -1358,3 +1370,4 @@ and can they talk enough to cooperate? Where a team contains a ranking, do the t
 | 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |
 | 2026-10-05 | The lines read while playing, the silver and card lines and the badge names are in the Index's voice; a plain `how` line says what each badge takes; `design/voice.md` is the house style | Unification | The theme was strong in the story and thin in the play; the newest systems had no voice, and the badges read as any game's |
 | 2026-10-05 | The ritual briefing says what the place is worth and what it puts at stake for both sides; `/sc places` checks every map ID against the game's own name; the point values stay | Endogenous Value | A place's worth is the stake of a summons and was invisible when the choice was made; the place table was from memory and never checked |
+| 2026-10-05 | The Party tab and `/sc tally` rank by summons of Zennit this season (an "Of Zennit" column), then points; `/sc week say` tells the group where the week stands; the cheap-slot order is left to the group | Cooperation | The one list everyone reads counted all-time points of every summons, not what the race counts, and the plan for the order lived in the caster's chat alone |

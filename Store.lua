@@ -175,6 +175,21 @@ function Store.Tallies()
     return t
 end
 
+-- The Party tab's rows: every name in the tallies, ranked by what the race counts (summons of Zennit this season, from
+-- `casters`, keyed by plain name), then by points, then by name. Each row is { name, tally, ofZennit }.
+function Store.Ranked(tallies, casters)
+    local rows = {}
+    for name, t in pairs(tallies) do
+        rows[#rows + 1] = { name, t, casters[ST.baseName(name) or name] or 0 }
+    end
+    table.sort(rows, function(a, b)
+        if a[3] ~= b[3] then return a[3] > b[3] end
+        if a[2].points ~= b[2].points then return a[2].points > b[2].points end
+        return a[1] < b[1]
+    end)
+    return rows
+end
+
 -- Stats about the summons a given caster has cast, used by the badge rules.
 function Store.Stats(caster)
     local s = { cast = 0, kinds = {}, distinctMaps = 0, points = 0 }

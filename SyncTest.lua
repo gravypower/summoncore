@@ -846,6 +846,47 @@ add("places: /sc places checks each map ID against the game's name for it, and f
     return ok, bad:sub(1, 160)
 end)
 
+add("the Party tab ranks by summons of Zennit this season, then points, then name", function()
+    local tallies = {
+        ["Al-Realm"] = { cast = 9, received = 0, assisted = 1, points = 60 },   -- many summons of others, none of him
+        ["Bo"] = { cast = 3, received = 0, assisted = 0, points = 3 },          -- took the cheap slots for the team
+        ["Cy"] = { cast = 3, received = 0, assisted = 2, points = 15 },
+        ["Di"] = { cast = 0, received = 0, assisted = 4, points = 0 },
+        ["Zennit"] = { cast = 0, received = 12, assisted = 0, points = 5 },
+    }
+    local rows = ST.Store.Ranked(tallies, { Bo = 3, Cy = 3, Al = 0 })
+    local order = {}
+    for _, r in ipairs(rows) do order[#order + 1] = r[1] .. ":" .. r[3] end
+    local got = table.concat(order, " ")
+    return got == "Cy:3 Bo:3 Al-Realm:0 Zennit:0 Di:0", got
+end)
+
+add("/sc week say: one line to the party or the raid, and a reason when it cannot", function()
+    return newRules(function()
+        local W, a = ST.Week, newClient("Alpha")
+        local out, sent = {}, {}
+        local function chat(channel, fail)
+            return { channel = function() return channel end,
+                send = function(text, ch) if fail then error("blocked") end sent[#sent + 1] = ch .. ": " .. text end }
+        end
+        with(a, function()
+            out.party = { W.SayWeek(chat("PARTY")) }
+            out.raid = { W.SayWeek(chat("RAID")) }
+            out.alone = { W.SayWeek(chat(nil)) }
+            out.blocked = { W.SayWeek(chat("PARTY", true)) }
+            W.RULES.from = math.huge
+            out.old = { W.SayWeek(chat("PARTY")) }
+            W.RULES.from = 0
+        end)
+        local ok = out.party[1] and out.party[2]:find("^Summon Core: Week:") and sent[1]:find("^PARTY: Summon Core: Week:")
+            and out.raid[1] and sent[2]:find("^RAID: ")
+            and not out.alone[1] and out.alone[2]:find("not in a group", 1, true) and #sent == 2
+            and not out.blocked[1] and out.blocked[2]:find("would not send", 1, true)
+            and not out.old[1] and out.old[2]:find("old rules", 1, true)
+        return ok, tostring(out.party[2])
+    end)
+end)
+
 add("voice clips: a refusal and a dice win each play their own category, other answers are silent", function()
     local a = newClient("Alpha")
     local id = cast(a, 950, true, { target = "Zennit" })

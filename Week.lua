@@ -677,6 +677,19 @@ function Week.StatusLine(start, you)
         table.concat(parts, ", "))
 end
 
+-- The week's standing, said to the group: `chat.channel()` is "PARTY", "RAID" or nil (not in a group) and `chat.send(text,
+-- channel)` sends it. Returns true and the text sent, or false and why not. Anyone can say it; it is one line, not a report.
+function Week.SayWeek(chat, start)
+    start = start or Week.Start()
+    if not Week.NewRules(start) then return false, "The race runs on the old rules this week, so there is no standing to say." end
+    local channel = chat.channel()
+    if not channel then return false, "You are not in a group, so there is nobody to tell." end
+    local text = "Summon Core: " .. Week.StatusLine(start)
+    local ok, err = pcall(chat.send, text, channel)
+    if not ok then return false, "The game would not send that to the group (" .. tostring(err) .. ")." end
+    return true, text
+end
+
 -- What the place the caster stands in is worth, and what is at stake in it: a summons is worth P to the group if he
 -- accepts, to him if he wins the roll, and P comes off him if he refuses. A city is worth less than his head start.
 function Week.PlaceLine(mapID, subzone, start)
