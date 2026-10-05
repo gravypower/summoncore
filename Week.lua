@@ -787,22 +787,27 @@ function Week.FirstCast()
     return true
 end
 
-function Week.Briefing(target, mapID, subzone, writ)
+-- away: the caster's client sees him flagged AFK (design/lenses.md, Freedom).
+function Week.Briefing(target, mapID, subzone, writ, away)
     if not isZennit(target) then return nil end
     local now = time()
     local start = Week.Start(now)
     if not Week.NewRules(start) then return nil end
     -- his out-of-office, when he has written one (design/lenses.md, Character), in place of the Index's hopes
-    local away = ST.Sync.ZennitLine("away")
+    local outOfOffice = ST.Sync.ZennitLine("away")
     if Week.IsOff(start) then
         -- what still counts on his leave (design/lenses.md, Inner Contradiction): the race is off, the rest is not
         return target .. " is on his week off. The Index will file this summons as disturbing his leave: it will not count for the race, " ..
             "but a far-flung place still earns a postcard, and the titles still see it." ..
-            (away and string.format(" His out-of-office says: '%s'", away) or "")
+            (outOfOffice and string.format(" His out-of-office says: '%s'", outOfOffice) or "")
     end
     if Week.Immune(now) then
         return target .. " is on his week off. The Index will note the summons" ..
-            (away and string.format(". His out-of-office says: '%s'", away) or ", and is not hopeful.")
+            (outOfOffice and string.format(". His out-of-office says: '%s'", outOfOffice) or ", and is not hopeful.")
+    end
+    if away then
+        return target .. " is away from his keyboard. If he has been away a while, the Index will file this summons as away: it will " ..
+            "not count, and it costs nobody anything. It may be worth waiting."
     end
     local r = Week.Score(start)
     if r.closed then return target .. " has closed the Index for the week: this summon will not count." end

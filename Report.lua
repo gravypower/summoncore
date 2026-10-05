@@ -147,7 +147,7 @@ function Report.Build(ctx)
     if whimWeeks > 0 then
         add(string.format("Whim weeks: %d, the group won %d of the %d decided.", whimWeeks, whimGroup, whimDone))
     end
-    local order = { "accepted", "refused", "excused", "declined", "owed", "paid", "won", "lost" }
+    local order = { "accepted", "refused", "excused", "declined", "away", "owed", "paid", "won", "lost" }
     local mix = {}
     for _, k in ipairs(order) do
         if answers[k] then mix[#mix + 1] = string.format("%s %d", k == "won" and "dice won" or k == "lost" and "dice lost" or k, answers[k]) end

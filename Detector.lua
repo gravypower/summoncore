@@ -99,6 +99,17 @@ local function snapshotHelpers()
     end
 end
 
+-- Whether the group member called `name` shows as away from the keyboard (design/lenses.md, Freedom).
+function Detector.IsAway(name)
+    for _, unit in ipairs(groupUnits()) do
+        if cleanName(UnitName(unit)) == name then
+            local ok, afk = pcall(UnitIsAFK, unit)
+            return ok and afk and not ST.isSecret(afk) and true or false
+        end
+    end
+    return false
+end
+
 local function clearPending()
     if pending and pending.ticker then pending.ticker:Cancel() end
     pending = nil
@@ -120,7 +131,7 @@ local function startPending(target)
     ST.Trace(string.format("ritual sent on %s%s", tostring(pending.target), Detector.writ and " (a writ is armed)" or ""))
     ST.Clips.Play("ritual") -- a recorded line as the ritual begins
     -- a ritual on Zennit: tell the caster whether it will count, where the week stands, and what helpers add
-    local brief = pending.target and ST.Week.Briefing(pending.target, mapID, pending.subzone, Detector.writ)
+    local brief = pending.target and ST.Week.Briefing(pending.target, mapID, pending.subzone, Detector.writ, Detector.IsAway(pending.target))
     if brief then ST.print(brief) end
     dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))

@@ -51,7 +51,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
 | Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
-| Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A proposed |
+| Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A built |
 
 ## Entries
 
@@ -2121,7 +2121,24 @@ an AFK that began before the ritual counts, and the group is told before they sp
 being away instead of excusing it. Both wait partly on the open `d-expire` check (what the game does when the prompt runs out), and A's
 "by a margin" needs a number (five minutes is proposed: the game's own idle AFK starts after five).
 
-**Live checks with whatever is built** (step 6): `d-away` (he goes AFK, a friend casts: the briefing warns, the summons is filed as away).
+**Our answer (built: A, 0.23.0).**
+
+**Built**
+- **A new answer, `away`** (`Store.RESULTS`): no points either way, no cost to him, and it does not count as his free decline.
+- **His client watches his AFK flag** (`PLAYER_FLAGS_CHANGED`, `UnitIsAFK`) and remembers when it was set. When the game's prompt
+  arrives and he has been AFK for five minutes or more (`Respond.AWAY_MARGIN`, the game's own idle time), it waits a few seconds
+  and, if he is still AFK and has not answered, files the summons as away (`Respond.FileAway`). An AFK of less than five minutes is not
+  honoured, so `/afk` as the ritual starts is not a dodge. With a caster who has no addon, his client files the summons itself (G)
+  and records it as away.
+- **The caster is warned** at the cast when he shows as AFK (`Detector.IsAway`, `Week.Briefing`): "If he has been away a while, the
+  Index will file this summons as away... It may be worth waiting."
+- **Lines:** "Zennit was away from his keyboard when the summons from Al came. The Index files it as away: it did not happen, and it
+  costs nobody anything." The log says "away from his keyboard (free)"; the report counts it.
+- **Version 0.23.0:** older clients refuse the new answer.
+- **Live check** `d-away` (marks itself); a self-test of the margin, the free decline untouched, the wire, the briefing, and his
+  coming back before the check.
+- **Still open:** what the game does when the prompt runs out (`d-expire`); an unanswered summons when he was *not* AFK still counts
+  as accepted.
 
 **To watch in playtests**
 - How often does a summons of him go unanswered, and was he away? (`/sc report` counts unanswered summons.)
@@ -2167,3 +2184,4 @@ being away instead of excusing it. Both wait partly on the open `d-expire` check
 | 2026-10-05 | Zennit writes his own postcards and an out-of-office for his week off; sent from his characters only, the newest kept, used on every client in place of ours | Character | Every word about him was ours; the two moments the joke is about him (where he was dragged, where he went on leave) are where his own line is funniest |
 | 2026-10-05 | A summons of him on his week off is "disturbing his leave": the lines say the race is off but postcards and titles still count, and the Index counts who disturbed it most; the week off itself stays | Inner Contradiction | About a third of weeks are his weeks off, and the only line the caster read said "do not bother", though most of the game still ran |
 | 2026-10-05 | The far-flung places still missing a postcard are named in `/sc week` and at the Monday login; the helper bonus waits for the report's helper counts; the Index's weekly request is parked | Indirect Control | The place nudges (points, postcards) arrived at the cast, after the group had already travelled; a ritual needs two helpers anyway, so the bonus steers only the bookkeeping |
+| 2026-10-05 | A summons that comes while he has been AFK for five minutes or more is filed as away: free, not his free decline; the caster is warned at the cast; version 0.23.0 | Freedom | Stepping away from the keyboard in the group let summons count as accepted with nothing he could do; silence cannot be free in general (Balance), but an AFK that began before the ritual is not a dodge |
