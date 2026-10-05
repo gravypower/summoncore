@@ -571,8 +571,8 @@ local function buildTools(f)
 
     local out = bodyText(f, 16, -300, 740, 140)
     local shown = "" -- what the output box says, so COPY can hand it over: the box itself cannot be selected
-    local function show(text)
-        shown = text
+    local function show(text, full) -- full: the longer text COPY hands over, when the box only has room for a summary
+        shown = full or text
         out:SetText(text)
     end
 
@@ -732,10 +732,18 @@ local function buildTools(f)
     local function paintChecks()
         checkLabel:SetText("CHECKS " .. (ST.Check.Summary()))
     end
+    -- the output box has room for a few lines, so the steps and the results go to the chat window, which scrolls, with a headline here
+    local function tellChat(lines, headline)
+        for _, l in ipairs(lines) do ST.print(l) end
+        show(headline .. " The details are in the chat window; COPY copies them.", table.concat(lines, "\n"))
+    end
     local function showCheck(id)
         current = id
-        show(id and table.concat(ST.Check.Detail(id), "\n") or
-            "Every check that needs a person has a result. REPORT opens the report to send back.")
+        if not id then
+            return show("Every check that needs a person has a result. REPORT opens the report to send back.")
+        end
+        local lines = ST.Check.Detail(id)
+        tellChat(lines, lines[1]:sub(1, 150))
     end
     local function mark(status)
         if not current then return showCheck((ST.Check.Next())) end
@@ -744,12 +752,12 @@ local function buildTools(f)
         paintChecks()
     end
     button(checkRow, "RUN AUTO", 112, 0, 90, function()
-        local lines, bad = {}, 0
+        local lines, bad = {}, {}
         for _, r in ipairs(ST.Check.RunAuto()) do
-            if not r.ok then bad = bad + 1 end
-            lines[#lines + 1] = string.format("%s %s: %s", r.ok and T.Paint("green", "PASS") or T.Paint("red", "FAIL"), r.id, tostring(r.detail))
+            if not r.ok then bad[#bad + 1] = r.id end
+            lines[#lines + 1] = string.format("%s %s: %s (%s)", r.ok and "PASS" or "FAIL", r.id, r.title, tostring(r.detail))
         end
-        show(table.concat(lines, "\n"))
+        tellChat(lines, #bad == 0 and "Automatic checks: all passed." or ("Automatic checks: " .. #bad .. " FAIL (" .. table.concat(bad, ", ") .. ")."))
         paintChecks()
     end)
     button(checkRow, "NEXT", 206, 0, 56, function() showCheck((ST.Check.Next())) end)
@@ -761,7 +769,8 @@ local function buildTools(f)
         for i = math.max(1, #ST.trace - 11), #ST.trace do
             lines[#lines + 1] = date("%H:%M:%S", ST.trace[i].time) .. " " .. ST.trace[i].text
         end
-        show(#lines > 0 and table.concat(lines, "\n") or "Nothing traced yet: it records the summon prompt and the answers as they happen.")
+        if #lines == 0 then return show("Nothing traced yet: it records the summon prompt and the answers as they happen.") end
+        tellChat(lines, "The last " .. #lines .. " things the summon prompt and the answers did.")
     end)
     button(checkRow, "REPORT", 514, 0, 80, function() ST.Check.Command("report") end)
     button(checkRow, "COPY", 598, 0, 60, function() ST.Check.Copy(shown) end)
