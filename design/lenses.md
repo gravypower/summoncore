@@ -45,7 +45,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
 | Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 | Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; A, B and C built |
-| Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B and C built; D waits on audio; G (logging from Zennit's side) open |
+| Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B, C and G built; D waits on audio |
 
 ## Entries
 
@@ -1683,6 +1683,22 @@ The cost: a record from his client has to give way to the caster's if both arriv
 writ cannot be played without the caster's addon, and the summons would be credited to the caster with no helpers. It is a gap worth
 closing only if a warlock in the group does not install it.
 
+**G, built (0.21.0).** And a helper with the addon does help: the caster's client already finds helpers by asking who in the group is
+channeling the ritual (`UnitChannelInfo`, which works in this client), so any other client in the group can do the same.
+- **The witness** (`Detector.lua`). A client that is not casting watches its group: the first to channel a ritual is the caster, their
+  target is the one being summoned, and anyone who starts after is a helper; if this client clicks the portal itself, it is a helper
+  too and its own place is the stone's. When the caster stops it sends a note (`W`) to the party or raid, for rituals on Zennit only.
+- **Zennit's client files it** (`Respond.FileWitnessed`). When he presses Accept or Decline and no record of the summons has
+  arrived, it looks again in five seconds; then it files one: the caster from the prompt, else a note, else the only warlock in his
+  group, else "Unknown"; the helpers only from notes; the place from where he arrives if he accepted, else a helper's note, else the
+  prompt's area name. The answer is recorded on it as on any other. The record carries a 12th field naming him, its id starts with
+  his name, and sync accepts it only from him and only for a summons of himself.
+- **If the caster's record turns up after all** (`Respond.Adopt`), his client moves the answer to it and deletes the one it filed.
+- **Not covered:** a prompt he never answers files nothing; no writ without the caster's addon. Protocol: older clients cannot read
+  the 12-field record, hence 0.21.0, and the version notice says so.
+- **Live check** `d-witness` (marks itself), and four self-tests: the record and its rules in sync, the note, who is credited, and the
+  file-then-adopt round trip.
+
 **To watch in playtests**
 - When someone new joins, what do they ask first? Did they read the rules card, watch the intro, or ask in voice?
 - Does a summons ever go unlogged because the caster did not have the addon?
@@ -1722,3 +1738,4 @@ closing only if a warlock in the group does not install it.
 | 2026-10-05 | Dice are one click; a key binding arms a writ; what he presses at the game's prompt ends a roll in flight | Flow | The ordinary summons needed nothing from anyone, but dice cost three clicks across two people and a writ had to be typed mid-play; a roll and the game's prompt could give two answers to one summons |
 | 2026-10-05 | The Tools tab is three sections (General, Testing, Checks) and opens on the one used last; each lens now ends with a live check for what only the game can confirm, and the earlier lenses have theirs (`s-login`, `s-band`, `s-lastcall`, and `/sc week login` to say the login lines again) | Interface, the method | Five columns and three rows left the output box three lines; the live checks arrived after Flow, so the lenses before it had no way to be confirmed in the game beyond the rules the self-tests cover |
 | 2026-10-05 | A welcome at the first login (nothing new to do, who needs the addon, the rules card); the rules card and README say who needs it; a caster's first summons of Zennit gets the full briefing whatever the day | Accessibility | A newcomer was pointed at four minutes of out-of-date story, nothing said that a caster without the addon logs nothing, and their first briefing assumed they knew the race |
+| 2026-10-05 | When the caster has no addon, Zennit's client files the summons from the game's prompt, with the caster, place and helpers that clients in the group saw (a witness note); the caster's own record replaces it if it arrives; version 0.21.0 | Accessibility | A warlock without the addon logged nothing, so their summons of him did not count; his client always sees the prompt, and anyone in the group can see who channels the ritual |

@@ -121,7 +121,8 @@ add("malformed records are rejected", function()
     local id, ev = sample()
     local rec = Sync.Encode(id, ev)
     local cases = {
-        { rec .. "|x|y", "fields" },
+        { rec .. "|x|y|z", "fields" },
+        { rec .. "|w|Bob", "by" },                                       -- only the summoned may file a record for someone else
         { mutate(rec, 7, "abc"), "time" },
         { mutate(rec, 7, tostring(time() + 10 * 86400)), "future" },
         { mutate(rec, 1, "Other-1717000100"), "id" },
@@ -1873,7 +1874,7 @@ add("a record carries a writ in an 11th field, and the old 10-field record still
     local _, a = Sync.Decode(plain)
     local _, b = Sync.Decode(marked)
     local _, c = Sync.Decode(answered)
-    local tooLong = select(2, Sync.Decode(marked .. "|x"))
+    local tooLong = select(2, Sync.Decode(marked .. "|x|y"))
     local badFlag = select(2, Sync.Decode((marked:gsub("|w$", "|q"))))
     local ok = a and a.writ == nil and b and b.writ == true and b.response == nil and c and c.writ == true
         and c.response.result == "refused" and tooLong == "fields" and badFlag == "writ" and not plain:find("|w", 1, true)
@@ -1956,6 +1957,109 @@ add("what he presses at the game's own prompt is his answer: accept, a free decl
             and not out.w3Lands and out.w3Goal == 0 and not out.decLands and out.decGoal == -3
             and out.status:find("0 free declines left", 1, true) and out.notHim == nil and out.seen == "pass pass pass pass"
         return good, tostring(out.results)
+    end)
+end)
+
+add("a record Zennit's client files for a caster without the addon: carried by sync, only from him, and only of himself", function()
+    local t = BASE + 50
+    local ev = { caster = "Wally", target = "Zennit", assistants = { "Cy" }, mapID = 1436, subzone = "Sentinel Hill", time = t,
+        wrote = t, confirmed = false, by = "Zennit" }
+    local id = "Zennit-" .. t
+    local rec = Sync.Encode(id, ev)
+    local did, dev = Sync.Decode(rec)
+    local plainID, plain = Sync.Decode(Sync.Encode("Alpha-" .. t, { caster = "Alpha", target = "Zennit", assistants = {}, time = t,
+        wrote = t, confirmed = true }))
+    local notHim = Sync.Decode(Sync.Encode("Bob-" .. t, { caster = "Wally", target = "Zennit", assistants = {}, time = t, wrote = t,
+        confirmed = true, by = "Bob" }))                                                  -- only the target may file one
+    local wrongID = Sync.Decode(Sync.Encode("Wally-" .. t, ev))                          -- the id must start with who filed it
+    ev.writ = true
+    local _, withWrit = Sync.Decode(Sync.Encode(id, ev))
+    ev.writ = nil
+    local w, z = newClient("Wally"), newClient("Ann")
+    local fromHim, fromOther, toCaster
+    with(z, function()
+        fromHim = Sync.Merge(did, select(2, Sync.Decode(rec)), "Zennit", true)
+        fromOther = Sync.Merge("Zennit-" .. (t + 1), select(2, Sync.Decode(Sync.Encode("Zennit-" .. (t + 1), ev))), "Wally", true)
+    end)
+    with(w, function() toCaster = Sync.Merge(did, select(2, Sync.Decode(rec)), "Zennit", true) end) -- the caster accepts it
+    local ok = did == id and dev and dev.by == "Zennit" and dev.caster == "Wally" and dev.assistants[1] == "Cy"
+        and plainID and plain.by == nil and notHim == nil and wrongID == nil and withWrit and withWrit.writ and withWrit.by == "Zennit"
+        and fromHim == "added" and fromOther == "rejected:sender" and toCaster == "added"
+    return ok, string.format("decoded %s by %s; from him %s, from another %s, at the caster %s", tostring(did),
+        tostring(dev and dev.by), tostring(fromHim), tostring(fromOther), tostring(toCaster))
+end)
+
+add("a witness's note of a ritual: who cast it, on whom, the helpers and the place, read back whole or not at all", function()
+    local note = { caster = "Wally", target = "Zennit", helpers = { "Cy", "Di" }, mapID = 1436, subzone = "Sentinel Hill",
+        time = BASE + 9, helping = true }
+    local back = Sync.DecodeWitness(Sync.EncodeWitness(note), "Cy")
+    local blank = Sync.DecodeWitness(Sync.EncodeWitness({ helpers = {}, time = BASE, subzone = "" }), "Cy")
+    local bad = Sync.DecodeWitness("Wally|Zennit|Cy|x|Hill|5|1", "Cy")
+    local short = Sync.DecodeWitness("Wally|Zennit", "Cy")
+    local ok = back and back.caster == "Wally" and back.target == "Zennit" and #back.helpers == 2 and back.mapID == 1436
+        and back.subzone == "Sentinel Hill" and back.helping and back.from == "Cy"
+        and blank and blank.caster == nil and blank.target == nil and bad == nil and short == nil
+    return ok, back and (back.caster .. " helped by " .. table.concat(back.helpers, ",")) or "no note"
+end)
+
+add("who cast a summons with no record: the prompt's name, else a witness, else the only warlock; helpers only from a witness", function()
+    local R = ST.Respond
+    local notes = {
+        { caster = "Wally", target = "Zennit", helpers = { "Cy", "Di", "Wally" }, mapID = 1451, subzone = "Cenarion Hold", helping = true },
+        { caster = "Vic", target = "Zennit", helpers = { "Ed" }, subzone = "Elsewhere" },
+        { caster = "Wally", target = "Bob", helpers = { "Fay" } },                       -- a ritual on someone else
+    }
+    local here = { mapID = 1436, subzone = "Sentinel Hill" }
+    local named = R.Witnessed({ me = "Zennit", kind = "accept", summoner = "Wally", notes = notes, here = here, at = 5 })
+    local declined = R.Witnessed({ me = "Zennit", kind = "decline", summoner = "Wally", notes = notes, here = here, area = "Silithus", at = 5 })
+    local hidden = R.Witnessed({ me = "Zennit", kind = "accept", notes = notes, here = here, at = 5 })
+    local lone = R.Witnessed({ me = "Zennit", kind = "decline", warlock = "Xan", here = here, area = "Westfall", at = 5 })
+    local nobody = R.Witnessed({ me = "Zennit", kind = "accept", here = here, at = 5 })
+    local ok = named.caster == "Wally" and table.concat(named.assistants, ",") == "Cy,Di" and named.mapID == 1436 and named.confirmed
+        and named.by == "Zennit" and named.time == 5
+        and declined.mapID == 1451 and declined.subzone == "Cenarion Hold"
+        and hidden.caster == "Wally"
+        and lone.caster == "Xan" and #lone.assistants == 0 and lone.mapID == nil and lone.subzone == "Westfall" and not lone.confirmed
+        and nobody.caster == "Unknown"
+    return ok, string.format("%s with %s; declined at %s; lone %s; nobody %s", named.caster, table.concat(named.assistants, ","),
+        tostring(declined.subzone), tostring(lone.caster), tostring(nobody.caster))
+end)
+
+add("his client files a summons nobody logged, answers it, and hands the answer over when the caster's record turns up", function()
+    return newRules(function()
+        local a, R, S, G, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, {}
+        local realMe, realIs, realLater, realPrint = S.me, G.IsZennit, R.later, ST.print
+        S.me = function() return "Zennit" end
+        G.IsZennit = function() return true end
+        R.later = function(fn) fn() end                                                  -- no waiting in the test
+        ST.print = function() end
+        local ok, err = pcall(with, a, function()
+            local now = time()
+            Sync.AddWitness({ caster = "Wally", target = "Zennit", helpers = { "Cy" }, time = now - 10, subzone = "Hill", helping = true })
+            R.SetPrompt(now - 3, "Westfall")
+            out.waits = R.Real("decline", "Wally")                                       -- nothing from Wally: it looks again, then files
+            for id, ev in pairs(a.db.events) do if ev.by == "Zennit" then out.id, out.ev = id, ev end end
+            out.first = out.ev and out.ev.response
+            out.again = R.Real("decline", "Wally")                                       -- the same prompt again: nothing more to file
+            local count = 0
+            for _ in pairs(a.db.events) do count = count + 1 end
+            out.count = count
+            -- Wally's own record arrives late
+            local wid = "Wally-" .. (now - 4)
+            a.db.events[wid] = { caster = "Wally", target = "Zennit", assistants = {}, time = now - 4, points = 3, kind = "zone" }
+            out.adopted = R.Adopt(wid, a.db.events[wid])
+            out.moved = a.db.events[wid].response and a.db.events[wid].response.result
+            out.gone = out.id and a.db.events[out.id] == nil and a.db.deleted and a.db.deleted[out.id] ~= nil
+            out.none = R.Adopt(wid, a.db.events[wid])                                    -- nothing left to adopt
+        end)
+        S.me, G.IsZennit, R.later, ST.print = realMe, realIs, realLater, realPrint
+        R.SetPrompt(nil, nil)
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.waits == nil and out.first and out.first.result == "declined" and out.ev and out.ev.caster == "Wally"
+            and out.ev.assistants[1] == "Cy" and out.ev.subzone == "Hill" and out.id:sub(1, 7) == "Zennit-"
+            and out.again == nil and out.count == 1 and out.adopted == true and out.moved == "declined" and out.gone and out.none == false
+        return good, string.format("filed %s for %s (%s), adopted %s, moved %s", tostring(out.id), tostring(out.ev and out.ev.caster),
+            tostring(out.first and out.first.result), tostring(out.adopted), tostring(out.moved))
     end)
 end)
 

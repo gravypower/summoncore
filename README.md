@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.20.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.21.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -14,9 +14,14 @@ addon does not appear, enable "Load out of date AddOns".
 
 Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`SummonTrackerDB`).
 
-**Who needs it.** Only the caster's client sees a Ritual of Summoning, so whoever casts needs Summon Core for the summons to be
-logged and count; Zennit needs it for his answers (what he presses at the game's prompt) to be his. Helpers are credited from the
-caster's snapshot either way, and need it only to see the log, the race and the window. On the first login the addon says a
+**Who needs it.** Only the caster's client sees a Ritual of Summoning, so whoever casts should run Summon Core for the summons to be
+logged with its place and helpers; Zennit needs it for his answers (what he presses at the game's prompt) to be his. Helpers are
+credited from the caster's snapshot either way. **When the caster does not have it,** Zennit's client files the summons itself once he
+answers the game's prompt and no record of it has arrived within a few seconds: the caster from the prompt (or the only warlock in his
+group), the place from where he arrives (or, if he declines, from a helper's client), and the helpers only if someone in the group
+runs the addon. Every client in the group that is not casting watches who channels a ritual and sends Zennit's client a note (`W`);
+a helper's own client also gives the place. If the caster's own record turns up later, it replaces the filed one and his answer
+moves to it. Nothing is filed if he never answers the prompt, and no writ can be played without the caster's addon. On the first login the addon says a
 three-line welcome to this effect (`/sc welcome` says it again).
 
 ## Commands
@@ -131,7 +136,7 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts) and `X` (a request to reset). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
+alts), `X` (a request to reset) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from
@@ -140,7 +145,8 @@ Zennit, and the last reset time, so a peer notices a missing summon, a changed a
 Merge rules:
 - Same event ID: keep the confirmed copy; if both are (or neither is), keep the earlier write.
 - Your own events are authoritative and nobody can add one against you.
-- A live `E` is accepted only if the sender is the caster.
+- A live `E` is accepted only if the sender is the caster, or, for a record Zennit's client filed (a 12th field names him), Zennit.
+  Only the summoned can file one, and only a summons of himself.
 - A `B` is accepted only by whisper and only soon after you sent a `R` to that sender (the window renews with
   each batch message, so a long log still arrives whole).
 - A deleted summon stays deleted: only its caster can send the `T`, and a copy of it is refused afterwards.
