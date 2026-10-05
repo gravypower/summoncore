@@ -14,6 +14,11 @@ addon does not appear, enable "Load out of date AddOns".
 
 Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`SummonTrackerDB`).
 
+**Who needs it.** Only the caster's client sees a Ritual of Summoning, so whoever casts needs Summon Core for the summons to be
+logged and count; Zennit needs it for his answers (what he presses at the game's prompt) to be his. Helpers are credited from the
+caster's snapshot either way, and need it only to see the log, the race and the window. On the first login the addon says a
+three-line welcome to this effect (`/sc welcome` says it again).
+
 ## Commands
 
 | Command | What it does |
@@ -50,6 +55,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. Paste it into the group chat. Also the Tools tab's **Playtest report**; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). Also the Tools tab's **The rules** |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
+| `/sc welcome` | The three lines a newcomer gets at their first login: taking part needs nothing new, who needs the addon, and where the rules and the story are |
 | `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |

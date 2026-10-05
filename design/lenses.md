@@ -45,7 +45,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
 | Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 | Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; A, B and C built |
-| Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B and C proposed; D waits on audio |
+| Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B and C built; D waits on audio; G (logging from Zennit's side) open |
 
 ## Entries
 
@@ -1653,13 +1653,35 @@ the order they get it, and whether they can take part without reading the README
 | E | **Who in the group is missing it**: the Sync tab lists the group's members whose client has not said hello, warlocks first | 2 | Remembering who said hello; a roster check; a layout to see in the client |
 | F | **Leave it**: the group is six friends who can explain it to each other in voice chat | | Nothing |
 
-**Recommendation:** A, B and C together: they are wording and one flag, and they change what a newcomer's first hour says without
-adding a surface. D is right but waits on the audio, so its wording can be written now and rendered with the next batch of narration.
-E is the strongest fix for finding 2 but adds a list to a tab, and the group may simply say "install it" in voice chat; leave it until
-a summons is lost that way.
+**Our answer (built: A, B and C).** They are wording and one rule, and they change what a newcomer's first hour says without adding
+a surface. D is right but waits on the audio, so its wording can be written now and rendered with the next batch of narration. E is
+the strongest fix for finding 2 but adds a list to a tab; it waits, and G (below) may make it less needed.
 
-**Live checks to add with whatever is built** (step 6): the welcome on a fresh install (`/sc reset`, then log in, or a new character's
-saved variables), and the newcomer's first briefing on a test summons.
+**Built**
+- **A, the welcome** (`Intro.WelcomeLines`). The first login says three lines instead of "New here?": you do not have to do anything
+  new (cast and click portals as usual; on Zennit's client, answer in the game's own prompt), who needs the addon, and that `/sc rules`
+  is the race in a minute and `/sc intro` the story. `/sc welcome` says it again.
+- **B, who needs it**: the welcome's second line, a line at the foot of the rules card, and a paragraph under the README's Install.
+- **C, a newcomer's first briefing in full.** The long briefing is now given for the week's first summons of Zennit *or* the caster's
+  first ever (`Week.FirstCast`: no summons of him in the log with them as the caster). It reads the log rather than keeping a flag,
+  so a newcomer whose log has synced from the group is still a newcomer until they cast.
+- **Live checks** (step 6): `s-welcome` (marks itself at a first login) and `d-firstbrief`; self-tests for both and the rules card.
+
+**G, when the warlock does not have it (asked after the entry; not built).** Zennit's client sees the summons even when the caster's
+does not: the game puts its prompt in front of him (`CONFIRM_SUMMON`) whoever cast it. So his client could log the summons itself when
+no record of it arrives from a caster within a few seconds:
+
+| What | Can his client know it? |
+|---|---|
+| That a summons happened, and when | **Yes**: the prompt is the summons |
+| Who cast it | **Usually**: `GetSummonConfirmSummoner` names them, if the client does not hide it (`d-name` will tell us). If hidden, a warlock in his group is a good guess, and the only one when there is one |
+| Where to | **Yes if he accepts**: once there, his own map and subzone score it exactly as the caster's client would. If he declines, only the prompt's area name (`GetSummonConfirmAreaName`), matched by name; a free decline scores nothing anyway |
+| His answer | **Yes**: the same hooks as now |
+| The helpers | **No, not reliably.** On arrival he can see who in his group is near him, but that is everyone standing at the stone, not the two who clicked, and helpers may have walked off. A helper's own client might see its own click on the portal; that is untested |
+
+The cost: a record from his client has to give way to the caster's if both arrive (a few seconds' wait, then a merge rule in sync), a
+writ cannot be played without the caster's addon, and the summons would be credited to the caster with no helpers. It is a gap worth
+closing only if a warlock in the group does not install it.
 
 **To watch in playtests**
 - When someone new joins, what do they ask first? Did they read the rules card, watch the intro, or ask in voice?
@@ -1699,3 +1721,4 @@ saved variables), and the newcomer's first briefing on a test summons.
 | 2026-10-05 | His first decline of a week in the game is free; every later one, and any on a writ, costs him the summons' points; the popup and his own Week line say how many free declines are left | Balance | A free decline with no limit was better than refusing every time and let him win every week he chose to (simulated: the group won 0% against 63% on the old rules); one a week leaves about 43% |
 | 2026-10-05 | Dice are one click; a key binding arms a writ; what he presses at the game's prompt ends a roll in flight | Flow | The ordinary summons needed nothing from anyone, but dice cost three clicks across two people and a writ had to be typed mid-play; a roll and the game's prompt could give two answers to one summons |
 | 2026-10-05 | The Tools tab is three sections (General, Testing, Checks) and opens on the one used last; each lens now ends with a live check for what only the game can confirm, and the earlier lenses have theirs (`s-login`, `s-band`, `s-lastcall`, and `/sc week login` to say the login lines again) | Interface, the method | Five columns and three rows left the output box three lines; the live checks arrived after Flow, so the lenses before it had no way to be confirmed in the game beyond the rules the self-tests cover |
+| 2026-10-05 | A welcome at the first login (nothing new to do, who needs the addon, the rules card); the rules card and README say who needs it; a caster's first summons of Zennit gets the full briefing whatever the day | Accessibility | A newcomer was pointed at four minutes of out-of-date story, nothing said that a caster without the addon logs nothing, and their first briefing assumed they knew the race |

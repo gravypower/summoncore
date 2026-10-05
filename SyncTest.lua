@@ -1824,6 +1824,43 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
     end)
 end)
 
+add("a newcomer's first summons of Zennit gets the full briefing, whatever day it is; their second does not", function()
+    return newRules(function()
+        local W, a = ST.Week, newClient("Alpha")
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local function put(key, caster, at) -- a summon of Zennit
+                a.db.events[key] = { caster = caster, target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone" }
+            end
+            put("a", "Bob", this + 60); put("b", "Cara", this + 120)                     -- the week is under way, by others
+            out.newcomer = W.FirstCast()
+            out.first = W.Briefing("Zennit", 1436, "Sentinel Hill")
+            put("c", "Alpha", this - 3 * 86400)                                           -- Alpha cast one last week
+            out.again = W.FirstCast()
+            out.later = W.Briefing("Zennit", 1436, "Sentinel Hill")
+        end)
+        local ok = out.newcomer == true and out.again == false
+            and out.first:find("summon 3 of 10 this week", 1, true) and out.first:find("each helper adds +5 to your roll", 1, true)
+            and out.first:find("/sc writ (2 left)", 1, true)
+            and not out.later:find("each helper adds", 1, true) and #out.later < #out.first
+        return ok, string.format("%s | %s", tostring(out.first), tostring(out.later))
+    end)
+end)
+
+add("the welcome says taking part needs nothing new, who needs the addon, and where the rules are; the rules card says who needs it", function()
+    local party, zennit = ST.Intro.WelcomeLines(false), ST.Intro.WelcomeLines(true)
+    local card = ""
+    newRules(function() card = table.concat(ST.Week.RulesCard(), "\n") return true end)
+    local p, z = table.concat(party, " "), table.concat(zennit, " ")
+    local ok = #party == 3 and #zennit == 3
+        and p:find("cast and click portals as usual", 1, true) and z:find("answer summons in the game's own prompt", 1, true)
+        and p:find("Whoever casts the ritual needs Summon Core", 1, true) and z:find("Whoever casts the ritual needs Summon Core", 1, true)
+        and p:find("/sc rules", 1, true) and p:find("/sc intro", 1, true)
+        and card:find("Who needs Summon Core: whoever casts the ritual", 1, true)
+    return ok, party[1]
+end)
+
 add("a record carries a writ in an 11th field, and the old 10-field record still reads", function()
     local ev = { caster = "Alpha", target = "Zennit", assistants = {}, mapID = 1436, subzone = "Sentinel Hill", time = BASE + 5,
         wrote = BASE + 5, confirmed = true }
