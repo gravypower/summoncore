@@ -20,6 +20,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 |---|---|
 | `/sc` (also `/summoncore`) | Open the Summon Core window: Party (Summary, Tally and Badges), Zennit (his answers), Log, Story, Sync and Tools tabs; the Party tab is closed to Zennit (he gets the "ah ah ah" gag) and Zennit's tab to the party (a gag of its own; the admin can open both); Story is a talent tree: the intro on top, then one trunk for Zennit and one for the group, a chapter per weekly win, with the next win pulsing, the reached chapters lit (click to play) and the rest hidden until the weekly race reaches them (everything below is in it too) |
 | `/sc help` | Five lines: the commands a player needs (the window, rules, week, tab, cards, titles, report, seasons). `/sc help all` lists every command |
+| `/sc errors [clear]` | The problems the addon caught in itself this session. Every slash command, event handler, login step and hub tab runs under a guard: a bug no longer fails silently (WoW shows nothing by default) or stops the steps after it; it is said once in chat, kept here, and still passed to the game's own error handler. Tell Aaron what it says |
 | `/sc tips [on\|off]` | The one-line tip about a command, said once a Monday at login (they go round in order; two are for Zennit's client only). `/sc tips off` stops it |
 | `/sc panel` | Open the window on the Party tab |
 | `/sc log [n]` | Recent summons |

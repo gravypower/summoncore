@@ -35,6 +35,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Reward | What does each member get, and when? | Answered; A, B, C and D built |
 | Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
+| Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 
 ## Entries
 
@@ -1089,6 +1090,73 @@ Monday 11:00 in summer and 10:00 from April). C (days in the report) and D (a ho
 - Which days and hours do the summons fall on? Does anyone ask when the week ends?
 - Is anyone away in December, and what does the group want to happen then?
 
+### 2026-10-05 · Lens of Risk Mitigation: what could go wrong with 0.19.0
+
+**The questions (paraphrased):** what could go wrong with this release, how likely is each, and how bad? What can we do now to make
+it less likely, or less bad? Is there a cheap way to find out early? The group has not started yet (they are building it now), so
+this is the last moment when a mistake costs nothing.
+
+**The risks, ranked** (likelihood and impact are judgements, the numbers are measured)
+
+| # | Risk | Likelihood | Impact | What exists | What is missing |
+|---|---|---|---|---|---|
+| 1 | **A Lua error in code that has never run in the game** (about 15 modules and a dozen self-tests were only exercised in a stub) | High | A feature, or the whole login, silently does nothing: with script errors off (the default) WoW shows nothing | The smoke test in `design/playtest.md` | Nothing catches an error and says so: a failing slash command prints nothing, and one failing login job stops the ones after it |
+| 2 | **Clients on different versions** (the answer's wire format gained a flag bit and a silver amount; 0.18 reads the card flag as "closed the Index") | Medium | Wrong answers shown to some players | "Update together" in the README | Nothing tells a player that a friend is on an older version |
+| 3 | **The client hides trade and mail amounts** (the 12.0 API hides some values) | Medium | The silver is not seen automatically | `pcall`, secret-value checks, a one-time notice, `/sc probe` | Nothing more can be done before it is tried |
+| 4 | **A client's clock is wrong**: a summons is stamped with the caster's own clock, and the week is cut from it | Low | A summons lands in the wrong week on one client | None | No warning |
+| 5 | **The addon gets slow as the log grows** | Low now | The window or the chat lags | Everything is derived, so it cannot drift | A measurement (below) |
+| 6 | **A rogue guild member forges a message** | Very low | A fake card, or being named one of Zennit's alts | Names and values are validated; an answer needs the summoned character as sender; a card needs one of Zennit's characters | `A` (an alt announcing itself) is taken from anyone, up to ten |
+| 7 | **Zennit is the single point of failure** (answers, cards, silver) | Medium | The Community entry | Waiting count, a provisional Monday | Left open on purpose |
+
+**Cost as the log grows** (measured, plain Lua 5.1, so a game client will be somewhat slower or faster; 30 weeks of log)
+
+| Events in the log | `Week.Season` | `/sc rules` | `Ledger.Seasons` | `/sc report` | The hub's refresh |
+|---|---|---|---|---|---|
+| 300 (about 15 seasons) | 40 ms | 43 ms | 284 ms | 333 ms | about 100 to 150 ms (it asks for the season several times) |
+| 1,500 | 203 ms | 208 ms | 1,556 ms | 1,874 ms | about 0.5 to 1 s |
+
+A first year is about 100 events, which is 10 ms or less. The cost is linear in the log and in the weeks: every call walks every
+event for every week, and `Week.Edge` asks for the whole season each time it is asked. It is fine for years; if a refresh ever feels
+slow, the fix is to remember the season until the log changes.
+
+**Findings**
+1. **The biggest risk is the one we cannot see.** We have measured, simulated and stubbed; we have not run. The smoke test is the
+   plan, but a failure there should say what failed.
+2. **A silent failure is worse than a loud one.** With script errors off, a bug looks like the feature not existing. A slash command
+   that fails today prints nothing.
+3. **Version skew is cheap to detect** and expensive to debug: the hello message already carries each client's version.
+4. **A wrong clock is cheap to detect** too: the client knows both the server's time and the computer's.
+5. **Speed is not a problem yet**, and has a known threshold.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Say when a friend is on another version**: when a hello shows a different version, say once, "Bo is on 0.18.0 and you are on 0.19.0: update together" | 2 | A comparison and a line |
+| B | **Catch errors and say so**: every slash command and every login job runs under `pcall`; a failure prints one line ("Summon Core hit a problem in /sc rules: ... Please tell Aaron.") and is kept for `/sc errors`, and one failing job no longer stops the others | 1 | A wrapper |
+| C | **A clock check at login**: if the computer's time and the server's differ by more than five minutes, say so once | 4 | One comparison |
+| D | **Remember the season** until the log changes, so the hub and the commands stay quick as the log grows | 5 | A cache and the care it needs |
+
+**Our answer:** build **B and A**. The clock check (C) and remembering the season (D) were not chosen: a clock off by hours is rare
+and the cost of the season is small for years.
+
+**Built**
+- **B, catch errors and say so** (`ST.Guard` and `ST.Safe` in `Core.lua`). Every slash command, the login, the Ritual detector, the
+  silver watcher, the sync handler, the story viewer's frame update, each hub tab's refresh and each step of the Monday login (the
+  week's result, the whim, the clock, the tip, what is waiting) now runs under `pcall`. A failure is said once in chat ("hit a
+  problem in /sc rules: Week.lua:123: ... (/sc errors lists them; please tell Aaron)"), kept for `/sc errors` (the last twenty), and
+  still handed to the game's own error handler so BugSack and the red box behave as before. One failing step no longer stops the
+  steps after it.
+- **A, a version notice.** When a friend's hello shows a different major.minor version, the chat says once per session: "Bo is on
+  0.18.0 and you are on 0.19.1: ask them to update (answers and cards are read wrongly across versions)", or the newer-than-yours
+  version of it. A patch difference is not mentioned.
+
+**To decide before building**
+- Do we want the clock check (C) once the group is playing, if a summons ever lands in the wrong week?
+
+**To watch in playtests**
+- Does `/sc errors` show anything? Does anyone see the version notice?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1113,3 +1181,4 @@ Monday 11:00 in summer and 10:00 from April). C (days in the report) and D (a ho
 | 2026-10-05 | Season titles, mid-season standings (`/sc titles`), kind titles for Zennit, and four later badges for the people who cast; helpers get titles, not badges | Reward | Individual rewards were front-loaded and for warlocks only; a helper's only reward was a named line about every other season |
 | 2026-10-05 | The Tools tab is five columns (the reports have their own, The record); a one-line command tip each Monday (`/sc tips off`); `/sc help` is five lines and `/sc help all` is the rest | Interface | One Tools column had grown past the tab for the admin; the useful commands were listed only in a 25-line help |
 | 2026-10-05 | The week's turnover stays at Monday 00:00 UTC (11:00 on the east coast of Australia in summer); the week's close is said in the player's time, and the last day of a week has a last call | Time | Nothing said when a week ends, and the deadline was never felt; the group's evenings fit the UTC week |
+| 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |

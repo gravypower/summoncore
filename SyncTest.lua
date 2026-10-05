@@ -1616,6 +1616,47 @@ add("the week's clock in the player's time, and a last call in the final day", f
     end)
 end)
 
+add("errors are caught and said once, kept for /sc errors, and a failing step does not stop the next", function()
+    local printed, realPrint, realHandler = {}, ST.print, geterrorhandler
+    local saved = ST.errors
+    ST.errors = {}
+    ST.print = function(text) printed[#printed + 1] = text end
+    local ran = false
+    local bad = function() error("boom") end
+    local ok1, msg1 = ST.Guard("the first step", bad)
+    local ok1b = ST.Guard("the first step", bad)                                -- the same again: kept, not said again
+    local ok2, value = ST.Guard("the second step", function() ran = true return "fine" end)
+    local safe = ST.Safe("an event", function(a, b) return a + b end)
+    local sum = select(2, safe(2, 3))
+    ST.print = realPrint
+    local kept, said = #ST.errors, #printed
+    local first = ST.errors[1]
+    ST.errors = saved
+    local good = ok1 == false and ok1b == false and msg1:find("boom", 1, true) and ok2 == true and value == "fine" and ran
+        and sum == 5 and kept == 2 and said == 1 and first and first.name == "the first step" and printed[1]:find("/sc errors", 1, true)
+    return good, string.format("kept %d, said %d, second step ran %s", kept, said, tostring(ran))
+end)
+
+add("a friend on another version is noticed (major and minor, once), and a patch is not", function()
+    local note = ST.Sync.VersionNote
+    local older = note("Bo", "0.18.0", "0.19.1")
+    local newer = note("Bo", "0.20.0", "0.19.1")
+    local patch = note("Bo", "0.19.0", "0.19.1")
+    local same = note("Bo", "0.19.1", "0.19.1")
+    local junk = note("Bo", "banana", "0.19.1")
+    -- the hello carries the version: a client on another one is noticed once and the sync goes on
+    local a, b = newClient("Alpha"), newClient("Beta")
+    local result, again
+    with(a, function()
+        local body = string.format("%d|%d|%s|%d|%d", 0, 0, "0.18.0", 0, 0)
+        result = Sync.OnMessage("1~H~" .. body, "PARTY", "Beta")
+        again = Sync.OnMessage("1~H~" .. body, "PARTY", "Beta")
+    end)
+    local good = older and older:find("ask them to update", 1, true) and newer and newer:find("newer than your", 1, true)
+        and patch == nil and same == nil and junk == nil and result and result:find("version", 1, true) and not again:find("version", 1, true)
+    return good, tostring(older)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

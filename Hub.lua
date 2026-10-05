@@ -921,8 +921,8 @@ end
 -- Refreshes the open tab (call after anything that changes the log).
 function Hub.Refresh()
     if window and window:IsShown() and current and tabs[current] then
-        tabs[current].refresh()
-        refreshChrome()
+        ST.Guard("the " .. current .. " tab", tabs[current].refresh)
+        ST.Guard("the season band", refreshChrome)
     end
 end
 

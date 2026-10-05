@@ -11,6 +11,35 @@ local function print_(msg)
 end
 ST.print = print_
 
+-- Errors are caught and said (design/lenses.md, Risk Mitigation). With script errors off, which is WoW's default, a bug in a
+-- command or an event handler is otherwise silent: the feature just seems not to exist. Guard runs fn under pcall; a failure is
+-- kept for /sc errors, said once in chat (per place and message), and still handed to the game's own error handler, so BugSack
+-- and the red box behave as they always did. Returns ok and what fn returned.
+ST.errors = {}
+local MAX_ERRORS = 20
+local told = {}
+function ST.Guard(name, fn, ...)
+    local results = { pcall(fn, ...) }
+    if results[1] then return unpack(results) end
+    local msg = tostring(results[2]):sub(1, 300)
+    local log = ST.errors
+    log[#log + 1] = { time = time(), name = name, msg = msg }
+    if #log > MAX_ERRORS then table.remove(log, 1) end
+    local key = name .. "|" .. msg
+    if not told[key] then
+        told[key] = true
+        ST.print("|cffff6644hit a problem in " .. name .. ":|r " .. msg .. " (|cffffd100/sc errors|r lists them; please tell Aaron)")
+    end
+    local handler = geterrorhandler and geterrorhandler()
+    if handler then pcall(handler, "Summon Core, " .. name .. ": " .. msg) end
+    return false, msg
+end
+
+-- A function that always runs under Guard: for event handlers and scripts.
+function ST.Safe(name, fn)
+    return function(...) return ST.Guard(name, fn, ...) end
+end
+
 -- Stringify anything safely, including 12.0 secret values and errors.
 function ST.safe(v)
     if v == nil then return "nil" end
@@ -133,7 +162,7 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
-frame:SetScript("OnEvent", function(_, event, arg1)
+frame:SetScript("OnEvent", ST.Safe("the login", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON then
         initDB()
         -- Remember what the previous session left behind for the save/reload test.
@@ -142,7 +171,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         if ST.OnLogin then ST.OnLogin() end
         print_("loaded v" .. ST.version .. ". /sc for commands.")
     end
-end)
+end))
 
 local function words(str)
     local out = {}
@@ -365,6 +394,19 @@ function commands.probe()
     ST.Silver.Probe()
 end
 
+-- The problems this session has caught (see ST.Guard): the last ten, newest last; "clear" forgets them.
+function commands.errors(rest)
+    if rest == "clear" then
+        for i = #ST.errors, 1, -1 do ST.errors[i] = nil end
+        return print_("errors cleared")
+    end
+    if #ST.errors == 0 then return print_("No problems caught this session.") end
+    for i = math.max(1, #ST.errors - 9), #ST.errors do
+        local e = ST.errors[i]
+        print_(string.format("%s  %s: %s", date("%H:%M:%S", e.time), e.name, e.msg))
+    end
+end
+
 -- The Monday tip on or off.
 function commands.tips(rest)
     local s = ST.db.settings
@@ -473,6 +515,7 @@ local HELP = {
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
     "/sc respond [test] - Zennit answers a summon of him (accept, refuse, ask for silver, dice); test tries it",
     "/sc tips [on|off] - the one-line tip about a command, at the Monday login",
+    "/sc errors [clear] - problems the addon caught in itself this session (tell Aaron what they say)",
     "/sc gag - preview the Zennit gag",
     "/sc comic [256|512|1024|2048] - large-image test pattern viewer",
     "/sc undo - remove the latest summon    /sc debug - toggle detector messages",
@@ -493,9 +536,9 @@ SlashCmdList["SUMMONCORE"] = function(input)
     local cmd, rest = (input or ""):match("^(%S*)%s*(.-)$")
     cmd = cmd:lower()
     if cmd == "" then
-        ST.Hub.Toggle() -- no arguments: the window with everything in it
+        ST.Guard("the window", ST.Hub.Toggle) -- no arguments: the window with everything in it
     elseif commands[cmd] then
-        commands[cmd](rest)
+        ST.Guard("/sc " .. cmd, commands[cmd], rest)
     else
         if cmd ~= "" and cmd ~= "help" then print_("unknown command '" .. cmd .. "'") end
         print_("v" .. ST.version)

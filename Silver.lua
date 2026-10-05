@@ -314,10 +314,10 @@ for _, event in ipairs({ "TRADE_SHOW", "TRADE_MONEY_CHANGED", "TRADE_ACCEPT_UPDA
     "MAIL_INBOX_UPDATE" }) do
     pcall(watcher.RegisterEvent, watcher, event)
 end
-watcher:SetScript("OnEvent", function(_, event, ...)
+watcher:SetScript("OnEvent", ST.Safe("the silver watcher", function(_, event, ...)
     if not (ST.db and ST.Gag and ST.Gag.IsZennit()) then return end -- only his client watches the money
     if event == "MAIL_INBOX_UPDATE" then snapshotInbox() else onTrade(event, ...) end
-end)
+end))
 if hooksecurefunc then
     pcall(hooksecurefunc, "TakeInboxMoney", tookMail)
     pcall(hooksecurefunc, "AutoLootMailItem", tookMail)
