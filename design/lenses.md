@@ -52,6 +52,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
 | Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
 | Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A built |
+| Pleasure | Which kinds of fun does it give, to whom, and when? The week's triumph and the story's wonder arrive to each person alone | Answered; A proposed |
 
 ## Entries
 
@@ -2143,6 +2144,60 @@ being away instead of excusing it. Both wait partly on the open `d-expire` check
 **To watch in playtests**
 - How often does a summons of him go unanswered, and was he away? (`/sc report` counts unanswered summons.)
 - Does anyone use `/afk` as a shield?
+
+### 2026-10-05 · Lens of Pleasure: the big moments arrive alone
+
+**The questions (paraphrased):** which pleasures does the game give, and which could it give but does not? The book lists kinds of
+pleasure to check against: anticipation, completion, delight in another's misfortune, gift giving, humour, possibility, pride,
+purification, surprise, thrill, triumph over adversity, wonder. For each: does the game deliver it, to whom, and *when*?
+
+**The pleasures, as built**
+
+| Pleasure | Where it comes from | Who gets it | When, and with whom |
+|---|---|---|---|
+| Delight in another's misfortune | Summoning Zennit somewhere unreasonable; the gags | The group | At the cast, together (they are in a party) |
+| Humour | The Index's voice, postcards, his out-of-office | Everyone | As it happens, together |
+| Thrill | The dice: his roll, the caster's roll back | Him and the caster | Live, together, with a real `/roll` the party sees |
+| Possibility | His answers; where to put a writ; his list | Both sides | At the moment of choice |
+| Surprise | The whim, "Darnassus again", the Index today | Everyone | Monday, or as it happens |
+| Completion | Postcards (10), badges, titles | Everyone | Over a season |
+| Pride | Titles, his kind titles, moments named in the keepsake | Named players | At the finale, and `/sc titles` |
+| Anticipation | The last call, the provisional result | Everyone | The week's final day |
+| **Triumph over adversity** | **A week won; a finale** | **The winning side** | **Monday, at each person's own login, alone** |
+| **Wonder** | **The story chapters, narrated and illustrated** | **Everyone** | **Alone, when each person types `/sc intro <key>`** |
+| Gift giving | Silver (to him), cards (from him) | Between him and a caster | When it happens |
+
+**Findings**
+1. **The two biggest moments are delivered to each person alone.** A week's result is said by each client at its first login after
+   the week closes (`checkLastWeek`): one friend reads "The group won the week" at 7am, another at 9pm, and by then it has been said
+   in voice chat. A won week also unlocks a chapter of the story: a narrated, illustrated scene, the most produced thing in the addon.
+   Each person plays it on their own with `/sc intro g2`, if they bother. The triumph and the wonder are the payoff of a whole week of
+   play, and they are the only pleasures the game gives in private.
+2. **Everything played live is shared, and that is the strength.** The summons, the dice, the answer lines, the postcards all
+   arrive in a party at the same moment. The design already knows how to make a moment shared; it just does not do it for the payoff.
+3. **The tools to share it exist.** Sync reaches every addon user in the group; `/sc week say` speaks to the party; the story viewer
+   can play any reached chapter. Nothing joins them up.
+4. **The rest is in good shape.** Thrill and possibility are live and two-sided; completion has its checklists now (Indirect
+   Control); pride is named and kept. Gift giving is narrow (silver and cards), but it is his money and his cards, and the friends give
+   each other the evening; nothing to add.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Watch it together**: when someone in the group plays a chapter (`/sc intro <key>`, or the Story tab), they can **play it for the group**: every addon client in the party gets a prompt ("Al would like to show the group chapter 3: The group wins. Watch now?") and those who accept start it at the same moment. A new message, only for chapters that are reached; nobody is made to watch | 1, 3 | A message, a small prompt, a button in the viewer and the Story tab; timing is "within a second or so", not frame-exact |
+| B | **Say the result in the group**: the week's result line at login ends with "(/sc week say tells the group)", and the first time a group forms after the week closes, the Index suggests it to one person. Speaking in party chat stays a person's choice | 1 | Wording; the "first group of the week" check |
+| C | **Leave it**: people tell each other in voice | | Nothing |
+
+**Recommendation:** A. It turns the most produced part of the addon, the narrated chapters, into the shared payoff of the week, at
+the moment the group chooses, and it is opt-in on both sides. B is a small nudge that can ride along. Both depend on addon messages
+the group already relies on; neither sends chat on its own.
+
+**Live checks with whatever is built** (step 6): `d-watch` (one plays a chapter for the group; the other accepts and it starts).
+
+**To watch in playtests**
+- Does the group watch a chapter together? Do they ask for it?
+- When do people hear a week's result: in game, or in voice first?
 
 ## Decisions
 
