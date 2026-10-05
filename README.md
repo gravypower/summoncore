@@ -246,8 +246,10 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 
 **What he presses in the game is his answer** (`Respond.Real`, and the lens of Resonance in `design/lenses.md`). The game puts its own
 Accept / Decline prompt in front of him at the same moment. If he accepts it, the Index records "accepted" and the form is done.
-If he declines it, the Index records **"declined in the game"**: the summons did not happen, so there are no points for the caster and
-none for him. If the group played a **writ** on that summons it is a **refusal** instead, and costs him its points (below). If nothing
+If he declines it, the Index records **"declined in the game"** for his **first decline of the week** (`Week.RULES.declines`): the summons did
+not happen, so there are no points for the caster and none for him. A **later decline costs him the summons' points**, as a refusal
+does (a free decline with no limit would beat refusing every time: design/lenses.md, Balance), and a decline of a summons the group
+played a **writ** on is always a refusal (below). His popup and his own "Week:" line say how many free declines he has left. If nothing
 is seen, the form works as above, and an unanswered summons still counts as accepted. This reads the prompt's own buttons
 (`C_SummonInfo.ConfirmSummon` and `CancelSummon`, hooked, not changed), which has never been tried in the live client; where those
 are missing it does nothing.
@@ -348,9 +350,8 @@ numbers behind it, is in `design/lenses.md`):
 - **Writs.** The group has **two a week** (`Week.RULES.writs`) to play on a summons of Zennit. `/sc writ` before the ritual arms one for
   your next summons of him (`/sc writ` again withdraws it); the briefing says so, and the Index files it with the summons ("2 left").
   His popup says the group has played a writ and what a decline would cost, so he knows before he decides. If he then declines that
-  summons in the game, it costs him its points as a refusal does (his list does not excuse it); if he accepts, the writ is spent anyway.
-  A decline with no writ costs him nothing and the summons does not count, so a real-life decline (away, in combat) never costs him unless
-  the group put the stakes up in view. Only the first two writs of a week count, worked out the same way on every client. A record
+  summons in the game, it costs him its points as a refusal does (his list does not excuse it); if he accepts, the writ is spent anyway
+  and the group scores the summons as it would have. A writ costs the group nothing, so the only choice is which summons to put it on. Only the first two writs of a week count, worked out the same way on every client. A record
   carrying a writ has an 11th field (`w`), and a decline is a new answer (`declined`), so this needs everyone on 0.20 (a friend on 0.19
   is told once, and cannot read those records).
 - **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the

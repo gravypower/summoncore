@@ -383,6 +383,11 @@ function commands.week(rest)
     print_("Last week: " .. W.Describe(last))
     local whim = W.WhimLine(W.Start())
     if whim and not W.IsOff(W.Start()) then print_("This week's whim: " .. whim) end
+    local left = W.DeclinesLeft(W.Start())
+    if W.NewRules(W.Start()) and not W.IsOff(W.Start()) then
+        print_(string.format("His free declines this week: %d of %d left. Writs: %d of %d left.", left, W.RULES.declines,
+            W.WritsLeft(W.Start()), W.RULES.writs))
+    end
     local season = W.Season()
     print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
         season.group, W.WINS, #season.finales))

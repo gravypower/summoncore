@@ -1804,7 +1804,7 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
             W.RULES.from = 0
         end)
         local ok = out.empty == "Week: Zennit leads by 2, 0 of 10 filed, 3 dice left."
-            and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left."
+            and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left, 1 free decline left."
             and out.tie == "Week: it is level, and a tie goes to Zennit, 1 of 10 filed, 3 dice left."
             and out.ahead == "Week: the group leads by 3, 2 of 10 filed, 3 dice left."
             and out.first:find("each helper adds +5 to your roll", 1, true) and out.first:find("summon 1 of 10 this week", 1, true)
@@ -1865,42 +1865,48 @@ add("writs: two a week count, the rest do not, and none in his week off or under
     end)
 end)
 
-add("what he presses at the game's own prompt is his answer: accept, decline, and a writ makes a decline cost", function()
+add("what he presses at the game's own prompt is his answer: accept, a free decline, then a decline costs, and a writ always costs", function()
     return newRules(function()
-        local a, R, S, G, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, {}
+        local a, R, S, G, W, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, ST.Week, {}
         local realMe, realIs = S.me, G.IsZennit
         S.me = function() return "Zennit" end
         G.IsZennit = function() return true end
         local ok, err = pcall(with, a, function()
             local now = time()
+            local this = W.Start(now)
             local function put(key, age, caster, writ)
                 a.db.events[key] = { caster = caster, target = "Zennit", assistants = {}, time = now - age, points = 3, kind = "zone",
                     writ = writ or nil }
             end
             local function result(key) return a.db.events[key].response and a.db.events[key].response.result end
-            put("acc", 30, "Alpha");  out.acc = R.Real("accept", "Alpha")
-            put("dec", 29, "Bo");     out.dec = R.Real("decline", "Bo")
-            put("w1", 28, "Cy", true); out.w1 = R.Real("decline", "Cy")
-            put("w2", 27, "Di", true); put("w3", 26, "Ed", true)
-            out.w3 = R.Real("decline", "Ed")                 -- the third writ of the week does not count
-            put("old", 400, "Gus");   out.stale = R.Real("decline", "Gus")
-            put("mm", 5, "Hal");      out.mismatch = R.Real("accept", "Zed")
-            put("nn", 1, "Ian");      out.newest = R.Real("decline", nil)
+            out.free0 = W.DeclinesLeft(this)
+            put("acc", 60, "Alpha");   out.acc = R.Real("accept", "Alpha")
+            put("w1", 50, "Cy", true); put("w2", 49, "Di", true); put("w3", 48, "Ed", true)   -- the third writ of the week does not count
+            out.w3 = R.Real("decline", "Ed")                  -- the first decline of the week: free
+            out.free1 = W.DeclinesLeft(this)
+            put("dec", 40, "Bo");      out.dec = R.Real("decline", "Bo")                      -- the free one is used: this costs
+            out.w1 = R.Real("decline", "Cy")                  -- a writ always costs
+            put("old", 400, "Gus");    out.stale = R.Real("decline", "Gus")
+            put("mm", 5, "Hal");       out.mismatch = R.Real("accept", "Zed")
+            put("nn", 1, "Ian");       out.newest = R.Real("accept", nil)
             out.again = R.Real("accept", "Alpha")             -- already answered
-            out.results = table.concat({ tostring(result("acc")), tostring(result("dec")), tostring(result("w1")),
-                tostring(result("w3")), tostring(result("old")), tostring(result("mm")), tostring(result("nn")) }, " ")
+            out.results = table.concat({ tostring(result("acc")), tostring(result("w3")), tostring(result("dec")),
+                tostring(result("w1")), tostring(result("old")), tostring(result("mm")), tostring(result("nn")) }, " ")
+            out.w3Lands, out.w3Goal = S.Lands(a.db.events.w3), S.Goal(a.db.events.w3)
             out.decLands, out.decGoal = S.Lands(a.db.events.dec), S.Goal(a.db.events.dec)
-            out.w1Lands, out.w1Goal = S.Lands(a.db.events.w1), S.Goal(a.db.events.w1)
+            out.status = W.StatusLine(this, true)
             G.IsZennit = function() return false end
             out.notHim = R.Real("accept", "Hal")
         end)
         S.me, G.IsZennit = realMe, realIs
         if not ok then return false, "ERROR " .. tostring(err) end
-        local good = out.acc and out.acc.result == "accepted" and out.dec and out.dec.result == "declined"
-            and out.w1 and out.w1.result == "refused" and out.w3 and out.w3.result == "declined"
-            and out.stale == nil and out.mismatch == nil and out.newest and out.newest.result == "declined" and out.again == nil
-            and out.results == "accepted declined refused declined nil nil declined"
-            and not out.decLands and out.decGoal == 0 and not out.w1Lands and out.w1Goal == -3 and out.notHim == nil
+        local good = out.free0 == 1 and out.free1 == 0 and out.acc and out.acc.result == "accepted"
+            and out.w3 and out.w3.result == "declined" and out.dec and out.dec.result == "refused"
+            and out.w1 and out.w1.result == "refused" and out.stale == nil and out.mismatch == nil
+            and out.newest and out.newest.result == "accepted" and out.again == nil
+            and out.results == "accepted declined refused refused nil nil accepted"
+            and not out.w3Lands and out.w3Goal == 0 and not out.decLands and out.decGoal == -3
+            and out.status:find("0 free declines left", 1, true) and out.notHim == nil
         return good, tostring(out.results)
     end)
 end)

@@ -41,7 +41,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
 | The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
 | Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
-| Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one; the fix waits for a decision (below) |
+| Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 
 ## Entries
 
@@ -1448,7 +1448,7 @@ about arrival (B and C), **what he really does at the game's prompt is his answe
   It is not a refusal, so a real-life decline (away, in combat) costs him nothing.
 - **A writ turns a decline into a cost** (the group's idea: "a wild card, only a few times a week"). The group has two writs a week.
   `/sc writ` before the ritual arms one; his popup tells him before he decides; if he declines that summons it is a refusal and costs
-  him its points (his list does not excuse it). If he accepts, the writ is spent anyway, so playing one is a gamble.
+  him its points (his list does not excuse it). If he accepts, the writ is spent anyway (and the group scores as it would have).
 - **Nothing seen:** the form works as before, and an unanswered summons still counts as accepted.
 - **How it listens:** the game's own buttons call `C_SummonInfo.ConfirmSummon` and `CancelSummon`; the addon hooks them (it does
   not change them) and matches the most recent summons of him still waiting, within the two minutes the prompt lasts, by the
@@ -1458,8 +1458,8 @@ about arrival (B and C), **what he really does at the game's prompt is his answe
   told once and cannot read those records.
 - **Left:** A (moving the form off the game's prompt) needs a look in the game first; B and C are replaced by the above.
 
-**Decided:** the real prompt answers; a real decline costs nothing unless the group played a writ on it, so Zennit is never
-punished for a real-life decline he could not have known the group was raising.
+**Decided:** the real prompt answers; his first decline of a week costs nothing (a real-life exit), a later one and any on a writ
+cost him the points (see the Balance entry, which found that unlimited free declines were a dominant move).
 
 **To watch in playtests**
 - Do the two popups cover each other on his screen? Does he miss one of them?
@@ -1502,7 +1502,7 @@ week; `decline.py` and `decline2.py` in the scratchpad)
 4. **The fiction.** The Index is a place where the target is summoned and goes. A rule that pays him most for never turning up pulls
    against that, even if no friend would play it that way.
 
-**Proposed changes** (none built yet)
+**Proposed changes**
 
 | # | Change | Fixes | Cost |
 |---|---|---|---|
@@ -1511,9 +1511,17 @@ week; `decline.py` and `decline2.py` in the scratchpad)
 | C | **Correct the wording on writs** ("the writ is spent either way", not "a gamble") in the README, the lens entry and the command text | 3 | Wording |
 | D | **Leave declines free**, and trust the group to stay friendly | | Nothing; the simulation says he would win every week he chose to |
 
-**To decide before building**
-- One free decline a week, or two? One leaves the group about 43% in a typical week and about 56% in a mixed one; two about 34% and 38%.
-  A real-life reason to decline (away, in combat) is the thing it is for.
+**Our answer (built: A, B and C; one free decline a week)**
+- **A.** `Week.RULES.declines = 1`. His first decline of a week in the game is "declined" (no points either way); every later one,
+  and any decline of a summons with a writ, is a refusal and costs him its points. The count comes from the log, like the writs. When it
+  costs him the Index says so on his client ("your free decline this week is used, so this one costs you 3 points").
+- **B.** His popup says what a decline would do before he decides (free, or costs P, or a writ is on it); his own "Week:" line ends with
+  "1 free decline left"; `/sc week` and the rules card say how many he and the group have of each. The group's own lines are not
+  longer (the Toy entry: chat is already busy).
+- **C.** The writ wording is corrected: it is spent either way, and the group scores the summons as it would have if he accepts.
+
+**Decided:** one free decline a week, the middle of what the simulation gave (about 43% for the group in a five-summons zone week, 56%
+in a mixed one, against 63% and 91% on the old rules); two would leave about 34% and 38%.
 
 **To watch in playtests**
 - Does he ever press Decline in the game, and how does the group react? That is the real test of this.
@@ -1549,3 +1557,4 @@ week; `decline.py` and `decline2.py` in the scratchpad)
 | 2026-10-05 | The Party tab and `/sc tally` rank by summons of Zennit this season (an "Of Zennit" column), then points; `/sc week say` tells the group where the week stands; the cheap-slot order is left to the group | Cooperation | The one list everyone reads counted all-time points of every summons, not what the race counts, and the plan for the order lived in the caster's chat alone |
 | 2026-10-05 | The ritual briefing is long once a week (the first summons of him) and short after; the second Week line and a chat setting wait for a playtest | The Toy | One summons cost about six wrapped lines of chat, and the longest, most repeated line arrived while the caster was channelling |
 | 2026-10-05 | What he presses at the game's own summon prompt is his answer (accept: accepted; decline: declined, worth nothing either way); the group has two writs a week that make a decline of one summons cost him its points; the version is 0.20.0 | Resonance | The addon asked him to answer a summons he had already taken or declined for real, and could not tell the two apart; a decline needed to be a move the group could price, not a punishment for real life |
+| 2026-10-05 | His first decline of a week in the game is free; every later one, and any on a writ, costs him the summons' points; the popup and his own Week line say how many free declines are left | Balance | A free decline with no limit was better than refusing every time and let him win every week he chose to (simulated: the group won 0% against 63% on the old rules); one a week leaves about 43% |

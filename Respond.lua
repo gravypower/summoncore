@@ -557,9 +557,15 @@ local function summonText(ev)
     local helpers = #ev.assistants > 0 and table.concat(ev.assistants, ", ") or "nobody"
     local text = string.format("%s has summoned you to %s.\n(%s, %s. Helped by %s.)", T.Paint("cyan", ev.caster), where,
         ev.kind or "?", T.Paint("amber", (ev.points or 0) .. " point" .. plural(ev.points or 0)), helpers)
-    if ev.writ and ST.Week.WritCounts(ev) then -- he must know before he decides, in the game or here
-        text = text .. string.format("\n%s If you decline it in the game, it costs you %d point%s.", T.Paint("amber", "The group has played a writ on this summons."),
-            ev.points or 0, plural(ev.points or 0))
+    if not ev.response and not ev.fake and ST.Week.NewRules(ST.Week.Start(ev.time)) then -- he must know before he decides, in the game or here
+        local pts = string.format("%d point%s", ev.points or 0, plural(ev.points or 0))
+        if ev.writ and ST.Week.WritCounts(ev) then
+            text = text .. string.format("\n%s If you decline it in the game, it costs you %s.", T.Paint("amber", "The group has played a writ on this summons."), pts)
+        elseif ST.Week.DeclinesLeft(ST.Week.Start(ev.time)) > 0 then
+            text = text .. string.format("\nIf you decline it in the game it is free: you have %s this week.", ST.Week.DeclinesText(ST.Week.DeclinesLeft(ST.Week.Start(ev.time))))
+        else
+            text = text .. string.format("\nIf you decline it in the game it costs you %s: your free decline this week is used.", pts)
+        end
     end
     return text
 end
@@ -759,7 +765,10 @@ function Respond.Real(kind, summoner)
     if not pick then return nil end
     if kind == "accept" then return Respond.Decide(pick.id, "accepted") end
     if ST.Week.WritCounts(pick.ev) then return Respond.Decide(pick.id, "refused") end
-    return Respond.Decide(pick.id, "declined")
+    if ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then return Respond.Decide(pick.id, "declined") end
+    ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
+        pick.ev.points or 0, plural(pick.ev.points or 0)))
+    return Respond.Decide(pick.id, "refused")
 end
 
 local promptFrame = CreateFrame("Frame")
