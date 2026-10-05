@@ -1393,7 +1393,7 @@ dungeons where chat is already scrolling.
   Every later one says only what changes: "Summoning Zennit: summon 4 of 10, Zennit leads by 2, 2 dice left. From here (a zone) the
   summons is worth 3: his roll could take 3, and so could yours." The last call and any earlier summons waiting for his answer still
   appear, since those change. With no dice left it still says he must accept, refuse or ask for the silver. A normal mid-week
-  briefing falls from about 335 characters to about 190.
+  briefing falls from about 335 characters to about 240 (the place line is most of what is left).
 - **B, C and D** are left: the second Week line and a chat setting wait for a playtest to say whether the chat is read at all.
 
 **To watch in playtests**
