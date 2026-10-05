@@ -64,8 +64,8 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
-| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting |
-| `/sc respond [test]` | Zennit answers a summon of him (accept, refuse, ask for silver or dice); `test` tries it on a pretend summon |
+| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting |
+| `/sc respond [test]` | Zennit answers a summon of him (accept, decline, ask for silver or dice); `test` tries it on a pretend summon |
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
 | `/sc party` | Toggle party test mode (admin only): this character acts as an ordinary party member, even on the admin's or Zennit's own account, so Zennit's tab gives the party's gag. It turns Zennit test mode off, and the other way round. Both are also switches on the Tools tab |
@@ -81,7 +81,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `Sync.lua` | Sync | The only code that touches the network |
 | `Scoring.lua` | Scoring | Zone value table, points, badge rules |
 | `Theme.lua` | Theme | The "Neon Index" look: windows, buttons, tabs, text boxes and scroll areas, all drawn from flat colours |
-| `Respond.lua` | Respond | Zennit's answer to a summon of him (accept, refuse, ask for silver, dice) |
+| `Respond.lua` | Respond | Zennit's answer to a summon of him (accept, decline, ask for silver, dice) |
 | `Week.lua` | Week | The weekly contest, his week off, and the season; all derived from the log |
 | `Reset.lua` | Reset | `/sc reset`: wipe this client, and the admin's request to everyone else |
 | `Export.lua` | Export | Import / Export window and the string codec |
@@ -254,16 +254,17 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 | Choice | What happens to the summon |
 |---|---|
 | Accept it | Counts. |
-| Refuse | Does not count. |
+| Decline | Does not count. Free or not by **one rule**, the same as the game's own Decline (below): free at a place on his list or with his free decline, otherwise it costs him the points, and a writ always costs. The button says **Decline (free)** when it is free, and the line above it says why |
 | Ask for silver, in cash, no receipt | **Counts, like an accept.** He names the price (a small box, 50 by default; `50`, `2g`, `1g 20s`) and it goes on the caster's **tab** until he says it was paid ("They paid"); the log shows "owes 200 silver". A holder of a summon card pays with a punch instead, and he is not asked. Asking for silver can never be a way to reject a summons. |
 | Roll the dice | One click: he rolls 1-100 (a real `/roll`, so the party sees it, and the rules are said as he waits); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, each of the summoner's helpers (up to two) adds 5 to theirs, higher wins and a tie goes to him. If Zennit wins, the summon does not count. He has 3 dice a week. |
 
 **What he presses in the game is his answer** (`Respond.Real`, and the lens of Resonance in `design/lenses.md`). The game puts its own
 Accept / Decline prompt in front of him at the same moment. If he accepts it, the Index records "accepted" and the form is done.
-If he declines it, the Index records **"declined in the game"** for his **first decline of the week** (`Week.RULES.declines`): the summons did
-not happen, so there are no points for the caster and none for him. A **later decline costs him the summons' points**, as a refusal
-does (a free decline with no limit would beat refusing every time: design/lenses.md, Balance), and a decline of a summons the group
-played a **writ** on is always a refusal (below). His popup and his own "Week:" line say how many free declines he has left. A dice roll in flight is ended by what he presses in the game: that is his answer, and no die is spent. If nothing
+If he declines it, the same rule as the form's Decline applies (`Respond.NoResult`, design/lenses.md, Simplicity/Complexity): the
+summons did not happen, so there are no points for the caster, and it is **free** at a place on his list or as his **first decline of
+the week** (`Week.RULES.declines`); otherwise it **costs him the summons' points** (a free decline with no limit would let him decide
+every week: design/lenses.md, Balance), and a decline of a summons the group played a **writ** on always costs (below). The lines say
+"declined (free)" or "declined (cost him 3)" whichever way he said it; the log keeps `declined`, `excused` and `refused` as before. His popup and his own "Week:" line say how many free declines he has left. A dice roll in flight is ended by what he presses in the game: that is his answer, and no die is spent. If nothing
 is seen, the form works as above, and an unanswered summons still counts as accepted. This reads the prompt's own buttons
 (`C_SummonInfo.ConfirmSummon` and `CancelSummon`, hooked, not changed), which has never been tried in the live client; where those
 are missing it does nothing.
@@ -395,7 +396,7 @@ numbers behind it, is in `design/lenses.md`):
   so every client agrees. Summons after that are filed under 'enthusiasm', and their casters are told.
 - The group's score is the points of those summons that landed. Zennit's starts at **2** (a head start), gains the
   summon's points when he wins the dice or accepts a summon to a place on his list, and loses them on a plain refusal.
-- **Zennit has 3 dice a week.** When they are gone he has to accept, refuse or ask for the silver. His roll gets **+10**;
+- **Zennit has 3 dice a week.** When they are gone he has to accept, decline or ask for the silver. His roll gets **+10**;
   each helper on the summon (up to two) adds **+5** to the summoner's roll; a tie goes to him.
 - **Where the week stands is shown when it changes**, not only in the hub:
   - as a ritual on Zennit begins, the caster is told whether it will count, who leads, his dice left and what helpers add;

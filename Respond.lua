@@ -3,7 +3,7 @@
 -- When a live summon of Zennit reaches his client, a dialog gives him four choices (the same choices are in the
 -- hub window's Zennit tab):
 --   Accept          the summon counts.
---   Refuse          the summon does not count.
+--   Decline         the summon does not count; free or not by one rule (Respond.NoResult), the same as the game's own Decline.
 --   50 silver       the summon counts once he says the silver was paid ("owes" until then).
 --   Dice            he rolls 1-100 (a real /roll, so the party sees it); the summoner is asked to roll back;
 --                   Zennit adds 10 to his roll (a little less or more as the season's catch-up moves it), higher wins and a tie goes to him. If he wins, the summon does not count.
@@ -74,9 +74,9 @@ function Respond.Describe(ev)
     local r = ev.response
     if not r then return nil end
     if r.result == "accepted" then return "accepted" end
-    if r.result == "refused" then return "refused (-" .. (ev.points or 0) .. ")" end
-    if r.result == "excused" then return "refused (on his list)" end
-    if r.result == "declined" then return "declined in the game" end
+    if r.result == "refused" then return "declined (cost him " .. (ev.points or 0) .. ")" end
+    if r.result == "excused" then return "declined (free: his list)" end
+    if r.result == "declined" then return "declined (free)" end
     if r.result == "owed" then return "owes " .. Respond.AmountOf(r) .. " silver" end
     if r.result == "paid" then return (r.card and "paid by a punch: " or "paid ") .. Respond.AmountOf(r) .. " silver" end
     if r.result == "won" then return string.format("won the dice %d-%s", r.zroll, summonerRoll(ev, r.sroll)) end
@@ -130,7 +130,7 @@ local function listNote(ev, resp)
 end
 
 -- What Zennit did, for a summon past the week's limit (Announce has no points to report for those).
-local DID = { accepted = "accepted", refused = "refused", excused = "refused", declined = "declined", owed = "put the silver for",
+local DID = { accepted = "accepted", refused = "declined", excused = "declined", declined = "declined", owed = "put the silver for",
     paid = "was paid for", won = "won the dice on", lost = "lost the dice on" }
 
 -- One line for the chat window when Zennit has answered.
@@ -154,28 +154,29 @@ function Respond.Announce(ev, resp)
             "%s accepted the summon from %s, without comment. +%d point%s.%s",
             "The Index records that %s accepted the summon from %s. +%d point%s.%s" }, who, ev.caster, pts, plural(pts), bonus)
     end
+    -- every no reads as a decline; what differs is whether it cost him (design/lenses.md, Simplicity/Complexity)
     if r == "declined" then
         return say("answer.declined", {
-            "%s declined the summon from %s in the game, so it did not happen. No points for them, and none for him: the Index files it under 'did not happen'.",
-            "The game saw %s decline the summon from %s. It did not happen: no points for them, none for him, and the Index has no comment.",
-            "%s declined the summon from %s at the game's own prompt. It did not happen, so it is worth nothing to either side." }, who, ev.caster)
+            "%s declined the summon from %s, free: his one free decline this week. It did not happen, so no points for them and none for him.",
+            "%s declined the summon from %s and spent his free decline. It did not happen: no points either way, and the Index has no comment.",
+            "%s declined the summon from %s. It was his free decline, so it is worth nothing to either side." }, who, ev.caster)
     end
     if r == "refused" and ev.writ and ST.Week.WritCounts(ev) then
-        return string.format("%s declined the summon from %s in the game, and the group had played a writ on it. No points for them, and %s loses %d point%s toward his goal.",
+        return string.format("%s declined the summon from %s, and the group had played a writ on it: it cost him. No points for them, and %s loses %d point%s toward his goal.",
             who, ev.caster, who, pts, plural(pts))
     end
     if r == "refused" then
         return say("answer.refused", {
-            "%s refused the summon from %s. No points for them, and %s loses %d point%s toward his goal.",
-            "%s refused the summon from %s, with some dignity. No points for them, and %s loses %d point%s toward his goal.",
-            "The Index records that %s refused the summon from %s. No points, and %s loses %d point%s toward his goal." },
+            "%s declined the summon from %s, and it cost him: no points for them, and %s loses %d point%s toward his goal.",
+            "%s declined the summon from %s, with some dignity, and it cost him: no points for them, and %s loses %d point%s toward his goal.",
+            "The Index records that %s declined the summon from %s, at a cost: no points, and %s loses %d point%s toward his goal." },
             who, ev.caster, who, pts, plural(pts))
     end
     if r == "excused" then
         return say("answer.excused", {
-            "%s refused the summon from %s. No points, but the destination is on his list, so it costs him nothing.%s",
+            "%s declined the summon from %s, free: the place is on his list. No points.%s",
             "%s declined the summon from %s. No points, but the place is on his list, so it costs him nothing.%s",
-            "%s refused the summon from %s at no cost to himself: the destination is on his list. No points.%s" },
+            "%s declined the summon from %s at no cost to himself: the destination is on his list. No points.%s" },
             who, ev.caster, listNote(ev, resp))
     end
     local silver = Respond.AmountOf(resp)
@@ -254,6 +255,27 @@ end
 function Respond.ListClear()
     local list = Respond.List()
     for i = #list, 1, -1 do list[i] = nil end
+end
+
+-- One rule for no, wherever he says it: the game's Decline or the form's (design/lenses.md, Simplicity/Complexity). A writ always
+-- costs him the summons' points; a place on his list is free; otherwise his first decline of the week is free and every later one
+-- costs. Returns the result to record: "refused" (it cost him), "excused" (free, his list) or "declined" (free, his free decline).
+function Respond.NoResult(ev)
+    if ST.Week.WritCounts(ev) then return "refused" end
+    if Respond.OnList(ev) then return "excused" end
+    if ST.Week.DeclinesLeft(ST.Week.Start(ev.time)) > 0 then return "declined" end
+    return "refused"
+end
+
+-- What a decline of this summons would do, in words, for his form.
+function Respond.NoText(ev)
+    local r, pts = Respond.NoResult(ev), ev.points or 0
+    if r == "excused" then return "On your list: accepting earns you the points again for your week off; declining costs nothing." end
+    if r == "declined" then return "Declining is free: it uses your one free decline this week." end
+    if ST.Week.WritCounts(ev) then
+        return string.format("The group played a writ on this one: declining costs you %d point%s.", pts, plural(pts))
+    end
+    return string.format("Your free decline this week is used: declining costs you %d point%s.", pts, plural(pts))
 end
 
 -- Is the summon's destination (zone or subzone name) on the list? A word on the list matches any part of the name.
@@ -603,21 +625,19 @@ local function render(s, stage, extra)
     local id, ev = s.current.id, s.current.ev
     s.stage = stage
     if stage == "choose" then
-        local free = Respond.OnList(ev)
         local cost
         if not ST.Week.Counts(ev) then
             local why, filing = ST.Week.Why(ST.Week.Start(ev.time), true)
             cost = string.format("%s, so the race ignores it: the Index files it under '%s'. Answer however you like.", why, filing)
         else
-            cost = free and "On your list: accepting earns you the points again for your week off; refusing costs nothing." or
-                string.format("Refusing costs you %d point%s.", ev.points or 0, plural(ev.points or 0))
+            cost = Respond.NoText(ev)
         end
         local dice = diceLeft(id, ev) -- the week line below says how many are left
         local week = ST.Week.StatusLine(ST.Week.Start(ev.time), ST.Gag.IsZennit())
         s.text:SetText(summonText(ev) .. "\n" .. cost .. "\n" .. (week and (week .. " ") or "") .. "How will you deal with it? (Ignore it and it counts as accepted.)")
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
-            { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },
+            { Respond.NoResult(ev) == "refused" and "Decline" or "Decline (free)", function() Respond.Decide(id, Respond.NoResult(ev)) end },
             { ST.Cards.Left(ev.caster) > 0 and string.format("Stamp the card (%d left)", ST.Cards.Left(ev.caster))
                 or "Name a price, in silver (no receipt)", function() Respond.AskSilver(id, ev) end },
             dice == 0 and { "No dice left this week", function() end, true }
@@ -758,14 +778,18 @@ local function answer(pick, kind)
     local resp, why
     if kind == "accept" then
         resp, why = Respond.Decide(pick.id, "accepted"), "d-accept"
-    elseif ST.Week.WritCounts(pick.ev) then
-        resp, why = Respond.Decide(pick.id, "refused"), "d-writ"
-    elseif ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then
-        resp, why = Respond.Decide(pick.id, "declined"), "d-decline"
     else
-        ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
-            pick.ev.points or 0, plural(pick.ev.points or 0)))
-        resp, why = Respond.Decide(pick.id, "refused"), "d-cost"
+        local result = Respond.NoResult(pick.ev) -- the same rule as the form's Decline
+        if result == "refused" and ST.Week.WritCounts(pick.ev) then
+            why = "d-writ"
+        elseif result == "refused" then
+            ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
+                pick.ev.points or 0, plural(pick.ev.points or 0)))
+            why = "d-cost"
+        elseif result == "declined" then
+            why = "d-decline"
+        end
+        resp = Respond.Decide(pick.id, result)
     end
     ST.Trace(string.format("%s -> %s (%s%s)", kind, resp and resp.result or "nothing recorded", pick.id, rolling and ", ended a roll in flight" or ""))
     if resp and ST.Check then

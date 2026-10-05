@@ -240,7 +240,7 @@ local function buildAnswer(f)
     button(f, "< PREV", 16, -228, 110, function() go(-1) end)
     button(f, "NEXT >", 132, -228, 110, function() go(1) end)
 
-    -- his secret list: refusing a summon to one of these costs him nothing (kept on this client only, so it is
+    -- his secret list: declining a summon to one of these costs him nothing (kept on this client only, so it is
     -- only shown on Zennit's client, and the admin's to try it)
     local secret = CreateFrame("Frame", nil, f)
     secret:SetAllPoints()
@@ -274,7 +274,7 @@ local function buildAnswer(f)
                 shown[#shown + 1] = T.Paint("dim", word) -- too short, or past the fifth: it does not count
             end
         end
-        listText:SetText(#list == 0 and T.Paint("dim", "empty: refusing always costs points") or table.concat(shown, ", "))
+        listText:SetText(#list == 0 and T.Paint("dim", "empty: only your free decline is free") or table.concat(shown, ", "))
         local pending = ST.Respond.Pending()
         local cur = surface.current
         -- keep what is on show (a summon being answered, or its outcome) until the user moves on

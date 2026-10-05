@@ -46,6 +46,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 | Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; A, B and C built |
 | Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B, C and G built; D waits on audio |
+| Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
 
 ## Entries
 
@@ -1704,6 +1705,92 @@ channeling the ritual (`UnitChannelInfo`, which works in this client), so any ot
 - Does a summons ever go unlogged because the caster did not have the addon?
 - Is the window readable for everyone at its size, on their screens?
 
+### 2026-10-05 · Lens of Simplicity/Complexity: twenty-odd rules, and three ways to say no
+
+**The questions (paraphrased):** what in the game is *innate* complexity (rules a player has to be told) and what is *emergent*
+(interesting situations that grow out of a few rules)? Where does a rule add work without adding a decision? Is the complexity where
+the fun is, or somewhere else? Are there rules that only make sense together, or that quietly undo each other?
+
+**Why now.** Elegance took stock on 4 October with "a dozen or so" rules. Since then Resonance, Balance, Flow and Accessibility added
+the game's own prompt as his answer, writs, the free decline, late answers, a provisional result, the silver tab and cards, the last
+call and a summons filed from his side. Each was argued for on its own; this lens looks at them together.
+
+**The innate rules, counted** (`Week.lua`, `Respond.lua`, `Store.lua`, the rules card)
+
+| Group | Rules | Count |
+|---|---|---|
+| What counts | Only summons of him; points by place (four kinds); a cap of 10; he may close after 5; unanswered counts as accepted; late answers for two days, and the result is provisional until then | 6 |
+| The score | Head start of 2; a tie is his; his list (five places, four letters) earns him the points | 3 |
+| The dice | Three a week; his edge of +10; helpers +5 each, two at most; the catch-up; the whim | 5 |
+| Saying no | Refuse costs the points; a refusal on his list is free; the first decline in the game is free; later declines cost; two writs a week make a decline cost | 5 |
+| Money | Silver goes on a tab (he names the price); cards prepay it | 2 |
+| The season | Five wins; his week off is filler | 2 |
+| | | **23** |
+
+The rules card says them in eleven lines, and that is about as small as they go. Emergent complexity, the part this lens wants more
+of, comes from four of them: **the dice** (when to roll), **the writs** (which summons to put one on), **the close** (when to shut the
+week) and **the order of summons** (Cooperation). Those are the decisions players talk about. Most of the rest are scoring detail
+nobody chooses.
+
+**Findings**
+1. **Five of the 23 rules are about saying no, and they disagree with each other.** He can say no in two places: the game's own
+   prompt (Decline) and the Index's form (Refuse). The two follow different rules (`Respond.Real` against the form's Refuse button):
+
+   | He says no... | No writ, free decline left | No writ, none left | With a writ |
+   |---|---|---|---|
+   | **In the game**, an ordinary place | free (declined) | costs P (refused) | costs P |
+   | **In the game**, a place on his list | free | **costs P** | costs P |
+   | **On the form**, an ordinary place | **costs P** | costs P | costs P |
+   | **On the form**, a place on his list | free (excused) | free | **free** |
+
+   Three cells are wrong by the game's own words. The rules card says refusing at a place on his list is free, but a second decline
+   in the game there costs P. It also says a writ makes a decline cost, but Refuse on the form at a list place ignores the writ, which
+   gives him **a way round a writ**. And Refuse on the form at an ordinary place is never better than the game's Decline: it is a
+   button that can only hurt him.
+2. **Two surfaces for one decision.** Since Resonance, the game's prompt *is* the answer, and the form's Accept and Refuse are there for
+   late answers (the prompt lasts two minutes, and an answer is taken for two days). That is a good reason for the buttons, but not
+   for their following different rules. One rule, used by both, removes a row from everyone's head.
+3. **Three words for no.** The log, the chat lines and the report show "refused", "declined" and "refused (on his list)". To a player
+   these are one thing, "he said no", which either cost him or did not. The difference that matters is the cost, and that is what the
+   line should say.
+4. **The head start is still dead weight** (Elegance B, not chosen then): it moves a normal week by about a point and is in the rules
+   card, the band and the briefing. It is innate complexity that buys no decision. It stays out of scope unless the group asks; noted
+   here because this lens is the one that would cut it.
+5. **The new rules from the last few lenses are cheap.** A writ is one choice with one effect; the free decline is a counter of one;
+   the filed summons and late answers need no one to learn anything. Most of the complexity added since Elegance sits where it should:
+   in the choices.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **One rule for no** (`Week.NoCost`): any no, in the game or on the form, is free if a free decline is left or the place is on his list, and costs the points otherwise; **a writ always costs**. The form's button becomes **Decline** and uses it | 1, 2 | A function both paths call; tests; the form's cost line reads from it |
+| B | **One word for no** in the lines: "declined (free)" or "declined (cost him 3)", whatever the surface; `refused`/`excused`/`declined` stay as stored values, so old records and other clients still read | 3 | Wording in `Respond.Describe` and the answer lines |
+| C | **Drop the head start** for weeks from now on (as Elegance B) | 4 | A constant and some lines; changes the numbers in the Fairness table a little |
+| D | **Leave it** | | Nothing |
+
+**Recommendation:** A and B. A closes a real hole (the writ dodge) and makes "saying no" one rule instead of two tables, which is the
+largest single cut available. B is wording that follows from it. C is still optional; nothing has changed since it was last turned down.
+
+**Our answer (built: A and B).** C (the head start) stays.
+
+**Built**
+- **A, one rule for no** (`Respond.NoResult`). The game's Decline (`Respond.Real`) and the form's button both call it: a writ that
+  counts costs him the points, a place on his list is free (and does not spend his free decline), his first decline of the week is
+  free, and every other costs. The form's button is now **Decline** ("Decline (free)" when it is), and the line above it says why
+  (`Respond.NoText`). The three bad cells are gone: a second decline at a list place is free, a writ costs even at a list place, and
+  the form's no is never worse than the game's. The stored results are unchanged (`declined`, `excused`, `refused`), so old records and
+  other clients read as before.
+- **B, one word for no.** The answer lines, the log (`Respond.Describe`: "declined (free)", "declined (free: his list)", "declined (cost
+  him 3)"), the rules card ("Declines: in the game's prompt or on the Index's form..."), the last-die lines and the briefings ("accept,
+  decline or ask for the silver") and the help all say *decline*.
+- **Live check** `s-decline` (the form's cost line against the rules card), with `d-cost` and `d-writ` reworded; a self-test of the rule
+  and the words.
+
+**To watch in playtests**
+- Does Zennit ever use the form to say no, or only the game's prompt?
+- Can the group say what a no costs him, without the card?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1739,3 +1826,4 @@ channeling the ritual (`UnitChannelInfo`, which works in this client), so any ot
 | 2026-10-05 | The Tools tab is three sections (General, Testing, Checks) and opens on the one used last; each lens now ends with a live check for what only the game can confirm, and the earlier lenses have theirs (`s-login`, `s-band`, `s-lastcall`, and `/sc week login` to say the login lines again) | Interface, the method | Five columns and three rows left the output box three lines; the live checks arrived after Flow, so the lenses before it had no way to be confirmed in the game beyond the rules the self-tests cover |
 | 2026-10-05 | A welcome at the first login (nothing new to do, who needs the addon, the rules card); the rules card and README say who needs it; a caster's first summons of Zennit gets the full briefing whatever the day | Accessibility | A newcomer was pointed at four minutes of out-of-date story, nothing said that a caster without the addon logs nothing, and their first briefing assumed they knew the race |
 | 2026-10-05 | When the caster has no addon, Zennit's client files the summons from the game's prompt, with the caster, place and helpers that clients in the group saw (a witness note); the caster's own record replaces it if it arrives; version 0.21.0 | Accessibility | A warlock without the addon logged nothing, so their summons of him did not count; his client always sees the prompt, and anyone in the group can see who channels the ritual |
+| 2026-10-05 | One rule for no: a decline in the game or on the form is free at a place on his list or with his free decline, otherwise it costs, and a writ always costs; every no reads as "declined (free)" or "declined (cost him N)" | Simplicity/Complexity | The two surfaces followed different rules, so a form refusal at a list place dodged a writ and the form's Refuse could only hurt him; three words for one act |

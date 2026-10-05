@@ -2063,6 +2063,39 @@ add("his client files a summons nobody logged, answers it, and hands the answer 
     end)
 end)
 
+add("one rule for no, in the game or on the form: free on his list or with his free decline, else it costs; a writ always costs", function()
+    return newRules(function()
+        local a, R, W, out = newClient("Zennit"), ST.Respond, ST.Week, {}
+        local ok, err = pcall(with, a, function()
+            local now = time()
+            a.db.settings.zennitList = { "Westfall" }
+            local function put(key, age, subzone, writ)
+                a.db.events[key] = { caster = "Al", target = "Zennit", assistants = {}, time = now - age, points = 3, kind = "zone",
+                    subzone = subzone or "Goldshire", writ = writ or nil }
+                return a.db.events[key]
+            end
+            local plain, listed, writOnList = put("p", 50), put("l", 40, "Westfall Farms"), put("w", 30, "Westfall Farms", true)
+            out.plainFree, out.listFree, out.writList = R.NoResult(plain), R.NoResult(listed), R.NoResult(writOnList)
+            out.textFree = R.NoText(plain)
+            a.db.events.used = { caster = "Bo", target = "Zennit", assistants = {}, time = now - 60, points = 3, kind = "zone",
+                response = { result = "declined", zroll = 0, sroll = 0, time = now - 55 } }          -- his free decline is spent
+            out.plainCost, out.listStill = R.NoResult(plain), R.NoResult(listed)
+            out.textCost, out.textWrit = R.NoText(plain), R.NoText(writOnList)
+            out.d1 = R.Describe({ points = 3, response = { result = "refused" } })
+            out.d2 = R.Describe({ points = 3, response = { result = "excused" } })
+            out.d3 = R.Describe({ points = 3, response = { result = "declined" } })
+        end)
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.plainFree == "declined" and out.listFree == "excused" and out.writList == "refused"
+            and out.plainCost == "refused" and out.listStill == "excused"
+            and out.textFree:find("Declining is free", 1, true) and out.textCost:find("costs you 3 points", 1, true)
+            and out.textWrit:find("writ", 1, true)
+            and out.d1 == "declined (cost him 3)" and out.d2 == "declined (free: his list)" and out.d3 == "declined (free)"
+        return good, string.format("free %s, list %s, writ on list %s; spent: %s, list %s", tostring(out.plainFree), tostring(out.listFree),
+            tostring(out.writList), tostring(out.plainCost), tostring(out.listStill))
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }
