@@ -51,6 +51,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
 | Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
+| Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A proposed |
 
 ## Entries
 
@@ -2070,6 +2071,61 @@ helpers a summons really has. C is fun but is a second weekly draw on top of the
 **To watch in playtests**
 - Does the group plan trips from the missing postcards?
 - The report's "Helpers on a summons": is it nearly always two?
+
+### 2026-10-05 · Lens of Freedom: when can he step away?
+
+**The questions (paraphrased):** when do the players feel free, and when do they feel boxed in? Are they free in the ways that
+matter to them? Is there anywhere they have too much freedom, so the game stops working? A game laid over a real friendship also
+asks: is everyone free to just be a person for a while?
+
+**The freedoms, as built**
+
+| Who | Free to | Limited by | Feels |
+|---|---|---|---|
+| The group | Summon him anywhere, any time he is in their group | The ritual (three people, him in the party or raid), the cap of 10 | Free; the limits are the game's own |
+| The group | Choose where to put two writs a week | Two a week | A real choice (Balance, Secrets) |
+| Zennit | Accept, decline (one free), silver at his price, dice (three), close the Index after 5 | The one rule for no | Many real choices |
+| Zennit | Set his list for next week, write his postcards and out-of-office | Five places, set weekly | His (Character, Secrets) |
+| Zennit | **Not be in their group** | Nothing: it is the game's rule that only party members can be summoned | Total, and right: absent weeks have no winner |
+| Zennit | **Step away for ten minutes while still in the group** | **Nothing protects it** | Below |
+
+**Findings**
+1. **A summons he never answers counts as accepted, so he is not free to step away.** If he is in the group but away from the
+   keyboard (dinner, a phone call, the kettle), a summons still arrives, the game's prompt runs out, and the Index records nothing, so
+   the summons counts as accepted: the group scores it, and he did not go. Up to ten a week can land this way while he is away. When he
+   comes back his late answers (the form, for two days) are all ways of saying no, which the one rule makes cost him the points once
+   his free decline is spent, the same as accepting. So in practice, being away during a session is a loss he cannot undo.
+   The friends would not farm it on purpose, but it happens by accident every time someone summons him without checking, and the
+   game's own words ("unanswered counts as accepted") make it the correct play.
+2. **The rule exists for a reason.** "Unanswered counts as accepted" was there so he could not dodge by ignoring the Index's form
+   (before Resonance, the form was the only answer). With the game's prompt now his answer, ignoring the prompt is not going, so the old
+   reason is weaker, but making silence free would hand him an unlimited free decline again (Balance). So silence cannot simply become
+   free.
+3. **The game already knows when he is away.** WoW has an AFK flag (`/afk`, or set by itself after a few minutes idle), and other
+   clients can see it on a party member. So the caster's client can know before the ritual, and his own client can know when the prompt
+   arrives. The risk is the reverse: `/afk` typed the moment a summons starts would be a dodge. It is a visible one, but it is still a
+   dodge, so a fix should only honour an AFK that started before the ritual did.
+4. **Everything else is free in the right places.** The group's limits are the ritual's; his are the race's; and his biggest
+   freedom, not grouping with them, is real life and correctly scores nothing.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Away means not home.** If he was already AFK when the ritual began (his AFK flag set before the prompt, by a margin), his client files the summons as **"away"**: it did not happen, it is free, and it does not use his free decline. The caster's briefing warns at the cast when he shows as AFK ("Zennit is away from his keyboard: the Index will file this as away and it will not count"), so the ritual can wait | 1, 3 | A new answer (`away`), his client watching his AFK flag (`PLAYER_FLAGS_CHANGED`, `UnitIsAFK`), a line in the briefing; older clients cannot read the new answer, so a version bump |
+| B | **Silence is a decline** under the one rule instead of an accept: free if his free decline is left, otherwise it costs him | 1 | Small; but an away week still costs him, and the group gains nothing for it |
+| C | **Leave it**: friends check before they summon | | Nothing; the accident stays the correct play |
+
+**Recommendation:** A. It gives him the one freedom he lacks, stepping away for a few minutes, without making silence a dodge: only
+an AFK that began before the ritual counts, and the group is told before they spend a ritual on it. B is simpler but punishes
+being away instead of excusing it. Both wait partly on the open `d-expire` check (what the game does when the prompt runs out), and A's
+"by a margin" needs a number (five minutes is proposed: the game's own idle AFK starts after five).
+
+**Live checks with whatever is built** (step 6): `d-away` (he goes AFK, a friend casts: the briefing warns, the summons is filed as away).
+
+**To watch in playtests**
+- How often does a summons of him go unanswered, and was he away? (`/sc report` counts unanswered summons.)
+- Does anyone use `/afk` as a shield?
 
 ## Decisions
 
