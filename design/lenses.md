@@ -48,7 +48,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B, C and G built; D waits on audio |
 | Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
 | Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
-| Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B proposed |
+| Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
 
 ## Entries
 
@@ -1920,8 +1920,18 @@ writes each of those, and whether the real Zennit gets a say.
 to write his own character, at the two moments the joke is about him: where he was dragged, and where he went on leave. C is worth
 doing whenever the group has an evening; it needs no code.
 
-**Live checks with whatever is built** (step 6): on Zennit's client set a postcard and an away line; a friend's client shows them
-(`d-` checks, since they need two clients).
+**Our answer (built: A and B).** C waits for an evening.
+
+**Built**
+- **His lines** (`Sync.SetLine`, `Sync.ZennitLine`, message `L`). A short line he writes (80 letters at most, escape codes taken out)
+  is kept on his client and sent to the group with a time; every client keeps the newest. Only his characters may send one, and only
+  for a key he may write: a postcard for one of the ten far-flung places (`pc:<mapID>`), or `away`. His client sends them all again with
+  his hello, so a friend who was offline catches up.
+- **A, his postcards.** `/sc zennit postcard Silithus: <line>` (a prefix of the place will do); `clear` puts ours back.
+  `Ledger.PostcardFor` uses his words when he has written them. Anyone can read them with `/sc zennit postcard`; only he can write.
+- **B, his out-of-office.** `/sc zennit away <line>`: the briefing for a summons of him on his week off says "His out-of-office says:
+  '...'" in place of the Index's "not hopeful". The line after logging the summons stays the Index's, so it is said once.
+- **Live check** `d-lines`; a self-test of sending, the sender rule, the newest-wins rule, a bad key, and both uses.
 
 **To watch in playtests**
 - Does he write any? Are his funnier than ours?
@@ -1964,3 +1974,4 @@ doing whenever the group has an evening; it needs no code.
 | 2026-10-05 | When the caster has no addon, Zennit's client files the summons from the game's prompt, with the caster, place and helpers that clients in the group saw (a witness note); the caster's own record replaces it if it arrives; version 0.21.0 | Accessibility | A warlock without the addon logged nothing, so their summons of him did not count; his client always sees the prompt, and anyone in the group can see who channels the ritual |
 | 2026-10-05 | One rule for no: a decline in the game or on the form is free at a place on his list or with his free decline, otherwise it costs, and a writ always costs; every no reads as "declined (free)" or "declined (cost him N)" | Simplicity/Complexity | The two surfaces followed different rules, so a form refusal at a list place dodged a writ and the form's Refuse could only hurt him; three words for one act |
 | 2026-10-05 | His list is set for the week (a new place counts from Monday); the briefing says a writ only bites at his list once his free decline is used; postcards from far-flung places, once each a season, no points | Secrets | The list could be changed with a summons on screen, which made every decline free; the group could not see when a writ mattered; the far-flung trips earned points but no part in the joke |
+| 2026-10-05 | Zennit writes his own postcards and an out-of-office for his week off; sent from his characters only, the newest kept, used on every client in place of ours | Character | Every word about him was ours; the two moments the joke is about him (where he was dragged, where he went on leave) are where his own line is funniest |

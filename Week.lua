@@ -789,10 +789,16 @@ function Week.Briefing(target, mapID, subzone, writ)
     local now = time()
     local start = Week.Start(now)
     if not Week.NewRules(start) then return nil end
+    -- his out-of-office, when he has written one (design/lenses.md, Character), in place of the Index's hopes
+    local away = ST.Sync.ZennitLine("away")
     if Week.IsOff(start) then
-        return target .. " is on his week off. The Index will file this summon as filler: it will not count, and it is not hopeful."
+        return target .. " is on his week off. The Index will file this summon as filler: it will not count" ..
+            (away and string.format(". His out-of-office says: '%s'", away) or ", and it is not hopeful.")
     end
-    if Week.Immune(now) then return target .. " is on his week off. The Index will note the summons, and is not hopeful." end
+    if Week.Immune(now) then
+        return target .. " is on his week off. The Index will note the summons" ..
+            (away and string.format(". His out-of-office says: '%s'", away) or ", and is not hopeful.")
+    end
     local r = Week.Score(start)
     if r.closed then return target .. " has closed the Index for the week: this summon will not count." end
     if r.counted >= Week.RULES.cap then

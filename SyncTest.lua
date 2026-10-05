@@ -2179,6 +2179,51 @@ add("postcards: the first landed summons of him to each far-flung place in a sea
     end)
 end)
 
+add("his own lines: a postcard and an out-of-office, sent only by him, the newest kept, and used in place of ours", function()
+    return newRules(function()
+        local z, a, W, L, out = newClient("Zennit"), newClient("Alpha"), ST.Week, ST.Ledger, {}
+        local realIs, realOff = ST.Gag.IsZennit, W.IsOff
+        local ok, err = pcall(function()
+            with(z, function()
+                ST.Gag.IsZennit = function() return true end
+                out.set = Sync.SetLine("pc:1451", "Sand |cffff0000again|r.")                  -- escape codes are taken out
+                out.away = Sync.SetLine("away", "Gone fishing. Do not summon.")
+                out.bad = Sync.SetLine("pc:1436", "Not far-flung")                            -- not a far-flung place
+                ST.Gag.IsZennit = realIs
+            end)
+            local sent = {}
+            for _, m in ipairs(z.state.queue) do if m.payload:find("~L~", 1, true) then sent[#sent + 1] = m.payload end end
+            out.sent = #sent
+            with(a, function()
+                for _, p in ipairs(sent) do out.got = Sync.OnMessage(p, "PARTY", "Zennit") end
+                out.fromOther = Sync.OnMessage(sent[1], "PARTY", "Bob")
+                out.older = Sync.OnMessage("1~L~away|5|old", "PARTY", "Zennit")
+                out.badKey = Sync.OnMessage("1~L~pc:1436|" .. (time() + 5) .. "|x", "PARTY", "Zennit")
+                out.line = Sync.ZennitLine("pc:1451")
+                local now = time()
+                a.db.events.s = { caster = "Al", target = "Zennit", assistants = {}, time = now - 30, mapID = 1451, subzone = "",
+                    points = 10, kind = "remote", response = { result = "accepted", zroll = 0, sroll = 0, time = now - 20 } }
+                out.postcard = L.PostcardFor(a.db.events.s, nil)
+                W.IsOff = function() return true end
+                out.brief = W.Briefing("Zennit")
+                W.IsOff = realOff
+                Sync.PutLine("away", "", time() + 10)                                       -- cleared: the Index's line again
+                W.IsOff = function() return true end
+                out.cleared = W.Briefing("Zennit")
+                W.IsOff = realOff
+            end)
+        end)
+        ST.Gag.IsZennit, W.IsOff = realIs, realOff
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.set and out.away and not out.bad and out.sent == 2 and out.got == "stored"
+            and out.fromOther == "rejected:sender" and out.older == "kept" and out.badKey == "bad"
+            and out.line == "Sand cffff0000againr." and out.postcard and out.postcard:find("in Silithus: 'Sand cffff0000againr.'", 1, true)
+            and out.brief:find("His out-of-office says: 'Gone fishing. Do not summon.'", 1, true)
+            and out.cleared:find("is not hopeful", 1, true)
+        return good, string.format("%s | %s", tostring(out.postcard), tostring(out.brief))
+    end)
+end)
+
 add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
     local C = ST.Check
     local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }
