@@ -220,6 +220,19 @@ function Check.Counts()
     return n
 end
 
+-- The first check that needs a person and has no result yet, or nil when they all have one.
+function Check.Next()
+    for _, c in ipairs(Check.LIST) do
+        if c.kind ~= "auto" and Check.Status(c.id) == "todo" then return c.id end
+    end
+end
+
+-- "3/25": how many have passed out of all of them.
+function Check.Summary()
+    local n = Check.Counts()
+    return string.format("%d/%d", n.pass, #Check.LIST), n
+end
+
 function Check.RunAuto()
     local out = {}
     for _, c in ipairs(Check.LIST) do
@@ -334,11 +347,10 @@ function Check.Command(rest)
                 return ST.print("Start with /sc check auto: it runs the automatic checks by itself, then come back here for the rest.")
             end
         end
-        for _, c in ipairs(Check.LIST) do
-            if Check.Status(c.id) == "todo" and c.kind ~= "auto" then
-                ST.print("Next: " .. c.id)
-                return say(Check.Detail(c.id))
-            end
+        local nextId = Check.Next()
+        if nextId then
+            ST.print("Next: " .. nextId)
+            return say(Check.Detail(nextId))
         end
         return
     elseif word == "auto" then

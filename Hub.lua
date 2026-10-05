@@ -720,7 +720,49 @@ local function buildTools(f)
         show("Ping sent. Replies appear in Diagnostics > Addon messages.")
     end)
 
+    -- the live checks (design/verification.md): run the automatic ones, then step through the rest with the buttons
+    local checkRow = CreateFrame("Frame", nil, f)
+    checkRow:SetSize(740, 24)
+    local checkLabel = label(checkRow, "CHECKS", 0, -3)
+    local current -- the check on show
+    local function paintChecks()
+        checkLabel:SetText("CHECKS " .. (ST.Check.Summary()))
+    end
+    local function showCheck(id)
+        current = id
+        show(id and table.concat(ST.Check.Detail(id), "\n") or
+            "Every check that needs a person has a result. REPORT opens the report to send back.")
+    end
+    local function mark(status)
+        if not current then return showCheck((ST.Check.Next())) end
+        ST.Check.Record(current, status, "")
+        showCheck((ST.Check.Next()))
+        paintChecks()
+    end
+    button(checkRow, "RUN AUTO", 112, 0, 90, function()
+        local lines, bad = {}, 0
+        for _, r in ipairs(ST.Check.RunAuto()) do
+            if not r.ok then bad = bad + 1 end
+            lines[#lines + 1] = string.format("%s %s: %s", r.ok and T.Paint("green", "PASS") or T.Paint("red", "FAIL"), r.id, tostring(r.detail))
+        end
+        show(table.concat(lines, "\n"))
+        paintChecks()
+    end)
+    button(checkRow, "NEXT", 206, 0, 56, function() showCheck((ST.Check.Next())) end)
+    button(checkRow, "PASS", 266, 0, 56, function() mark("pass") end)
+    button(checkRow, "FAIL", 326, 0, 56, function() mark("fail") end)
+    button(checkRow, "SKIP", 386, 0, 56, function() mark("skip") end)
+    button(checkRow, "TRACE", 446, 0, 64, function()
+        local lines = {}
+        for i = math.max(1, #ST.trace - 11), #ST.trace do
+            lines[#lines + 1] = date("%H:%M:%S", ST.trace[i].time) .. " " .. ST.trace[i].text
+        end
+        show(#lines > 0 and table.concat(lines, "\n") or "Nothing traced yet: it records the summon prompt and the answers as they happen.")
+    end)
+    button(checkRow, "REPORT", 514, 0, 80, function() ST.Check.Command("report") end)
+
     return function()
+        paintChecks()
         local admin = ST.IsAdmin()
         local lowest = 0
         for _, col in ipairs(columns) do
@@ -746,6 +788,9 @@ local function buildTools(f)
             pingRow:SetPoint("TOPLEFT", 16, y)
             y = y - STEP
         end
+        checkRow:ClearAllPoints()
+        checkRow:SetPoint("TOPLEFT", 16, y)
+        y = y - STEP
         out:ClearAllPoints()
         out:SetPoint("TOPLEFT", 16, y - 8)
         out:SetPoint("BOTTOMRIGHT", -16, 4)

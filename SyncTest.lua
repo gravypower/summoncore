@@ -1930,6 +1930,7 @@ add("the live checklist: well-formed, records results, marks what it sees, and s
     local missing = C.Missing({ "C_SummonInfo.ConfirmSummon", "C_SummonInfo.CancelSummon", "hooksecurefunc", "C_Map.GetMapInfo", "Nope.Nothing" }, env)
     local a, out = newClient("Alpha"), {}
     with(a, function()
+        out.next1 = C.Next()
         out.todo = C.Status("a-api")
         out.good, out.err = C.Record("a-api", "pass", "fine"), select(2, C.Record("nope", "pass"))
         out.badStatus = select(2, C.Record("a-api", "maybe"))
@@ -1937,6 +1938,9 @@ add("the live checklist: well-formed, records results, marks what it sees, and s
         C.Seen("d-accept", "first")
         C.Seen("d-accept", "second")
         out.note = a.db.checks["d-accept"].note
+        C.Record("s-popup", "pass")
+        out.next2 = C.Next()
+        out.sum = C.Summary()
         C.Record("d-cost", "fail", "free decline wrong")
         local n = C.Counts()
         out.counts = string.format("%d %d", n.pass, n.fail)
@@ -1945,8 +1949,9 @@ add("the live checklist: well-formed, records results, marks what it sees, and s
         out.report = table.concat(C.ReportText(), "\n")
     end)
     local ok = #bad == 0 and #missing == 2 and missing[1] == "C_SummonInfo.CancelSummon" and missing[2] == "Nope.Nothing"
+        and out.next1 == "s-popup" and out.next2 == "s-key" and out.sum == "3/" .. #C.LIST
         and out.todo == "todo" and out.good and out.err:find("no such check", 1, true) and out.badStatus:find("pass, fail or skip", 1, true)
-        and out.pass == "pass" and out.note == "seen live: first" and out.counts == "2 1" and out.trace == 40
+        and out.pass == "pass" and out.note == "seen live: first" and out.counts == "3 1" and out.trace == 40
         and out.report:find("FAIL d-cost: ", 1, true) and out.report:find("free decline wrong", 1, true) and out.report:find("Trace (newest last)", 1, true)
         and out.report:find("PASS a-api: ", 1, true) and out.report:find("-- fine", 1, true)
     return ok, table.concat(bad, "; ") .. " " .. tostring(out.counts)
