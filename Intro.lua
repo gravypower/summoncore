@@ -713,3 +713,88 @@ hint:SetScript("OnEvent", ST.Safe("the welcome", function()
         if ST.Check then ST.Check.Seen("s-welcome", "said at the first login") end
     end
 end))
+
+----------------------------------------------------------------------
+-- Watching together (design/lenses.md, Pleasure): a chapter is the week's payoff, so it can be played for the whole group at once.
+-- The one who starts it sends the chapter's key; every addon client in the party or raid that has reached it is asked "Watch now?".
+-- The raid leader is offered last week's chapter when the raid gathers, once a week.
+----------------------------------------------------------------------
+-- "chapter 5: The carbon", from the chapter's first scene.
+function Intro.ChapterTitle(key)
+    local ch = CHAPTER_KEYS[key]
+    local i = ch and firstOf[ch]
+    return i and string.format("chapter %d: %s", ch, scenes[i].label) or nil
+end
+
+-- A seam: how a client is asked (a popup in the game; the self-test answers itself).
+Intro.ask = function(text, onAccept)
+    StaticPopup_Show("SUMMONCORE_ASK", text, nil, onAccept)
+end
+StaticPopupDialogs["SUMMONCORE_ASK"] = {
+    text = "%s", button1 = "Watch", button2 = "Not now",
+    OnAccept = function(_, data) if data then data() end end,
+    timeout = 60, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+}
+
+-- Plays a reached chapter here and asks the rest of the group to watch it too.
+function Intro.PlayForGroup(key)
+    if not (key and key:match("^[zg]%d$") and Intro.HasChapter(key)) then return ST.print("no such chapter: " .. tostring(key)) end
+    if not Intro.Reached(key) and not ST.IsAdmin() then return ST.print("the season has not reached that chapter yet") end
+    if not (IsInGroup() or IsInRaid()) then return ST.print("you are not in a group: /sc intro " .. key .. " plays it for you") end
+    ST.Sync.SendWatch(key)
+    ST.print(string.format("The Index is showing the group %s.", Intro.ChapterTitle(key)))
+    Intro.Play(key)
+    return true
+end
+
+-- Someone in the group is showing a chapter: ask whether to watch, if this client has reached it.
+function Intro.OnWatch(sender, key)
+    if not (Intro.HasChapter(key) and Intro.Reached(key)) then
+        ST.Trace(string.format("%s showed %s, which this client has not reached", tostring(sender), tostring(key)))
+        return false
+    end
+    Intro.ask(string.format("%s would like to show the group %s. Watch now?", sender, Intro.ChapterTitle(key)),
+        function() Intro.Play(key) end)
+    return true
+end
+ST.Sync.onWatch = Intro.OnWatch
+
+-- Last week's chapter, if its win unlocked one that is written: the key, else nil.
+function Intro.LastWeeksChapter()
+    local last = ST.Week.Start() - 7 * 86400
+    for _, c in ipairs(ST.Week.Season().chapters) do
+        if c.start == last and Intro.HasChapter(c.key) then return c.key end
+    end
+    return nil
+end
+
+-- When the raid gathers, once a week: the leader is asked whether to play last week's chapter for everyone, and every other addon
+-- user is told how. With no chapter, the leader is reminded that /sc week say tells the raid where the week stands (B).
+function Intro.RaidGathered()
+    local s = ST.db and ST.db.settings
+    if not s or not IsInRaid() then return end
+    local week = ST.Week.Start()
+    if s.raidOffer == week then return end
+    s.raidOffer = week
+    local key = Intro.LastWeeksChapter()
+    local leader = UnitIsGroupLeader and UnitIsGroupLeader("player")
+    if key and leader then
+        Intro.ask(string.format("The raid has gathered. Last week unlocked %s. Play it for the raid? (/sc week say tells them where the week stands.)",
+            Intro.ChapterTitle(key)), function() Intro.PlayForGroup(key) end)
+    elseif key then
+        ST.print(string.format("The raid has gathered. Last week unlocked %s: |cffffd100/sc intro %s group|r plays it for everyone.",
+            Intro.ChapterTitle(key), key))
+    elseif leader then
+        ST.print("The raid has gathered. |cffffd100/sc week say|r tells it where the week stands.")
+    end
+end
+
+local raidWatch = CreateFrame("Frame")
+raidWatch:RegisterEvent("GROUP_ROSTER_UPDATE")
+raidWatch:RegisterEvent("PLAYER_ENTERING_WORLD")
+local inRaid = false
+raidWatch:SetScript("OnEvent", ST.Safe("the raid watch", function()
+    local now = IsInRaid()
+    if now and not inRaid then C_Timer.After(10, function() ST.Guard("the raid gathering", Intro.RaidGathered) end) end -- let it fill
+    inRaid = now
+end))

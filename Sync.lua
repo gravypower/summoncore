@@ -7,6 +7,7 @@
 --   R  REQUEST  body: since                (asks the whisper target for events with time > since)
 --   B  BATCH    body: record               (one record per message, whispered in reply to R)
 --   L  LINE     body: key|time|text        (a line Zennit wrote for himself: a postcard "pc:<mapID>" or his out-of-office "away")
+--   V  WATCH    body: key                   (someone is showing the group a chapter of the story: z1..z5, g1..g5)
 --   W  WITNESS  body: caster|target|helpers|mapID|subzone|time|helping   (what a group member saw of a ritual, for Zennit's client)
 -- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote[|answer[|w[|by]]]
 -- A record filed by Zennit's client for a caster without the addon carries "by" (his name): its id starts with it, and only he
@@ -379,6 +380,13 @@ function Sync.SendWitness(note)
     end
 end
 
+-- Shows a chapter of the story to the group (Intro.PlayForGroup): party or raid only.
+function Sync.SendWatch(key)
+    for _, ch in ipairs(Sync.channels()) do
+        if ch ~= "GUILD" then enqueue(ch, nil, "V", key) end
+    end
+end
+
 -- Zennit tells everyone how he dealt with a summon of him.
 function Sync.SendResponse(id, resp)
     -- the same optional tail as the record's answer, with "|" for ":"
@@ -666,6 +674,14 @@ function Sync.OnMessage(text, channel, sender)
         if #s.zenitAlts >= MAX_ALTS then return "rejected:full" end
         s.zenitAlts[#s.zenitAlts + 1] = sender
         return "learned"
+
+    elseif typ == "V" then
+        -- a chapter shown to the group: only from the party or raid, and never our own echo
+        if channel ~= "PARTY" and channel ~= "RAID" then return "rejected:channel" end
+        if not body:match("^[zg]%d$") then return "bad" end
+        if sender == Sync.myName() then return "self" end
+        if Sync.onWatch then Sync.onWatch(sender, body) end
+        return "asked"
 
     elseif typ == "L" then
         -- a line Zennit wrote for himself: only his characters may send one

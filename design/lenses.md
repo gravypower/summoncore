@@ -52,7 +52,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
 | Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
 | Freedom | Is everyone free to just be a person for a while? A summons he never answers counts as accepted | Answered; A built |
-| Pleasure | Which kinds of fun does it give, to whom, and when? The week's triumph and the story's wonder arrive to each person alone | Answered; A proposed |
+| Pleasure | Which kinds of fun does it give, to whom, and when? The week's triumph and the story's wonder arrive to each person alone | Answered; A and B built, at the weekly raid |
 
 ## Entries
 
@@ -2193,7 +2193,20 @@ purification, surprise, thrill, triumph over adversity, wonder. For each: does t
 the moment the group chooses, and it is opt-in on both sides. B is a small nudge that can ride along. Both depend on addon messages
 the group already relies on; neither sends chat on its own.
 
-**Live checks with whatever is built** (step 6): `d-watch` (one plays a chapter for the group; the other accepts and it starts).
+**Our answer (built: A and B, at the weekly raid).** Asked with the answer: the moment to watch it is the start of the group's weekly
+raid, when everyone is there.
+
+**Built**
+- **A, watch it together** (`Intro.PlayForGroup`, `Intro.OnWatch`, message `V`). `/sc intro <key> group` plays a reached chapter
+  and sends its key to the party or raid; every other addon client that has reached it asks "Al would like to show the group chapter
+  3: The group wins. Watch now?", and Watch plays it there. It starts when each person clicks, so it is a shared moment, not a
+  frame-exact one. Only chapters the season has reached (the admin may show any); a client that has not reached it is not asked.
+- **At the weekly raid** (`Intro.RaidGathered`). About ten seconds after this client joins a raid, once a week: the raid leader is
+  asked whether to play last week's chapter for the raid; everyone else with the addon is told `/sc intro <key> group`. With no
+  chapter last week, the leader is reminded that `/sc week say` tells the raid where the week stands.
+- **B, saying it in the group.** The week's result line at login now ends "The story: /sc intro g2 group shows it to the group, at
+  the raid perhaps."; the raid prompt mentions `/sc week say`. Speaking in chat stays a person's choice.
+- **Live check** `d-watch`; a self-test of the message, who is asked, last week's chapter and the once-a-week raid offer.
 
 **To watch in playtests**
 - Does the group watch a chapter together? Do they ask for it?
@@ -2240,3 +2253,4 @@ the group already relies on; neither sends chat on its own.
 | 2026-10-05 | A summons of him on his week off is "disturbing his leave": the lines say the race is off but postcards and titles still count, and the Index counts who disturbed it most; the week off itself stays | Inner Contradiction | About a third of weeks are his weeks off, and the only line the caster read said "do not bother", though most of the game still ran |
 | 2026-10-05 | The far-flung places still missing a postcard are named in `/sc week` and at the Monday login; the helper bonus waits for the report's helper counts; the Index's weekly request is parked | Indirect Control | The place nudges (points, postcards) arrived at the cast, after the group had already travelled; a ritual needs two helpers anyway, so the bonus steers only the bookkeeping |
 | 2026-10-05 | A summons that comes while he has been AFK for five minutes or more is filed as away: free, not his free decline; the caster is warned at the cast; version 0.23.0 | Freedom | Stepping away from the keyboard in the group let summons count as accepted with nothing he could do; silence cannot be free in general (Balance), but an AFK that began before the ritual is not a dodge |
+| 2026-10-05 | A chapter can be shown to the whole group (each person asked "Watch now?"), and the raid leader is offered last week's chapter when the weekly raid gathers | Pleasure | The week's triumph and the story's wonder were the only pleasures delivered alone, at each person's login; the weekly raid is when everyone is there |
