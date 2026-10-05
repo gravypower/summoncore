@@ -40,6 +40,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
 | The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
+| Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -1400,6 +1401,53 @@ dungeons where chat is already scrolling.
 - Does anyone mute or move the addon's chat, or stop reading it? Which lines do they still quote?
 - Does the caster read the briefing at all while the ritual is channelling?
 - The measurements above are from stubs; the wrapped-line count depends on the player's chat window.
+
+### 2026-10-05 · Lens of Resonance: does it ring true?
+
+**The questions (paraphrased):** what is it about this game that feels real and strong to the people playing it? What in their own
+experience does it touch, and where does the game sit at odds with that experience?
+
+**What the group already knows, and the game plays with.** Everyone in a WoW group has asked for a summons, waited for a warlock to
+set up the ritual and two friends to click, and then pressed Accept on the game's own prompt. That small, slightly absurd ritual
+is the real thing the Index files. The paperwork joke has a true centre: the game's prompt really is a form (Accept, Decline).
+
+**Where the build rings true:** the ritual is detected for real (verified live), the clips play at the real moments, the Index's
+voice borrows the prompt's own bureaucratic tone, and the contest is about a real friend's real choices.
+
+**Where it sits apart from the real thing**
+
+1. **Two decisions arrive at once, and only one of them is real.** When the ritual completes, the game puts its own summon prompt in
+   front of Zennit (Accept or Decline, with a timer). At the same moment the addon opens its own "A SUMMONING!" popup, with four
+   answers and the dice (`Respond.Incoming`, from the live `E` message). The addon's answer is a statement in the contest. Whether he
+   actually presses Accept on the game's prompt is a separate act that the addon never sees: nothing hooks `CONFIRM_SUMMON`, and the
+   README parks it ("a notice when a summon is declined in game"). So he can say "accepted" in the Index and decline in the game, or
+   the reverse, and the log cannot tell the difference.
+2. **The two popups sit in nearly the same place.** The addon's dialog is anchored at the top of the screen, 140 pixels down
+   (`Respond.lua`, `buildDialog`). From memory, the game's own prompt is anchored at the top, about 135 pixels down. If that is right,
+   one covers the other at the one moment both matter. This is an inference from the default layout, not something seen in the
+   client, so it is the first thing to look at in the game.
+3. **The most resonant fact, did he actually arrive, is the least visible.** The contest is about whether Zennit came when called. The
+   addon only knows what he said. A summons he accepted in the Index and did not actually take would be the funniest line the Index
+   could file ("accepted, and is still in Ironforge"), and the information is available on his client: where he is after the answer,
+   against where the summons was to (`ev.mapID`).
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Move the Index's popup off the game's prompt** (lower on the screen), and head it as the Index's form so the two are not confused | 2 | A position and a title; seen in the game to confirm |
+| B | **The Index notes whether he arrived**: after an accepted (or unanswered) summons, his client checks for two minutes whether he is in the summons' map, and says so on his client: "The Index confirms that you arrived in Silithus, 40 seconds after you accepted." or "The Index notes that you accepted and are still in Ironforge." Banter only: it never changes a score | 1, 3 | A timer on his client, a map comparison and a test; a wrong "still in Ironforge" is possible when the arrival lands in another sub-map |
+| C | **Tell the group too**: the same note sent with his answer so the group sees "accepted, and has not arrived". Needs a protocol bit and a resend after the answer | 3 | Sync format change (a new flag on the response); wait until B has run in the game |
+| D | **Leave the two decisions independent**: the Index's paperwork and the game's prompt are two forms for one event, which is the joke | 1 | Nothing |
+
+**To decide before building**
+- Should the arrival note stay on his client (B), or be shared with the group (C)? A note only he sees is a private joke; one the
+  group sees is banter that could land as a callout, and Zennit has to stay happy.
+
+**To watch in playtests**
+- Do the two popups cover each other on his screen? Does he miss one of them?
+- Does he accept in the Index and decline in the game, or the reverse, and does anyone notice?
+- Nothing here has run in the live client.
 
 ## Decisions
 
