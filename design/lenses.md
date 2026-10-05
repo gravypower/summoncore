@@ -46,7 +46,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 | Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; A, B and C built |
 | Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B, C and G built; D waits on audio |
-| Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B proposed |
+| Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
 
 ## Entries
 
@@ -1772,8 +1772,20 @@ nobody chooses.
 **Recommendation:** A and B. A closes a real hole (the writ dodge) and makes "saying no" one rule instead of two tables, which is the
 largest single cut available. B is wording that follows from it. C is still optional; nothing has changed since it was last turned down.
 
-**Live checks with whatever is built** (step 6): `d-cost` and `d-writ` already cover the game's side; a solo check for the form's
-Decline on a test summons (its cost line against the rules card) would cover the other.
+**Our answer (built: A and B).** C (the head start) stays.
+
+**Built**
+- **A, one rule for no** (`Respond.NoResult`). The game's Decline (`Respond.Real`) and the form's button both call it: a writ that
+  counts costs him the points, a place on his list is free (and does not spend his free decline), his first decline of the week is
+  free, and every other costs. The form's button is now **Decline** ("Decline (free)" when it is), and the line above it says why
+  (`Respond.NoText`). The three bad cells are gone: a second decline at a list place is free, a writ costs even at a list place, and
+  the form's no is never worse than the game's. The stored results are unchanged (`declined`, `excused`, `refused`), so old records and
+  other clients read as before.
+- **B, one word for no.** The answer lines, the log (`Respond.Describe`: "declined (free)", "declined (free: his list)", "declined (cost
+  him 3)"), the rules card ("Declines: in the game's prompt or on the Index's form..."), the last-die lines and the briefings ("accept,
+  decline or ask for the silver") and the help all say *decline*.
+- **Live check** `s-decline` (the form's cost line against the rules card), with `d-cost` and `d-writ` reworded; a self-test of the rule
+  and the words.
 
 **To watch in playtests**
 - Does Zennit ever use the form to say no, or only the game's prompt?
@@ -1814,3 +1826,4 @@ Decline on a test summons (its cost line against the rules card) would cover the
 | 2026-10-05 | The Tools tab is three sections (General, Testing, Checks) and opens on the one used last; each lens now ends with a live check for what only the game can confirm, and the earlier lenses have theirs (`s-login`, `s-band`, `s-lastcall`, and `/sc week login` to say the login lines again) | Interface, the method | Five columns and three rows left the output box three lines; the live checks arrived after Flow, so the lenses before it had no way to be confirmed in the game beyond the rules the self-tests cover |
 | 2026-10-05 | A welcome at the first login (nothing new to do, who needs the addon, the rules card); the rules card and README say who needs it; a caster's first summons of Zennit gets the full briefing whatever the day | Accessibility | A newcomer was pointed at four minutes of out-of-date story, nothing said that a caster without the addon logs nothing, and their first briefing assumed they knew the race |
 | 2026-10-05 | When the caster has no addon, Zennit's client files the summons from the game's prompt, with the caster, place and helpers that clients in the group saw (a witness note); the caster's own record replaces it if it arrives; version 0.21.0 | Accessibility | A warlock without the addon logged nothing, so their summons of him did not count; his client always sees the prompt, and anyone in the group can see who channels the ritual |
+| 2026-10-05 | One rule for no: a decline in the game or on the form is free at a place on his list or with his free decline, otherwise it costs, and a writ always costs; every no reads as "declined (free)" or "declined (cost him N)" | Simplicity/Complexity | The two surfaces followed different rules, so a form refusal at a list place dodged a writ and the form's Refuse could only hurt him; three words for one act |

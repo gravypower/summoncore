@@ -70,7 +70,7 @@ Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3
     -- summons in the game's own prompt, it costs him its points; with no writ a decline costs nothing and the summons does not count.
     writs = 2,
     -- Free declines (design/lenses.md, Balance): the first decline he really makes in a week costs nothing and the summons does not
-    -- happen. Every later one costs him its points, as a refusal does: a free decline with no limit would be better than refusing.
+    -- happen. Every later one costs him its points: a free decline with no limit would let him decide every week (Balance).
     declines = 1 }
 
 -- Each whim moves one rule for one week, by a few points of the group's chance (about +6 or -5 in a normal week), so no
@@ -555,12 +555,12 @@ function Week.RulesCard(start)
             "Zennit scores the dice he wins and the places on his list that land. Zennit starts the week with %d, and a tie is his.",
             kinds.city, kinds.zone, kinds.dungeon, kinds.remote, R.headstart),
         string.format("Dice: he has %d a week and adds +%d to his roll; each helper (two at most) adds +%d to the summoner's. " ..
-            "When they are gone he can only accept, refuse or ask for the silver.", Week.Rule("dice", start), edge, bonus),
+            "When they are gone he can only accept, decline or ask for the silver.", Week.Rule("dice", start), edge, bonus),
         string.format("Writs: the group has %d a week. Played with /sc writ before a ritual on him, a writ makes his decline of that summons " ..
             "in the game cost him its points.", R.writs),
-        string.format("Declines: when he declines a summons in the game's own prompt it does not happen (no points either way). The first decline " ..
-            "of a week is free (%d); every later one costs him its points, as a refusal does, and one with a writ always does.", R.declines),
-        string.format("His list: up to %d places of %d letters or more. Accepting a summon there earns him the points; refusing it is free.",
+        string.format("Declines: in the game's prompt or on the Index's form, a declined summons does not happen. It is free at a place on " ..
+            "his list, and his first decline of a week is free (%d); every other one costs him its points, and one with a writ always does.", R.declines),
+        string.format("His list: up to %d places of %d letters or more. Accepting a summon there earns him the points; declining it is free (unless the group played a writ).",
             ST.Respond.LIST_MAX, ST.Respond.LIST_MIN),
         string.format("Catch-up: when a side leads the season by two wins, his edge moves %d toward the side that is behind; by three, %d.%s",
             R.catchup[2] or 0, R.catchup[3] or 0, moved ~= 0 and string.format(" This week it has moved %+d.", moved) or ""),
@@ -703,14 +703,14 @@ function Week.LastDie(ev, you)
     if Week.IsOff(start) or Week.IsClosed(start) then return nil end
     if you then
         return ST.Voice.Say("lastdie.you", {
-            "That was your last die this week. From here you can only accept, refuse or ask for the silver.",
-            "That was your last die of the week. From here it is accept, refuse or the silver.",
-            "Your dice are spent for the week. From here you can only accept, refuse or ask for the silver." })
+            "That was your last die this week. From here you can only accept, decline or ask for the silver.",
+            "That was your last die of the week. From here it is accept, decline or the silver.",
+            "Your dice are spent for the week. From here you can only accept, decline or ask for the silver." })
     end
     return ST.Voice.Say("lastdie.them", {
-        "That was Zennit's last die this week. Every summon from here is certain: he can only accept, refuse or ask for the silver.",
-        "That was Zennit's last die of the week. Every summon from here is certain: he can only accept, refuse or ask for the silver.",
-        "Zennit's dice are spent for the week. Every summon from here is certain: he can only accept, refuse or ask for the silver." })
+        "That was Zennit's last die this week. Every summon from here is certain: he can only accept, decline or ask for the silver.",
+        "That was Zennit's last die of the week. Every summon from here is certain: he can only accept, decline or ask for the silver.",
+        "Zennit's dice are spent for the week. Every summon from here is certain: he can only accept, decline or ask for the silver." })
 end
 
 -- One line on where the week starting at `start` stands (default: this week), for the chat after a summon of Zennit
@@ -753,7 +753,7 @@ function Week.SayWeek(chat, start)
 end
 
 -- What the place the caster stands in is worth, and what is at stake in it: a summons is worth P to the group if he
--- accepts, to him if he wins the roll, and P comes off him if he refuses. A city is worth less than his head start.
+-- accepts, to him if he wins the roll, and P comes off him if a decline costs him. A city is worth less than his head start.
 function Week.PlaceLine(mapID, subzone, start)
     local pts, kind = ST.Scoring.Score(mapID, subzone)
     local place = ST.Scoring.kindText[kind] or kind
@@ -803,11 +803,11 @@ function Week.Briefing(target, mapID, subzone, writ)
     local text
     if first then
         text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
-            Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
+            Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, decline or ask for the silver." or
             string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.Rule("helperBonus", start)))
     else
         text = string.format("Summoning %s: summon %d of %d, %s, %s.%s", target, r.counted + 1, Week.RULES.cap, leadText(r),
-            diceText(dice), dice == 0 and " He must accept, refuse or ask for the silver." or "")
+            diceText(dice), dice == 0 and " He must accept, decline or ask for the silver." or "")
     end
     if mapID ~= nil or subzone ~= nil then text = text .. " " .. Week.PlaceLine(mapID, subzone, start) end
     if first and moved ~= 0 and dice > 0 then
