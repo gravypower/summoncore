@@ -360,8 +360,9 @@ add("Zennit hears a recorded complaint when summoned live, not from history", fu
     local z = newClient("Zennit")
     z.db.settings.zenitTest = true
     local calls = {}
-    local realPlay = ST.Clips.Play
+    local realPlay, realIncoming = ST.Clips.Play, ST.Respond.Incoming
     ST.Clips.Play = function(category) calls[#calls + 1] = category end
+    ST.Respond.Incoming = function() end -- the simulated client's summons is not in the real log: the real form would open and could not be answered
     local ok, err = pcall(function()
         local function record(target, i)
             local id, ev = sample({ caster = "Alpha", target = target, time = BASE + i })
@@ -375,7 +376,7 @@ add("Zennit hears a recorded complaint when summoned live, not from history", fu
         id, ev = record("Someone", 302)
         with(z, function() Sync.OnMessage("1~E~" .. Sync.Encode(id, ev), "PARTY", "Alpha") end)       -- someone else: no
     end)
-    ST.Clips.Play = realPlay
+    ST.Clips.Play, ST.Respond.Incoming = realPlay, realIncoming
     if not ok then return false, tostring(err) end
     return #calls == 1 and calls[1] == "zenit_land", #calls .. " clip call(s)"
 end)
@@ -772,7 +773,7 @@ add("Zennit's alts are learned from his own client, and only a few", function()
     local a, z = newClient("Alpha"), newClient("Zennit")
     local savedGet = ST.bnGetInfo
     ST.bnGetInfo = function() return 1, ST.ZENNIT_TAG end
-    with(z, function() Sync.Hello() end)
+    with(z, function() Sync.Hello() Sync.Pump(100000) end) -- messages only reach c.out once pumped
     ST.bnGetInfo = savedGet
     local sentA
     for _, m in ipairs(z.out) do if m.payload:match("^%d+~A~") then sentA = m.payload end end
@@ -816,10 +817,10 @@ end)
 
 add("scoring: cities, far-flung maps and dungeon entrances score by kind, and a dungeon subzone beats its map", function()
     local S = ST.Scoring
-    local city, cityPts = S.Score(1453, "Trade District")
+    local cityPts, city = S.Score(1453, "Trade District") -- Score gives the points, then the kind
     local zone = S.Score(1436, "Sentinel Hill")
-    local remote, remotePts = S.Score(1451, "Cenarion Hold")
-    local dungeon, dungeonPts = S.Score(1451, "The Deadmines")
+    local remotePts, remote = S.Score(1451, "Cenarion Hold")
+    local dungeonPts, dungeon = S.Score(1451, "The Deadmines")
     local wc = S.Kind(1413, "Wailing Caverns")
     local ok = city == "city" and cityPts == 1 and zone == 3 and remote == "remote" and remotePts == 10
         and dungeon == "dungeon" and dungeonPts == 5 and wc == "dungeon"
@@ -841,7 +842,7 @@ add("places: /sc places checks each map ID against the game's name for it, and f
         and good:find("Cities: ", 1, true) and good:find("Silithus", 1, true) and good:find("wailing caverns", 1, true)
         and good:find("The client knows every map above", 1, true) and not good:find("client has no such map", 1, true)
         and bad:find("Silithus (1451: the client has no such map)", 1, true)
-        and bad:find("Stormwind (1453: the client calls it 'Somewhere Else')", 1, true)
+        and bad:find("Stormwind City (1453: the client calls it 'Somewhere Else')", 1, true)
         and bad:find("2 maps above did not match the client", 1, true)
     return ok, bad:sub(1, 160)
 end)
@@ -860,6 +861,17 @@ add("the Party tab ranks by summons of Zennit this season, then points, then nam
     local got = table.concat(order, " ")
     return got == "Cy:3 Bo:3 Al-Realm:0 Zennit:0 Di:0", got
 end)
+
+-- Runs fn with the new race rules (Week.RULES) in force for every week; T.Run keeps the old rules for the rest.
+-- (Defined here, before the first test that uses it.)
+local function newRules(fn)
+    local saved = ST.Week.RULES.from
+    ST.Week.RULES.from = 0
+    local ok, good, detail = pcall(fn)
+    ST.Week.RULES.from = saved
+    if not ok then return false, "ERROR " .. tostring(good) end
+    return good, detail
+end
 
 add("/sc week say: one line to the party or the raid, and a reason when it cannot", function()
     return newRules(function()
@@ -975,17 +987,6 @@ add("pending summons: the unanswered and the ones owing silver, newest first", f
     local ok = #pending == 2 and pending[1].ev.time == BASE + 941 and pending[2].ev.time == BASE + 940
     return ok, ok and "2 waiting: the one owing silver, then the unanswered one" or ("found " .. #pending)
 end)
-
--- Runs fn with the new race rules (Week.RULES) in force for every week; T.Run keeps the old rules for the rest.
--- (Defined here, before the tests below that use it.)
-local function newRules(fn)
-    local saved = ST.Week.RULES.from
-    ST.Week.RULES.from = 0
-    local ok, good, detail = pcall(fn)
-    ST.Week.RULES.from = saved
-    if not ok then return false, "ERROR " .. tostring(good) end
-    return good, detail
-end
 
 add("the new race: only summons of Zennit count, ten a week, and a summon to his list pays him too", function()
     return newRules(function()
@@ -1682,6 +1683,7 @@ add("errors are caught and said once, kept for /sc errors, and a failing step do
     local saved = ST.errors
     ST.errors = {}
     ST.print = function(text) printed[#printed + 1] = text end
+    geterrorhandler = function() return function() end end                     -- the deliberate "boom" must not reach the game's error window
     local ran = false
     local bad = function() error("boom") end
     local ok1, msg1 = ST.Guard("the first step", bad)
@@ -1689,7 +1691,7 @@ add("errors are caught and said once, kept for /sc errors, and a failing step do
     local ok2, value = ST.Guard("the second step", function() ran = true return "fine" end)
     local safe = ST.Safe("an event", function(a, b) return a + b end)
     local sum = select(2, safe(2, 3))
-    ST.print = realPrint
+    ST.print, geterrorhandler = realPrint, realHandler
     local kept, said = #ST.errors, #printed
     local first = ST.errors[1]
     ST.errors = saved
@@ -2046,12 +2048,12 @@ function T.Run(quiet)
     local lastCall = ST.Week.RULES.lastCall
     ST.Week.RULES.lastCall = nil     -- nor is a week "about to close"
     local pass = 0
-    local results = {}
+    local results, failed = {}, {}
     for _, t in ipairs(tests) do
         local ok, good, detail = pcall(t.fn)
         if not ok then good, detail = false, "ERROR " .. tostring(good) end
         results[#results + 1] = { name = t.name, ok = good and true or false, detail = detail or "" }
-        if good then pass = pass + 1 end
+        if good then pass = pass + 1 else failed[#failed + 1] = string.format("%s (%s)", t.name, tostring(detail or ""):sub(1, 120)) end
     end
     for _, r in ipairs(results) do
         if not (quiet and r.ok) then -- quiet: only the failures
@@ -2063,5 +2065,5 @@ function T.Run(quiet)
     ST.Week.RULES.from = rulesFrom
     ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue, ST.Week.RULES.lastCall = whims, fixed, overdue, lastCall
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
-    return pass, #tests
+    return pass, #tests, failed
 end

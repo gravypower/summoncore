@@ -522,7 +522,9 @@ for ($s = 1; $s -le $sceneCount; $s++) {
     $highlights[$s] = @()
     foreach ($h in $highlightSpec | Where-Object { $_[0] -eq $s }) {
         $t = PhraseTime $texts[$s - 1] $sentences $segs $byCount $h[1] $s
-        $highlights[$s] += , @([math]::Max(0.1, [double]$t - 0.15), $h[2], $h[3], $h[4], $h[5])
+        # keep the box inside the 960x540 picture (the self-test checks it)
+        $bw = [math]::Min($h[4], 960 - $h[2]); $bh = [math]::Min($h[5], 540 - $h[3])
+        $highlights[$s] += , @([math]::Max(0.1, [double]$t - 0.15), $h[2], $h[3], $bw, $bh)
     }
     $highlights[$s] = @($highlights[$s] | Sort-Object { $_[0] })
 
