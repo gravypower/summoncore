@@ -42,6 +42,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
 | Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
 | Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
+| Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -1525,6 +1526,62 @@ in a mixed one, against 63% and 91% on the old rules); two would leave about 34%
 
 **To watch in playtests**
 - Does he ever press Decline in the game, and how does the group react? That is the real test of this.
+- Nothing here has run in the live client.
+
+### 2026-10-05 · Lens of Flow: does the addon stay out of the way?
+
+**The questions (paraphrased):** does the activity have clear goals, direct feedback and a challenge that fits the player's skill? Is
+there anything that distracts or interrupts, so the player drops out of what they were doing? Does the player feel in control?
+
+**How to read it.** *Flow* is the state of being absorbed in something: hours go by, the next move is clear, you are neither bored
+nor overwhelmed. Games produce it by keeping the goal clear, answering every action at once, matching the difficulty to the player,
+and removing anything that pulls them out. For this addon the activity that matters is **playing WoW with friends**; the contest sits on
+top of it. So the sharpest form of the question is: *how often does the addon make someone stop playing to do something for it?*
+
+**The inputs, counted** (what a person has to do, beyond playing, for one summons; from `Detector.lua`, `Respond.lua`, `Core.lua`)
+
+| Path | The caster | Zennit | Waits |
+|---|---|---|---|
+| An ordinary summons, he accepts | none (the ritual is the input) | the game's own Accept; the Index records it | none |
+| He declines (free, or costing) | none | the game's own Decline | none |
+| He asks for silver | none | a click, then a small box with the usual price and OK: about 2 to 3 | none |
+| **Dice** | **one click** (the Roll button in the prompt) | **two clicks** ("Suggest dice", then "Roll 1-100", which only confirms) | up to 90 seconds |
+| **A writ** | **typed `/sc writ` before the cast** | none (it is on his popup) | none |
+| The assistants prompt | one click, only when the roster is unclear | none | none |
+
+**Findings**
+1. **The ordinary path needs nothing from anyone beyond what they would do anyway.** Since the game's own prompt became the answer,
+   a plain summons costs the caster and Zennit no extra input at all. For the loop that happens most often, that is the best
+   possible result for flow.
+2. **Dice is the one real interruption: three clicks and a wait across two people.** Zennit clicks twice; the caster, who has just
+   finished a ritual and may be back in a fight, has to click Roll; and the whole thing has a 90-second timer. The second of Zennit's
+   clicks (the "Roll 1-100" confirm) exists to stop an accident spending one of his three dice, which is a fair reason.
+3. **The writ is a typed command before the cast.** In a dungeon or a fight, typing `/sc writ` is a break in play, and if it is
+   forgotten there is no taking it back: the ritual has started. It is rare (two a week), so the cost is small, but it is the one
+   chore that falls on the whole group rather than on Zennit.
+4. **The dice and the game's prompt run on separate clocks.** The game's prompt lasts about two minutes and the dice can take up to ninety
+   seconds on top of a few clicks, so the two can overlap. In the code, while a roll is in flight the game's Accept or Decline is
+   deliberately ignored (`Respond.Real` skips a summons with a roll pending), and the dice decide it later. So he can accept in the
+   game and then "win the dice" so that it does not count. It is an honour-system joke today, but it is also two answers to one summons.
+5. **Feedback is quick where it matters.** An accept or decline reaches everyone within a couple of seconds by sync, and the answer
+   lines arrive straight after (the Toy entry covers the volume). A challenge that fits: the catch-up edge and the one free decline
+   keep a week close, and the group's skill (ordering, which summons gets a writ) has room to grow.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **One-click dice**: "Suggest dice" rolls at once; the rules move to the button's own text and the line above it. Drops the confirm click | 2 | A little code; an accidental click now spends a die (he has three) |
+| B | **A key binding for the writ** (`Bindings.xml`: "Summon Core: play a writ"), so arming it is one key, and the briefing already says whether one is armed | 3 | A bindings file and a global function the game calls; never tried in the client |
+| C | **Let the game's prompt end the dice**: if he accepts or declines in the game while a roll is in flight, that is his answer and the dice are cancelled (no die spent). One answer per summons | 4 | A few lines in `Respond.Real`; a test. Open: whether the game also "declines" when the prompt merely expires, which would then end a roll that is still going |
+| D | **Leave it**: dice are three a week and writs two, and each chore protects something scarce | | Nothing |
+
+**To decide before building**
+- Does the group mind the writ's typed command? That is a playtest question; nothing in the log can answer it.
+
+**To watch in playtests**
+- Does anyone forget to arm a writ, or ask how? Does Zennit use dice at all, now that a free decline exists?
+- Does a dice roll ever outlast the game's prompt?
 - Nothing here has run in the live client.
 
 ## Decisions
