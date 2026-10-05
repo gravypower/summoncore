@@ -34,6 +34,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
 | Reward | What does each member get, and when? | Answered; A, B, C and D built |
 | Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
+| Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
 
 ## Entries
 
@@ -1026,6 +1027,68 @@ chosen: B carries layout risk in a client we cannot see, and D can wait until th
 - Which commands does the group actually type? Does anyone ask "how do I see..."?
 - Does the Tools tab fit, for the admin and for the others?
 
+### 2026-10-05 · Lens of Time: the week's clock, the season's calendar
+
+**The questions (paraphrased):** what clocks does the game run on, and do the players know them? Where are the deadlines, and does
+anything make a deadline felt? When do the players actually play, and does the game fit that? What happens when real life (a holiday,
+a daylight-saving change) lands on the game's calendar?
+
+**The clocks, as built** (`Week.lua`, `Respond.lua`, `Week.RULES`)
+
+| Clock | Length | When it turns over, for a group on Australia's east coast |
+|---|---|---|
+| A week | 7 days, **Monday 00:00 UTC** | **Monday 11:00** in summer time (AEDT), **10:00** from April (AEST) |
+| A week closes (answers stop, the result freezes) | 2 days after it ends | Wednesday 11:00 (10:00 from April) |
+| A summons is "waiting for his answer" | 1 hour | |
+| The Monday result | A minute after the first login after the week ends | |
+| A season | Five wins, about 11 weeks at normal effort | The first, from 5 October, ends about **14 to 21 December** |
+
+(The commit times in this repository are +1100, so the group's evenings are used as the example. Nothing in the game knows the group's
+time zone: it is UTC throughout.)
+
+**Findings**
+1. **The week turns over at 11 in the morning, and nothing says so.** For an east-coast evening player this is harmless: the
+   evenings of Monday to Sunday all fall inside one week, and Monday morning before 11 still belongs to the week before. But the
+   README is the only place that says "Monday (UTC)", the rules card does not give a time, and no line tells a player when *their*
+   week ends.
+2. **There is a deadline and nothing makes it felt.** The Interest Curve entry wanted a beat in the last hours of a week and it was
+   never built. Players learn the week is over a minute after their next login; they are never told it is about to end.
+3. **We do not know when the group plays.** The log has every summons with its time, so the answer is in it, but `/sc report` does
+   not say: it counts weeks, not days.
+4. **The first season runs into the holidays.** Eleven weeks from 5 October is the middle of December, and the end of the year is when
+   people are away. The Community entry found that the whole balance depends on Zennit answering; a Christmas fortnight with half the
+   group away would give the group free wins and chapters (or none) for reasons that have nothing to do with the game. Nothing in
+   the rules can pause a season.
+5. **Daylight saving does not matter.** The clock is UTC; the shift in April moves the turnover from 11:00 to 10:00 for the group and
+   changes nothing in the rules.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Say the week's clock in the group's time**: the rules card, the briefing and the Monday line give when the week closes ("this week closes Monday 11:00, your time"), using the player's own clock | 1 | Wording and a `date` call |
+| B | **A last call**: in the last 24 hours of a week, the briefing for a summons of him and the login say "the week closes in 9 hours: the group leads by 1, 2 summons filed" | 2 | Wording |
+| C | **Days in the report**: `/sc report` says which days and evenings the group plays, so the week's clock can be chosen from evidence | 3 | A few lines in `Report.lua` |
+| D | **A holiday pause**: a list of dates in `Week.RULES.pauses`; any week inside one is filler for everyone (like his week off, but for all), nobody wins it, and the season waits. Empty until the group says when they are away | 4 | A rule and a list |
+
+**Our answer:** build **A and B**. The group is on the east coast of Australia, so **the turnover stays** (Monday 00:00 UTC, which is
+Monday 11:00 in summer and 10:00 from April). C (days in the report) and D (a holiday pause) were not chosen.
+
+**Built**
+- **A, the week's clock in the player's time.** `Week.ClosesText` formats the close and the last answer with the player's own clock.
+  The rules card says "The clock: this week closes Monday 11:00, your time (answers stop Wednesday 11:00). A week is Monday to Monday,
+  UTC." and the Monday login says "This week closes Monday 11:00, your time; he can still answer until Wednesday 11:00."
+- **B, a last call.** In the last 24 hours (`Week.RULES.lastCall`): the "Week:" line adds "the week closes in 3 hours", the briefing
+  for a ritual on him ends "Last call: the week closes in 3 hours (Monday 11:00).", and a login in that stretch says it once with the
+  standing. Not in a week off.
+
+**To decide before building**
+- When is the group away over the holidays, if at all? (Then a pause, D, can be written in.)
+
+**To watch in playtests**
+- Which days and hours do the summons fall on? Does anyone ask when the week ends?
+- Is anyone away in December, and what does the group want to happen then?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1049,3 +1112,4 @@ chosen: B carries layout risk in a client we cannot see, and D can wait until th
 | 2026-10-05 | A `/sc tab` statement of who owes what; the ask is not bounded (trust the group); cards are not forced to be a discount and points stay a score | Economy | The tab was only visible as a total and a login line; the silver cannot hurt the race, so a bound would only police the mood of friends |
 | 2026-10-05 | Season titles, mid-season standings (`/sc titles`), kind titles for Zennit, and four later badges for the people who cast; helpers get titles, not badges | Reward | Individual rewards were front-loaded and for warlocks only; a helper's only reward was a named line about every other season |
 | 2026-10-05 | The Tools tab is five columns (the reports have their own, The record); a one-line command tip each Monday (`/sc tips off`); `/sc help` is five lines and `/sc help all` is the rest | Interface | One Tools column had grown past the tab for the admin; the useful commands were listed only in a 25-line help |
+| 2026-10-05 | The week's turnover stays at Monday 00:00 UTC (11:00 on the east coast of Australia in summer); the week's close is said in the player's time, and the last day of a week has a last call | Time | Nothing said when a week ends, and the deadline was never felt; the group's evenings fit the UTC week |
