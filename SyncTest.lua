@@ -1545,6 +1545,50 @@ add("the Monday tip: they go round without repeating, once a week, and can be sw
     return good, string.format("%d different tips in a round, printed %d then %d, %s", out.seen, out.once, out.off, tostring(out.line))
 end)
 
+add("the week's clock in the player's time, and a last call in the final day", function()
+    return newRules(function()
+        local W = ST.Week
+        local a = newClient("Alpha")
+        local printed, realPrint, realTime, savedCall = {}, ST.print, time, W.RULES.lastCall
+        local out = {}
+        local ok, err = pcall(function()
+            with(a, function()
+                local start = W.Start()
+                W.RULES.lastCall = 24 * 3600
+                a.db.events.x = { caster = "Alpha", target = "Zennit", assistants = {}, time = start + 60, points = 3, kind = "zone",
+                    response = { result = "accepted", zroll = 0, sroll = 0, time = start + 90 } }
+                ST.print = function(text) printed[#printed + 1] = text end
+                out.closes, out.answers = W.ClosesText(start)
+                rawset(_G, "time", function() return start + 7 * 86400 - 3 * 3600 end)      -- three hours before the week closes
+                out.left = W.LastCall()
+                out.status = W.StatusLine(start)
+                out.brief = W.Briefing("Zennit")
+                W.AnnounceClock()
+                W.AnnounceClock()                                                            -- once a week
+                out.printed = table.concat(printed, " | ")
+                rawset(_G, "time", function() return start + 2 * 86400 end)                  -- early in the week: no last call
+                out.early = W.LastCall()
+                out.earlyStatus = W.StatusLine(start)
+                out.card = table.concat(W.RulesCard(start), "\n")
+            end)
+        end)
+        rawset(_G, "time", realTime)
+        ST.print = realPrint
+        W.RULES.lastCall = savedCall
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local start = W.Start()
+        local good = out.closes == date("%A %H:%M", start + 7 * 86400) and out.answers == date("%A %H:%M", start + 9 * 86400)
+            and out.left == 3 * 3600 and out.status:find("the week closes in 3 hours", 1, true)
+            and out.brief:find("Last call: the week closes in 3 hours (" .. out.closes .. ")", 1, true)
+            and out.printed:find("This week closes " .. out.closes .. ", your time", 1, true)
+            and out.printed:find("Last call: the week closes in 3 hours", 1, true)
+            and select(2, out.printed:gsub("This week closes", "")) == 1 and select(2, out.printed:gsub("Last call", "")) == 1
+            and out.early == nil and not out.earlyStatus:find("closes in", 1, true)
+            and out.card:find("this week closes " .. out.closes .. ", your time", 1, true)
+        return good, string.format("closes %s, answers until %s; %s", tostring(out.closes), tostring(out.answers), tostring(out.status))
+    end)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")
@@ -1666,6 +1710,8 @@ function T.Run()
     ST.Week.RULES.whims = false -- no whim of the week, and the plain variant of every line: the tests read exact words
     ST.Voice.fixed = true
     ST.Week.RULES.overdue = math.huge -- and nothing is "waiting for his answer" unless a test asks
+    local lastCall = ST.Week.RULES.lastCall
+    ST.Week.RULES.lastCall = nil     -- nor is a week "about to close"
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -1680,6 +1726,6 @@ function T.Run()
     end
     ST.Week.EventClosed = realEventClosed
     ST.Week.RULES.from = rulesFrom
-    ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue = whims, fixed, overdue
+    ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue, ST.Week.RULES.lastCall = whims, fixed, overdue, lastCall
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end

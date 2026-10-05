@@ -63,7 +63,9 @@ Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3
     whims = true,
     -- A summons of Zennit unanswered for this many seconds is "waiting for his answer": the group is told, so it can chase him
     -- (design/lenses.md, Community).
-    overdue = 3600 }
+    overdue = 3600,
+    -- In the last stretch of a week (this many seconds) the Index says it is about to close (design/lenses.md, Time).
+    lastCall = 24 * 3600 }
 
 -- Each whim moves one rule for one week, by a few points of the group's chance (about +6 or -5 in a normal week), so no
 -- week is much easier or harder than another. `show` is the rule whose number the text names, when it does.
@@ -187,6 +189,32 @@ function Week.Owed(start)
         end
     end
     return n, silver
+end
+
+-- When the week starting at `start` closes to the race, in the player's own time ("Monday 11:00"), and when he can last answer
+-- into it (two days later). The clock is UTC, so this is the week's real turnover where the player is.
+function Week.ClosesText(start)
+    return date("%A %H:%M", start + LENGTH), date("%A %H:%M", start + LENGTH + Week.GRACE)
+end
+
+-- "9 hours", "40 minutes" or "1 hour": how long is left.
+local function leftText(secs)
+    if secs >= 3600 then
+        local h = math.ceil(secs / 3600)
+        return h == 1 and "1 hour" or (h .. " hours")
+    end
+    local m = math.max(1, math.ceil(secs / 60))
+    return m == 1 and "1 minute" or (m .. " minutes")
+end
+
+-- Seconds left in the current week if it is in its last stretch (RULES.lastCall), else nil.
+function Week.LastCall(now)
+    now = now or time()
+    local start = Week.Start(now)
+    local left = start + LENGTH - now
+    if Week.RULES.lastCall and left > 0 and left <= Week.RULES.lastCall and Week.NewRules(start) and not Week.IsOff(start) then
+        return left
+    end
 end
 
 -- Waiting for his answer for longer than RULES.overdue.
@@ -486,6 +514,8 @@ function Week.RulesCard(start)
             ST.Respond.LIST_MAX, ST.Respond.LIST_MIN),
         string.format("Catch-up: when a side leads the season by two wins, his edge moves %d toward the side that is behind; by three, %d.%s",
             R.catchup[2] or 0, R.catchup[3] or 0, moved ~= 0 and string.format(" This week it has moved %+d.", moved) or ""),
+        string.format("The clock: this week closes %s, your time (answers stop %s). A week is Monday to Monday, UTC.",
+            Week.ClosesText(start)),
         string.format("The season: win %d weeks to take its finale. A week he wins is followed by his week off, when summons of him are filler.",
             Week.WINS),
     }
@@ -493,6 +523,28 @@ function Week.RulesCard(start)
     card[#card + 1] = whim and ("This week's whim: " .. whim) or "No whim this week."
     if Week.IsOff(start) then card[#card + 1] = "This is his week off: summons of him are filler, and nobody wins the week." end
     return card
+end
+
+-- At login: the week's clock in the player's time, once a week; and, in its last stretch, a last call with the standing.
+function Week.AnnounceClock()
+    local s = ST.db and ST.db.settings
+    local start = Week.Start()
+    if not s or not Week.NewRules(start) or Week.IsOff(start) then return end
+    if s.clockSeen ~= start then
+        s.clockSeen = start
+        local closes, answers = Week.ClosesText(start)
+        ST.print(string.format("This week closes %s, your time; he can still answer until %s.", closes, answers))
+    end
+    local left = Week.LastCall()
+    if left and s.lastCallSeen ~= start then
+        s.lastCallSeen = start
+        local r = Week.Score(start)
+        local side, by = Week.Lead(r)
+        ST.print(string.format("|cffffd100Last call:|r the week closes in %s. %s, %d of %d summons filed.", leftText(left),
+            side == "group" and string.format("The group leads by %d", by) or
+                (by == 0 and "It is level, and a tie goes to Zennit" or string.format("Zennit leads by %d", by)),
+            r.counted, Week.RULES.cap))
+    end
 end
 
 -- One line about a command players may not know, once a Monday at login (design/lenses.md, Interface). They go round in order,
@@ -537,6 +589,7 @@ end
 function Week.Check()
     checkLastWeek()
     Week.AnnounceWhim()
+    Week.AnnounceClock()
     Week.AnnounceTip()
     if ST.Gag.IsZennit() then
         local waiting = ST.Respond.Waiting()
@@ -613,6 +666,8 @@ function Week.StatusLine(start, you)
     if silver > 0 then
         parts[#parts + 1] = string.format(you and "%d silver owed to you" or "%d silver owed to him", silver)
     end
+    local left = start == Week.Start() and Week.LastCall()
+    if left then parts[#parts + 1] = "the week closes in " .. leftText(left) end
     return ST.Voice.Say("week.status", { "Week: %s.", "The Index's tally for the week: %s.", "Standing: %s." },
         table.concat(parts, ", "))
 end
@@ -644,6 +699,8 @@ function Week.Briefing(target)
     end
     local whim = Week.WhimLine(start)
     if whim then text = text .. " This week's whim: " .. whim end
+    local left = Week.LastCall(now)
+    if left then text = text .. string.format(" Last call: the week closes in %s (%s).", leftText(left), (Week.ClosesText(start))) end
     local waiting = Week.Overdue(start)
     if waiting > 0 then
         text = text .. string.format(" %d earlier summons of him %s still waiting for his answer: a word to him might help.", waiting,

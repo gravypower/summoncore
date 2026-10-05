@@ -318,6 +318,12 @@ numbers behind it, is in `design/lenses.md`):
   is (it is paid in person, often after the week has closed, and the silver of a closed week can still be marked paid). The "Week:"
   line says "100 silver owed to him" (to you, on his client); at login his client says how much he is owed, and everyone else's says
   how much they owe him.
+- **The week's clock is said in your own time.** The week turns over at Monday 00:00 UTC, which is Monday 11:00 on the east coast of
+  Australia in summer (10:00 from April). The rules card ("The clock: this week closes Monday 11:00, your time") and a line at the
+  Monday login say when it closes and when answers stop (two days later), using the player's own clock.
+- **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the
+  briefing as a ritual on him begins ends "Last call: the week closes in 9 hours (Monday 11:00).", and a login in that stretch says it
+  once with the standing ("The group leads by 1, 2 of 10 summons filed"). Not in a week off.
 - **The group can see who is slow.** A summons of Zennit unanswered for an hour (`Week.RULES.overdue`) is counted as *waiting for
   his answer*, and the "Week:" line ("... 2 waiting for his answer") and the briefing as a ritual on him begins say how many, so the
   group can chase him. On his own client, a minute after login, the chat says how many summons are waiting for him and that
