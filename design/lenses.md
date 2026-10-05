@@ -49,6 +49,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
 | Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
 | Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
+| Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B proposed |
 
 ## Entries
 
@@ -1936,6 +1937,60 @@ doing whenever the group has an evening; it needs no code.
 **To watch in playtests**
 - Does he write any? Are his funnier than ours?
 - Does the group ask for lines of their own (a caster's signature on a summons)?
+
+### 2026-10-05 · Lens of Inner Contradiction: his prize is a week of not playing
+
+**The questions (paraphrased):** what is the game for, and does anything in it pull against that? Do the goals of the players, the
+rules and the story agree? Where they disagree, is the disagreement the joke (and so worth keeping), or a crack?
+
+**What the game is for.** The group summons Zennit to unreasonable places and he answers, in a race and a story kept by a deadpan
+Index. Every summons of him is the game happening.
+
+**Contradictions, sorted** (the code and the rules as of 0.21.0)
+
+| | Says | Does | Verdict |
+|---|---|---|---|
+| 1 | "The Index takes no sides" | The catch-up and the whim lean on the dice | **The joke.** It says so with a straight face (`design/voice.md`) |
+| 2 | His list: places he would like to go | He scores there if he goes, and declines there for free | **Fine.** It is his ground; Secrets fixed the way he could move it |
+| 3 | A declined summons "did not happen" | A writ still charges him for it | **Fine.** A writ is paperwork served on him; the line says "it cost him" |
+| 4 | Far-flung places earn postcards | His list makes the same places the riskiest | **Wanted.** It is the guessing game (Secrets) |
+| 5 | His answer is the game's prompt (Resonance) | A prompt that runs out counts as accepted, though he did not go | **A crack, known** (`d-expire`, Risk Mitigation). Waits on what the game does |
+| 6 | **Winning a week is his prize** | **The prize is a week in which summoning him does nothing** | **A crack.** Below |
+
+**Findings**
+1. **His prize is a week of not playing, for everyone.** When Zennit wins a week, the next is his week off: summons of him are filler,
+   nobody can win it, and the briefing tells a caster "it will not count, and it is not hopeful". In the fiction that is exactly right:
+   he wanted to be left alone. In play, the winner's reward removes the game for him *and* for the group. If he wins a little over half
+   of the decided weeks (Balance's numbers), about **a third of all weeks** are weeks off (a win is followed by an off week, so the share
+   is z / (1 + z) with z about 0.55). That is a lot of the season with the race switched off.
+2. **The off week is not actually empty, and nothing says so.** Summons of him in his week off still go in the log, so they still earn
+   **postcards** (a far-flung place still lands), still count toward the **titles** (the heaviest hand, the best supporting role) and the
+   **keepsake**, and he still answers them (dice and silver included). The only thing switched off is the weekly race. But the one line
+   the caster reads says it "will not count", which reads as "do not bother".
+3. **What a summons on his leave *means* has no name.** The race has "filed", "enthusiasm" and "filler". A summons of a man on leave is
+   the most on-premise thing in the game (the story's chapter 2 is about the party standing in a circle saying his name while he is
+   away) and the Index files it as "filler".
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Say what still counts on his leave.** The briefing and the logged line on his week off say: it will not count for the race, but a far-flung place still earns a postcard and the titles still see it. His out-of-office (Character) stays where it is | 2 | Wording in `Week.Briefing` and `Week.Warn` |
+| B | **Name it: disturbing his leave.** A summons of him on his week off is filed as "disturbing his leave" (in place of "filler"); the season's keepsake and `/sc week` say how many times his leave was disturbed and who did it most ("The Index notes that Al disturbed his leave four times."). No points; it is the chapter 2 joke made countable | 2, 3 | A count from the log, a line in the keepsake and `/sc week`, a word in the lines |
+| C | **Shorten or soften the week off** (a half week, or the race running at half points) | 1 | A rule, and the Interest Curve's numbers move; turned down there once already |
+| D | **Leave it** | | Nothing |
+
+**Recommendation:** A and B. They do not change the race (the Interest Curve chose a real week off on purpose, and C would reopen that),
+but they turn the third of the season the race is off into its own small game that is already half there: postcards, titles, and a
+running count of how often the group disturbed a man on leave. It also makes his win feel like a win to the group too: something
+new to do.
+
+**Live checks with whatever is built** (step 6): in a week off (or with the week off stubbed on a test character), the briefing's
+line, and the keepsake and `/sc week` count.
+
+**To watch in playtests**
+- Does the group still summon him in his week off? Does the count make them try?
+- Does he enjoy the leave, or miss the game?
 
 ## Decisions
 
