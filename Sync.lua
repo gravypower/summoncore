@@ -264,6 +264,25 @@ function Sync.Pump(max)
     return n
 end
 
+-- "0.19.1" -> 0, 19 (major and minor; nil for anything that is not a version).
+local function parseVersion(v)
+    local major, minor = tostring(v or ""):match("^(%d+)%.(%d+)")
+    if not major then return nil end
+    return tonumber(major), tonumber(minor)
+end
+
+-- What to say when a friend's addon is not the same version as ours (major.minor; a patch does not matter), or nil. The answer
+-- format changed in 0.19, so mixed versions read some answers wrongly (design/lenses.md, Risk Mitigation).
+function Sync.VersionNote(sender, theirs, mine)
+    local tm, tn = parseVersion(theirs)
+    local mm, mn = parseVersion(mine)
+    if not (tm and mm) or (tm == mm and tn == mn) then return nil end
+    local older = tm < mm or (tm == mm and tn < mn)
+    return string.format(older and "%s is on %s and you are on %s: ask them to update (answers and cards are read wrongly across versions)."
+        or "%s is on %s, newer than your %s: update the addon (answers and cards are read wrongly across versions).",
+        sender, theirs, mine)
+end
+
 local function helloBody()
     return string.format("%d|%d|%s|%d|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse(),
         ST.db.resetAt or 0)
@@ -397,6 +416,16 @@ function Sync.OnMessage(text, channel, sender)
         if not count then return "bad" end
         local myCount, myLatest, myResp = ST.Store.Count(), ST.Store.Latest(), ST.Store.LatestResponse()
         local actions = {}
+        -- a friend on another version: say so once
+        st.versionNoted = st.versionNoted or {}
+        if not st.versionNoted[sender] then
+            local note = Sync.VersionNote(sender, body:match("^%d+|%d+|([^|]*)"), ST.version)
+            if note then
+                st.versionNoted[sender] = true
+                if not Sync.quiet then ST.print("|cffffd100Version:|r " .. note) end
+                actions[#actions + 1] = "version"
+            end
+        end
         -- They may hold something we lack: ask for everything (set union makes repeats harmless).
         if count > myCount or latest > myLatest or (count == myCount and latest ~= myLatest) or respT > myResp then
             st.requested[sender] = now
@@ -565,7 +594,7 @@ frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("CHAT_MSG_ADDON")
 local grouped = false
-frame:SetScript("OnEvent", function(_, event, ...)
+frame:SetScript("OnEvent", ST.Safe("sync", function(_, event, ...)
     if event == "PLAYER_LOGIN" then
         pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX)
         ST.Store.onAdd = function(id, ev) Sync.BroadcastEvent(id, ev) end
@@ -581,4 +610,4 @@ frame:SetScript("OnEvent", function(_, event, ...)
         local prefix, text, channel, sender = ...
         if prefix == PREFIX then Sync.OnMessage(text, channel, sender) end
     end
-end)
+end))

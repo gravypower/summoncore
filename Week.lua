@@ -587,10 +587,16 @@ end
 
 -- At login: how the last week ended, then this week's whim, and (on Zennit's client) what is waiting for his answer.
 function Week.Check()
-    checkLastWeek()
-    Week.AnnounceWhim()
-    Week.AnnounceClock()
-    Week.AnnounceTip()
+    -- each step on its own, so one that fails does not stop the others
+    ST.Guard("the week's result", checkLastWeek)
+    ST.Guard("the week's whim", Week.AnnounceWhim)
+    ST.Guard("the week's clock", Week.AnnounceClock)
+    ST.Guard("the Monday tip", Week.AnnounceTip)
+    ST.Guard("the waiting summons", Week.AnnounceWaiting)
+end
+
+-- Zennit's client says what is waiting for him; everyone else's says what they owe.
+function Week.AnnounceWaiting()
     if ST.Gag.IsZennit() then
         local waiting = ST.Respond.Waiting()
         if waiting > 0 then
@@ -604,7 +610,7 @@ function Week.Check()
     else
         local n, silver = ST.Respond.Owed("caster")
         if n > 0 then
-            ST.print(string.format("You owe Zennit %d silver for %d summons: fifty each, in cash, no receipt. The Ritual is keeping count.",
+            ST.print(string.format("You owe Zennit %d silver for %d summons, in cash, no receipt. The Ritual is keeping count: /sc tab lists it.",
                 silver, n))
         end
     end

@@ -180,7 +180,7 @@ for _, ev in ipairs({
     pcall(frame.RegisterUnitEvent, frame, ev, "player")
 end
 
-frame:SetScript("OnEvent", function(_, event, _, a2, a3, a4)
+frame:SetScript("OnEvent", ST.Safe("the ritual detector", function(_, event, _, a2, a3, a4)
     -- SENT args: unit, target, castGUID, spellID. Others: unit, castGUID, spellID.
     local spellID = (event == "UNIT_SPELLCAST_SENT") and a4 or a3
     if not isRitualID(spellID) then return end
@@ -198,4 +198,4 @@ frame:SetScript("OnEvent", function(_, event, _, a2, a3, a4)
     else
         clearPending() -- interrupted or failed
     end
-end)
+end))

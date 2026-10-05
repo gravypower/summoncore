@@ -610,7 +610,7 @@ local function build()
     sizeBtn:SetText("Size: " .. (ST.db.settings.introSize or "medium"))
     buttonsWidth = nextX + 6
 
-    frame:SetScript("OnUpdate", function(_, elapsed)
+    frame:SetScript("OnUpdate", ST.Safe("the story viewer", function(_, elapsed)
         if not playing then return end
         t = t + elapsed
         if t >= endTime() then
@@ -618,7 +618,7 @@ local function build()
             setPlaying(false)
         end
         show(t)
-    end)
+    end))
     frame:SetScript("OnHide", function()
         setPlaying(false)
         local after = onClose

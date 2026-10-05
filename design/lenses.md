@@ -35,7 +35,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Reward | What does each member get, and when? | Answered; A, B, C and D built |
 | Interface | Thirty-odd commands and a full Tools tab have piled up; can people find and read what they need? | Answered; the Tools tab fixed; the tip and the short help built; B and D left |
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
-| Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; the change waits for a decision (below) |
+| Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 
 ## Entries
 
@@ -1137,8 +1137,22 @@ slow, the fix is to remember the season until the log changes.
 | C | **A clock check at login**: if the computer's time and the server's differ by more than five minutes, say so once | 4 | One comparison |
 | D | **Remember the season** until the log changes, so the hub and the commands stay quick as the log grows | 5 | A cache and the care it needs |
 
+**Our answer:** build **B and A**. The clock check (C) and remembering the season (D) were not chosen: a clock off by hours is rare
+and the cost of the season is small for years.
+
+**Built**
+- **B, catch errors and say so** (`ST.Guard` and `ST.Safe` in `Core.lua`). Every slash command, the login, the Ritual detector, the
+  silver watcher, the sync handler, the story viewer's frame update, each hub tab's refresh and each step of the Monday login (the
+  week's result, the whim, the clock, the tip, what is waiting) now runs under `pcall`. A failure is said once in chat ("hit a
+  problem in /sc rules: Week.lua:123: ... (/sc errors lists them; please tell Aaron)"), kept for `/sc errors` (the last twenty), and
+  still handed to the game's own error handler so BugSack and the red box behave as before. One failing step no longer stops the
+  steps after it.
+- **A, a version notice.** When a friend's hello shows a different major.minor version, the chat says once per session: "Bo is on
+  0.18.0 and you are on 0.19.1: ask them to update (answers and cards are read wrongly across versions)", or the newer-than-yours
+  version of it. A patch difference is not mentioned.
+
 **To decide before building**
-- Which of these are worth doing before the first summons? (B and A first, I think.)
+- Do we want the clock check (C) once the group is playing, if a summons ever lands in the wrong week?
 
 **To watch in playtests**
 - Does `/sc errors` show anything? Does anyone see the version notice?
@@ -1167,3 +1181,4 @@ slow, the fix is to remember the season until the log changes.
 | 2026-10-05 | Season titles, mid-season standings (`/sc titles`), kind titles for Zennit, and four later badges for the people who cast; helpers get titles, not badges | Reward | Individual rewards were front-loaded and for warlocks only; a helper's only reward was a named line about every other season |
 | 2026-10-05 | The Tools tab is five columns (the reports have their own, The record); a one-line command tip each Monday (`/sc tips off`); `/sc help` is five lines and `/sc help all` is the rest | Interface | One Tools column had grown past the tab for the admin; the useful commands were listed only in a 25-line help |
 | 2026-10-05 | The week's turnover stays at Monday 00:00 UTC (11:00 on the east coast of Australia in summer); the week's close is said in the player's time, and the last day of a week has a last call | Time | Nothing said when a week ends, and the deadline was never felt; the group's evenings fit the UTC week |
+| 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |
