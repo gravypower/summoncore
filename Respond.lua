@@ -227,6 +227,15 @@ function Respond.OnList(ev)
     return false
 end
 
+-- How many summons of this character have no answer at all (not counting those that only owe the silver).
+function Respond.Waiting()
+    local n = 0
+    for _, r in ipairs(Respond.Pending()) do
+        if not r.ev.response then n = n + 1 end
+    end
+    return n
+end
+
 -- Summons of this character that still need an answer (none yet, or owing the silver), newest first.
 function Respond.Pending()
     local me, out = ST.Store.me(), {}

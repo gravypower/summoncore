@@ -1247,6 +1247,77 @@ add("the playtest report: weeks, answers, dice, the list and the helpers, counte
     return ok and #none == 1, "weeks, answers, dice, the list and the helpers read from the log; an empty log says so"
 end)
 
+add("waiting for his answer: counted once overdue, said to the group and in his own words", function()
+    return newRules(function()
+        local W = ST.Week
+        local a = newClient("Alpha")
+        local savedOverdue = W.RULES.overdue
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local function put(key, answered)
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this, points = 3, kind = "zone",
+                    response = answered and { result = "accepted", zroll = 0, sroll = 0, time = this + 1 } or nil }
+            end
+            put("a", true); put("b", false); put("c", false)
+            W.RULES.overdue = math.huge
+            out.quiet = W.StatusLine(this)                       -- nothing is overdue yet
+            out.none = W.Overdue(this)
+            W.RULES.overdue = 0
+            out.all = W.Unanswered(this)
+            out.waiting = W.Overdue(this)
+            out.group = W.StatusLine(this)
+            out.you = W.StatusLine(this, true)
+            out.brief = W.Briefing("Zennit")
+            W.RULES.overdue = savedOverdue
+        end)
+        local ok = not out.quiet:find("waiting", 1, true) and out.none == 0 and out.all == 2 and out.waiting == 2
+            and out.group:find("2 waiting for his answer", 1, true) and out.you:find("2 waiting for your answer", 1, true)
+            and out.brief and out.brief:find("2 earlier summons of him are still waiting", 1, true)
+        return ok, tostring(out.group)
+    end)
+end)
+
+add("a provisional Monday: announced as provisional while he can still answer, then said again as final or as changed", function()
+    return newRules(function()
+        local W = ST.Week
+        local a = newClient("Alpha")
+        local printed, realPrint, realTime = {}, ST.print, time
+        local out = {}
+        local function say() return table.concat(printed, "\n") end
+        local ok, err = pcall(function()
+            with(a, function()
+                local monday = W.Start()
+                local last = monday - 7 * 86400
+                -- last week: one summons accepted, one never answered; both land, so the group leads 6 to 2
+                a.db.events.x = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 3600, points = 3, kind = "zone",
+                    response = { result = "accepted", zroll = 0, sroll = 0, time = last + 3700 } }
+                a.db.events.y = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 7200, points = 3, kind = "zone" }
+                ST.print = function(text) printed[#printed + 1] = text end
+                rawset(_G, "time", function() return monday + 86400 end)          -- Tuesday: he can still answer
+                W.Check()
+                out.first = say()
+                out.provisional = a.db.settings.weekAnnounced and a.db.settings.weekAnnounced.provisional
+                out.announced = a.db.settings.weekAnnounced and a.db.settings.weekAnnounced.winner
+                -- his late answer: he wins the dice, and the week is his
+                a.db.events.y.response = { result = "won", zroll = 90, sroll = 10, time = monday + 80000 }
+                printed = {}
+                rawset(_G, "time", function() return monday + 3 * 86400 end)      -- Thursday: the week has closed
+                W.Check()
+                out.second = say()
+                out.settled = a.db.settings.weekAnnounced and a.db.settings.weekAnnounced.provisional
+            end)
+        end)
+        rawset(_G, "time", realTime)
+        ST.print = realPrint
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local pass = out.first:find("Provisional:", 1, true) and out.first:find("1 summons of him is still waiting", 1, true)
+            and out.provisional == true and out.announced == "group"
+            and out.second:find("changed", 1, true) and out.second:find("went to Zennit, not the group", 1, true) and out.settled == nil
+        return pass, string.format("announced provisional (%s), then: %s", tostring(out.provisional), tostring(out.second):sub(1, 90))
+    end)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")
@@ -1364,9 +1435,10 @@ function T.Run()
     ST.Week.EventClosed = function() return false end -- the other tests use old summons
     local rulesFrom = ST.Week.RULES.from
     ST.Week.RULES.from = math.huge -- and the old race rules (the new-rules tests switch them on themselves)
-    local whims, fixed = ST.Week.RULES.whims, ST.Voice.fixed
+    local whims, fixed, overdue = ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue
     ST.Week.RULES.whims = false -- no whim of the week, and the plain variant of every line: the tests read exact words
     ST.Voice.fixed = true
+    ST.Week.RULES.overdue = math.huge -- and nothing is "waiting for his answer" unless a test asks
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -1381,6 +1453,6 @@ function T.Run()
     end
     ST.Week.EventClosed = realEventClosed
     ST.Week.RULES.from = rulesFrom
-    ST.Week.RULES.whims, ST.Voice.fixed = whims, fixed
+    ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue = whims, fixed, overdue
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end

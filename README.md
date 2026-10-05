@@ -285,6 +285,14 @@ numbers behind it, is in `design/lenses.md`):
   he is ahead (to +5), and grows when the group is ahead (to +15). At three or more it moves by **10** (to +0, or +20);
   a lead of one changes nothing. The briefing, the "Week:" line, his popup, the dice prompts and "The Index today" say
   so ("The Index, which takes no sides, has cut his edge on the dice to +5 this week"). Tune it in `Week.RULES.catchup`.
+- **The group can see who is slow.** A summons of Zennit unanswered for an hour (`Week.RULES.overdue`) is counted as *waiting for
+  his answer*, and the "Week:" line ("... 2 waiting for his answer") and the briefing as a ritual on him begins say how many, so the
+  group can chase him. On his own client, a minute after login, the chat says how many summons are waiting for him and that
+  `/sc respond` opens the latest. An unanswered summons still counts as accepted.
+- **A provisional Monday.** He can still answer into a week until it closes, two days after it ends, so a result announced on Monday
+  can change. While summons of him are unanswered, the Monday result ends "Provisional: N summons of him are still waiting for his
+  answer, and the week closes on Wednesday"; once the week has closed, the next login says it is final, or that it changed and who
+  it went to. A finale's keepsake waits for the final word.
 - **A whim of the week.** About half the weeks, the Index draws one small twist, the same on every client (it follows from the week
   number, so nothing is synced or kept): **The Index is distracted** (his dice edge is 5 lower), **attentive** (5 higher), **a
   helpers' feast** (each helper adds +8 instead of +5) or **the helpers are tired** (+2). Each moves a normal week's chance by

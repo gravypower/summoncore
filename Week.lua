@@ -60,7 +60,10 @@ Week.RULES = { from = 1791158400, headstart = 2, minimum = 5, cap = 10, dice = 3
     -- A lead of 1 changes nothing; a lead past the last step uses the last step.
     catchup = { [2] = 5, [3] = 10 },
     -- The whim of the week (design/lenses.md, Surprise): about half the weeks, the Index draws one small twist.
-    whims = true }
+    whims = true,
+    -- A summons of Zennit unanswered for this many seconds is "waiting for his answer": the group is told, so it can chase him
+    -- (design/lenses.md, Community).
+    overdue = 3600 }
 
 -- Each whim moves one rule for one week, by a few points of the group's chance (about +6 or -5 in a normal week), so no
 -- week is much easier or harder than another. `show` is the rule whose number the text names, when it does.
@@ -164,6 +167,20 @@ end
 function Week.IsClosed(start)
     if not Week.NewRules(start) then return false end
     return (select(3, filed(start)))
+end
+
+-- Summons of Zennit in the week starting at `start` that he has not answered. With `minAge`, only those at least that old.
+function Week.Unanswered(start, minAge)
+    local n, now = 0, time()
+    for _, s in ipairs(summonsOfZennit(start)) do
+        if not s.ev.response and (not minAge or now - s.ev.time >= minAge) then n = n + 1 end
+    end
+    return n
+end
+
+-- Waiting for his answer for longer than RULES.overdue.
+function Week.Overdue(start)
+    return Week.Unanswered(start, Week.RULES.overdue)
 end
 
 -- The summon Zennit can close the Index on, in the week starting at `start` (nil if he can't yet): the latest
@@ -359,9 +376,37 @@ function Week.AnnounceWhim()
 end
 
 -- Says once when a finished week has been won, and points to that win's chapter of the story.
+-- The keepsake of the season that has just ended, in chat.
+local function printKeepsake()
+    local seasons = ST.Ledger.Seasons()
+    if seasons[1] then
+        for _, line in ipairs(seasons[1].lines) do ST.print(line) end
+    end
+end
+
+-- A result announced as provisional is settled once its week has closed: said again as final, or as changed.
+local function settleLastWeek()
+    local settings = ST.db.settings
+    local a = settings.weekAnnounced
+    if not (a and a.provisional and Week.Closed(a.start)) then return end
+    a.provisional = nil
+    local now = Week.Score(a.start).winner
+    local who = { zennit = "Zennit", group = "the group" }
+    if now == a.winner then
+        ST.print(string.format("The week of %s is now final: it stays with %s.", date("%d %b", a.start), who[now] or "nobody"))
+    else
+        ST.print(string.format("|cffffd100The week of %s changed|r after Zennit's late answers: it went to %s, not %s.",
+            date("%d %b", a.start), who[now] or "nobody", who[a.winner] or "nobody"))
+    end
+    local season = Week.Season()
+    local f = season.finales[#season.finales]
+    if now == a.winner and f and f.start == a.start then printKeepsake() end
+end
+
 local function checkLastWeek()
     if not ST.db or not ST.db.settings then return end
     Week.Freeze()
+    settleLastWeek() -- an earlier provisional result, now that its week has closed
     local last = Week.Score(Week.Start() - LENGTH)
     if last.off and ST.db.settings.weekSeen ~= last.start then
         ST.db.settings.weekSeen = last.start
@@ -374,6 +419,10 @@ local function checkLastWeek()
     local season = Week.Season()
     local chapter = season.chapters[#season.chapters]
     local key = chapter and chapter.start == last.start and chapter.key
+    -- while he can still answer into the week (two days after it ends), the result is provisional
+    local waiting = Week.Unanswered(last.start)
+    local provisional = waiting > 0 and not Week.Closed(last.start)
+    ST.db.settings.weekAnnounced = { start = last.start, winner = last.winner, provisional = provisional or nil }
     local story = ""
     if key then
         story = ST.Intro.HasChapter(key) and (" The story: |cffffd100/sc intro " .. key .. "|r") or " (That chapter of the story is not written yet.)"
@@ -393,12 +442,12 @@ local function checkLastWeek()
             "The week went to the group (%s). Zennit is back on the list.%s" }, lines(last), story))
     end
     ST.print(string.format("Season: Zennit %d of %d, the group %d of %d.", season.zennit, Week.WINS, season.group, Week.WINS))
-    -- a finale just landed: the Index's keepsake of the season, with who was there
-    if chapter and chapter.start == last.start and chapter.n >= Week.WINS then
-        local seasons = ST.Ledger.Seasons()
-        if seasons[1] then
-            for _, line in ipairs(seasons[1].lines) do ST.print(line) end
-        end
+    if provisional then
+        ST.print(string.format("|cffffd100Provisional:|r %d summons of him %s still waiting for his answer, and the week closes on %s. " ..
+            "The Index will say again if it changes.", waiting, waiting == 1 and "is" or "are",
+            date("%A", last.start + LENGTH + Week.GRACE)))
+    elseif chapter and chapter.start == last.start and chapter.n >= Week.WINS then
+        printKeepsake() -- a finale just landed: the Index's keepsake of the season, with who was there
     end
 end
 
@@ -435,10 +484,17 @@ function Week.RulesCard(start)
     return card
 end
 
--- At login: how the last week ended, then this week's whim.
+-- At login: how the last week ended, then this week's whim, and (on Zennit's client) what is waiting for his answer.
 function Week.Check()
     checkLastWeek()
     Week.AnnounceWhim()
+    if ST.Gag.IsZennit() then
+        local waiting = ST.Respond.Waiting()
+        if waiting > 0 then
+            ST.print(string.format("%d summons %s waiting for your answer. |cffffd100/sc respond|r opens the latest.", waiting,
+                waiting == 1 and "is" or "are"))
+        end
+    end
 end
 
 -- Who is ahead in a week's score, and by how much: "group" or "zennit" (a tie is his, so "zennit" with 0).
@@ -489,6 +545,10 @@ function Week.StatusLine(start, you)
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
     local edge, moved = Week.Edge(start)
     if moved ~= 0 and not r.closed then parts[#parts + 1] = string.format("his dice edge is +%d", edge) end
+    local waiting = Week.Overdue(start)
+    if waiting > 0 then
+        parts[#parts + 1] = string.format(you and "%d waiting for your answer" or "%d waiting for his answer", waiting)
+    end
     return ST.Voice.Say("week.status", { "Week: %s.", "The Index's tally for the week: %s.", "Standing: %s." },
         table.concat(parts, ", "))
 end
@@ -520,6 +580,11 @@ function Week.Briefing(target)
     end
     local whim = Week.WhimLine(start)
     if whim then text = text .. " This week's whim: " .. whim end
+    local waiting = Week.Overdue(start)
+    if waiting > 0 then
+        text = text .. string.format(" %d earlier summons of him %s still waiting for his answer: a word to him might help.", waiting,
+            waiting == 1 and "is" or "are")
+    end
     return text
 end
 
