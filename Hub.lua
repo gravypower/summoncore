@@ -28,7 +28,7 @@ local function who(name)
 end
 
 -- Zennit's answer in its colour, or "" if there is none.
-local ANSWER_COLORS = { accepted = "green", paid = "green", lost = "green", refused = "red", excused = "violet",
+local ANSWER_COLORS = { accepted = "green", paid = "green", lost = "green", refused = "red", excused = "violet", declined = "dim",
     owed = "amber", won = "pink" }
 local function answerText(ev)
     local text = ST.Respond.Describe(ev)

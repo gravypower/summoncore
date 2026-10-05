@@ -8,6 +8,7 @@ local PENDING_TTL = 30
 local TICK = 0.5
 local MAX_CANDIDATES = 12 -- longest list the assistants prompt offers
 local pending
+Detector.writ = false -- a writ armed for the next ritual on Zennit (/sc writ; Week.RULES.writs a week)
 
 local function dbg(msg)
     if ST.db and ST.db.settings.debug then ST.print("|cff888888[detect]|r " .. msg) end
@@ -116,7 +117,7 @@ local function startPending(target)
     end)
     ST.Clips.Play("ritual") -- a recorded line as the ritual begins
     -- a ritual on Zennit: tell the caster whether it will count, where the week stands, and what helpers add
-    local brief = pending.target and ST.Week.Briefing(pending.target, mapID, pending.subzone)
+    local brief = pending.target and ST.Week.Briefing(pending.target, mapID, pending.subzone, Detector.writ)
     if brief then ST.print(brief) end
     dbg(string.format("pending: target=%s map=%s subzone=%s", tostring(pending.target),
         tostring(mapID), tostring(pending.subzone)))
@@ -131,6 +132,10 @@ local function report(ev, badges)
     -- a summon of Zennit moves the week: say where it stands now
     local week = not ev.fake and ST.Week.IsZennit(ev.target) and ST.Week.StatusLine(ST.Week.Start(ev.time))
     if week then ST.print(week) end
+    if ev.writ then
+        ST.print(string.format("The Index files the writ on this summons: %d left this week. If he declines it in the game, it costs him %d point%s.",
+            ST.Week.WritsLeft(ST.Week.Start(ev.time)), ev.points, ev.points == 1 and "" or "s"))
+    end
     if zenit then return end -- points and badges are hidden on Zennit's client
     for _, name in ipairs(badges) do ST.print("|cffffd100Badge earned:|r " .. name) end
 end
@@ -144,7 +149,7 @@ function Detector.Finish(info)
     local function save(assistants, confirmed)
         local _, ev, badges = ST.Store.Add({
             caster = me, target = target, assistants = assistants,
-            mapID = info.mapID, subzone = info.subzone or "", confirmed = confirmed,
+            mapID = info.mapID, subzone = info.subzone or "", confirmed = confirmed, writ = info.writ or nil,
         })
         report(ev, badges)
     end
@@ -168,6 +173,11 @@ local function commit()
     for n in pairs(pending.helpers) do info.helpers[#info.helpers + 1] = n end
     table.sort(info.helpers)
     clearPending()
+    -- a writ armed with /sc writ goes on a summons of Zennit, if one is still to be had; a ritual on anyone else leaves it armed
+    if Detector.writ and info.target and ST.Week.IsZennit(info.target) then
+        info.writ = ST.Week.WritsLeft(ST.Week.Start()) > 0 or nil
+        Detector.writ = false
+    end
     Detector.Finish(info)
 end
 

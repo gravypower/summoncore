@@ -40,7 +40,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
 | The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
-| Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the change waits for a decision (below) |
+| Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
 
 ## Entries
 
@@ -1431,7 +1431,7 @@ voice borrows the prompt's own bureaucratic tone, and the contest is about a rea
    could file ("accepted, and is still in Ironforge"), and the information is available on his client: where he is after the answer,
    against where the summons was to (`ev.mapID`).
 
-**Proposed changes** (none built yet)
+**Proposed changes**
 
 | # | Change | Fixes | Cost |
 |---|---|---|---|
@@ -1440,9 +1440,25 @@ voice borrows the prompt's own bureaucratic tone, and the contest is about a rea
 | C | **Tell the group too**: the same note sent with his answer so the group sees "accepted, and has not arrived". Needs a protocol bit and a resend after the answer | 3 | Sync format change (a new flag on the response); wait until B has run in the game |
 | D | **Leave the two decisions independent**: the Index's paperwork and the game's prompt are two forms for one event, which is the joke | 1 | Nothing |
 
-**To decide before building**
-- Should the arrival note stay on his client (B), or be shared with the group (C)? A note only he sees is a private joke; one the
-  group sees is banter that could land as a callout, and Zennit has to stay happy.
+**Our answer.** Asked "why are we prompting him if he has arrived? surely we can detect this?", the design changed: instead of a note
+about arrival (B and C), **what he really does at the game's prompt is his answer**, with the Index's form as the fallback.
+- **He accepts in the game:** the Index records "accepted" and the form is done. (The silver ask belongs before he presses Accept.)
+- **He declines in the game:** a new answer, **"declined"**: the summons did not happen, so no points for the caster and none for him.
+  It is not a refusal, so a real-life decline (away, in combat) costs him nothing.
+- **A writ turns a decline into a cost** (the group's idea: "a wild card, only a few times a week"). The group has two writs a week.
+  `/sc writ` before the ritual arms one; his popup tells him before he decides; if he declines that summons it is a refusal and costs
+  him its points (his list does not excuse it). If he accepts, the writ is spent anyway, so playing one is a gamble.
+- **Nothing seen:** the form works as before, and an unanswered summons still counts as accepted.
+- **How it listens:** the game's own buttons call `C_SummonInfo.ConfirmSummon` and `CancelSummon`; the addon hooks them (it does
+  not change them) and matches the most recent summons of him still waiting, within the two minutes the prompt lasts, by the
+  summoner's name when the game gives it. This is the part never run in the live client: where the functions are missing, or the
+  client hides the name, it falls back as above.
+- **Protocol:** a record with a writ has an 11th field, and "declined" is a new answer, so this is **0.20.0**; a friend on 0.19 is
+  told once and cannot read those records.
+- **Left:** A (moving the form off the game's prompt) needs a look in the game first; B and C are replaced by the above.
+
+**Decided:** the real prompt answers; a real decline costs nothing unless the group played a writ on it, so Zennit is never
+punished for a real-life decline he could not have known the group was raising.
 
 **To watch in playtests**
 - Do the two popups cover each other on his screen? Does he miss one of them?
@@ -1478,3 +1494,4 @@ voice borrows the prompt's own bureaucratic tone, and the contest is about a rea
 | 2026-10-05 | The ritual briefing says what the place is worth and what it puts at stake for both sides; `/sc places` checks every map ID against the game's own name; the point values stay | Endogenous Value | A place's worth is the stake of a summons and was invisible when the choice was made; the place table was from memory and never checked |
 | 2026-10-05 | The Party tab and `/sc tally` rank by summons of Zennit this season (an "Of Zennit" column), then points; `/sc week say` tells the group where the week stands; the cheap-slot order is left to the group | Cooperation | The one list everyone reads counted all-time points of every summons, not what the race counts, and the plan for the order lived in the caster's chat alone |
 | 2026-10-05 | The ritual briefing is long once a week (the first summons of him) and short after; the second Week line and a chat setting wait for a playtest | The Toy | One summons cost about six wrapped lines of chat, and the longest, most repeated line arrived while the caster was channelling |
+| 2026-10-05 | What he presses at the game's own summon prompt is his answer (accept: accepted; decline: declined, worth nothing either way); the group has two writs a week that make a decline of one summons cost him its points; the version is 0.20.0 | Resonance | The addon asked him to answer a summons he had already taken or declined for real, and could not tell the two apart; a decline needed to be a move the group could price, not a punishment for real life |

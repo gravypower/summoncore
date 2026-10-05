@@ -38,8 +38,10 @@ end
 -- A summon still counts unless it was refused or he won the dice. A demand for silver does NOT stop it counting: the silver goes
 -- on the caster's tab (design/lenses.md, Meaningful Choices), so it cannot be used to reject a summons.
 -- "excused" is a refusal of a destination on his secret list: no points for the summoner and no penalty for him.
-Store.RESULTS = { accepted = true, refused = true, excused = true, owed = true, paid = true, won = true, lost = true }
-local NO_POINTS = { refused = true, excused = true, won = true }
+-- "declined" is what the game itself saw: he declined the summons in the game's own prompt. The summons did not happen, so no
+-- points for the summoner and none for him, unless the group played a writ on it (Week.Writ), which makes it a "refused".
+Store.RESULTS = { accepted = true, refused = true, excused = true, declined = true, owed = true, paid = true, won = true, lost = true }
+local NO_POINTS = { refused = true, excused = true, declined = true, won = true }
 
 function Store.Lands(ev)
     return not (ev.response and NO_POINTS[ev.response.result])

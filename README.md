@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.19.1, work in progress**. See [Status](#status) for what has and has
+Status: **v0.20.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -26,6 +26,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc log [n]` | Recent summons |
 | `/sc tally` | Cast, received and assisted counts and points per player, ranked by summons of Zennit this season (what the race counts), then points. The Party tab's Tally is the same list, with an "Of Zennit" column |
 | `/sc badges` | Badge list |
+| `/sc writ` | Arm a writ for your next ritual on Zennit (two a week): if he declines that summons in the game, it costs him its points. Again to withdraw it |
 | `/sc week say` | Tell the group (party or raid chat) where the week stands, in one line: the lead, his dice left, the last call. It uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
 | `/sc where` | Current map ID, subzone and how it scores |
 | `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
@@ -243,6 +244,14 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 | Ask for silver, in cash, no receipt | **Counts, like an accept.** He names the price (a small box, 50 by default; `50`, `2g`, `1g 20s`) and it goes on the caster's **tab** until he says it was paid ("They paid"); the log shows "owes 200 silver". A holder of a summon card pays with a punch instead, and he is not asked. Asking for silver can never be a way to reject a summons. |
 | Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, each of the summoner's helpers (up to two) adds 5 to theirs, higher wins and a tie goes to him. If Zennit wins, the summon does not count. He has 3 dice a week. |
 
+**What he presses in the game is his answer** (`Respond.Real`, and the lens of Resonance in `design/lenses.md`). The game puts its own
+Accept / Decline prompt in front of him at the same moment. If he accepts it, the Index records "accepted" and the form is done.
+If he declines it, the Index records **"declined in the game"**: the summons did not happen, so there are no points for the caster and
+none for him. If the group played a **writ** on that summons it is a **refusal** instead, and costs him its points (below). If nothing
+is seen, the form works as above, and an unanswered summons still counts as accepted. This reads the prompt's own buttons
+(`C_SummonInfo.ConfirmSummon` and `CancelSummon`, hooked, not changed), which has never been tried in the live client; where those
+are missing it does nothing.
+
 His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
 own client can answer for him, a newer answer replaces an older one (owes, then paid), and the dice use two more
 messages (`D`: his roll to the summoner, `S`: the roll back). Points, tallies and badges only count summons that
@@ -277,7 +286,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 |---|---|
 | Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zennit gag | Verified in the live client (solo, with `/sc fake`) |
 | Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/sc synctest`, 23/23 in the live client on 2026-10-04). Tests added since, for answer resync, deletions, resets, closed weeks, Zennit's alts, test summons and raid candidates, have not been run in the live client yet |
-| Real Ritual of Summoning detection | Verified in the live client (with Poogs). A target who declines in game and summons by a warlock without the addon are not handled; raid helpers in other subgroups are checked now but not yet tried in a raid |
+| Real Ritual of Summoning detection | Verified in the live client (with Poogs). Summons by a warlock without the addon are not handled; what a target presses on the game's own summon prompt is read by hooking `C_SummonInfo` (written, never run live); raid helpers in other subgroups are checked now but not yet tried in a raid |
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
@@ -336,6 +345,14 @@ numbers behind it, is in `design/lenses.md`):
 - **The briefing is long once and short after.** The first ritual on him each week (nothing filed yet) says everything: the helper
   rule, the catch-up and the whim. Later ones say only what changes cast to cast ("Summoning Zennit: summon 4 of 10, Zennit leads
   by 2, 2 dice left. From here (a zone) the summons is worth 3..."), the last call and anything waiting; the rest is on `/sc rules`.
+- **Writs.** The group has **two a week** (`Week.RULES.writs`) to play on a summons of Zennit. `/sc writ` before the ritual arms one for
+  your next summons of him (`/sc writ` again withdraws it); the briefing says so, and the Index files it with the summons ("2 left").
+  His popup says the group has played a writ and what a decline would cost, so he knows before he decides. If he then declines that
+  summons in the game, it costs him its points as a refusal does (his list does not excuse it); if he accepts, the writ is spent anyway.
+  A decline with no writ costs him nothing and the summons does not count, so a real-life decline (away, in combat) never costs him unless
+  the group put the stakes up in view. Only the first two writs of a week count, worked out the same way on every client. A record
+  carrying a writ has an 11th field (`w`), and a decline is a new answer (`declined`), so this needs everyone on 0.20 (a friend on 0.19
+  is told once, and cannot read those records).
 - **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the
   briefing as a ritual on him begins ends "Last call: the week closes in 9 hours (Monday 11:00).", and a login in that stretch says it
   once with the standing ("The group leads by 1, 2 of 10 summons filed"). Not in a week off.
