@@ -38,6 +38,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
+| Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -1282,6 +1283,53 @@ real week.
 - Does the group choose where to summon, or only whom? (If they do not, A is only noise.)
 - Does anyone say "that should have been worth more"? That is a table entry to fix.
 - Does `/sc places` flag anything? (It has never run in the live client, and neither has the lookup it relies on.)
+
+### 2026-10-05 · Lens of Cooperation, with Competition: one team, or a list of people?
+
+**The questions (paraphrased):** who is cooperating with whom, and who is competing with whom? Does the game make people need each other,
+and can they talk enough to cooperate? Where a team contains a ranking, do the two pull the same way?
+
+**The layers, as built**
+
+| Layer | Who | What decides it |
+|---|---|---|
+| Team against the opponent | The group against Zennit, who is also a friend | The weekly race and the season (`Week.lua`) |
+| Cooperation inside the team | A caster and two helpers on each summons | The helpers' +5 each to the roll (two at most), and what they are credited with |
+| Competition inside the team | The casters, with each other | The Party tab's ranking, the Heaviest Hand title, the badges |
+| Opposition by agreement | Zennit | His four answers; nobody else sees his dice until he rolls |
+
+**Findings**
+1. **The team layer works, and it is mostly built into the game.** The ritual itself needs two other people to click, so the helpers are
+   always there, and the helpers' +5 is nearly always +10. Cooperation here is not a decision the rules make for the group; it is
+   what warlocks and their friends do anyway, and the addon only notices it (the Lucky Pair, the Best Supporting Role).
+2. **The ranking counts something the race does not.** The Party tab sorts by *all-time points of every summons a caster has
+   landed* (`Store.Tallies`): summons of anyone, from before 5 October, with no cap. The race counts only summons of Zennit, ten a
+   week. So the one list everyone looks at says nothing about who is carrying *this* race. The nearest thing is the Heaviest Hand
+   title (summons of him, by count) in `/sc titles`, which is a different place and a different number.
+3. **The one real pull in two directions is the order.** The Skill entry found that a good week puts the cheap summons first, where
+   his dice are spent, and the dear ones after. A caster who takes the cheap slot for the team earns the fewest points on the Party
+   tab, and no far-flung badge. The Heaviest Hand counts summons, not points, so that title is not hurt, but the Party tab's ranking is.
+   This only bites a group with two or more warlocks, and the group has not said how many it has.
+4. **What the plan needs is seen by the caster only.** After an answer, every client prints where the week stands. But the briefing
+   (his dice left, what the place is worth, the last call) prints on the caster's client alone, as the ritual starts. The people
+   who would plan the order, "you take the cheap one, then I go to Silithus", do it in voice chat from memory unless each runs
+   `/sc week`.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Count the race on the Party tab**: a column "Of Zennit" (summons of him cast this season) beside Cast and Points, and sort by it, so the list ranks what the race counts and the cheap slot is not last | 2, 3 | One column on the tab, one count in `Store.Tallies`, one test |
+| B | **A way to say the week to the group**: `/sc week say` sends the "Week:" line (the lead, his dice left, the last call) to party chat, so the plan starts from one shared line | 4 | One argument; it uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
+| C | **Do nothing about the order**: it is a good tension (a friend takes the cheap slot for the team, and that is a story), and the group may have one warlock | 3 | Nothing; recorded as a decision |
+
+**To decide before building**
+- How many warlocks does the group have? If one, A matters less and C is the answer for finding 3.
+
+**To watch in playtests**
+- Does anyone say "I'll take the cheap one"? That is the cooperation working, and a line for the Index to quote.
+- Does anyone run `/sc week` before a cast, or ask in chat where the week stands?
+- Nothing here has run in the live client.
 
 ## Decisions
 
