@@ -17,8 +17,8 @@ local WAG = { file = MEDIA .. "gag_wag_sheet", cols = 4, rows = 2, frames = 8, f
 Gag.clips = {
     { sheet = WAG, sound = MEDIA .. "gag_zennit.ogg", duration = 2.9 },
 }
--- The party's gag, on Zennit's tab: the same finger, but without his recording.
-local PARTY_CLIP = { sheet = WAG }
+-- The party's gag, on Zennit's tab: the same finger, with his recording for the party (it runs 7.9 s).
+local PARTY_CLIP = { sheet = WAG, sound = MEDIA .. "gag_party.ogg", duration = 7.9 }
 
 local DURATION = 2.5
 local SHOW_SIZE = 192
