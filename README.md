@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.18.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.19.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -289,7 +289,7 @@ other units (`UnitInRange`, `UnitHealth`) were confirmed, so the addon does not 
 
 CI (`.github/workflows/ci.yml`) runs luacheck, installed through luarocks, on every push; `.luacheckrc` currently
 reports only syntax errors and undefined or accidental globals. There is no Lua on the CI image to run the self-test,
-so `/sc synctest` is run in the game. Pushing a tag such as `v0.18.0` (it must match `## Version` in the TOC)
+so `/sc synctest` is run in the game. Pushing a tag such as `v0.19.0` (it must match `## Version` in the TOC)
 runs `release.yml`, which zips the addon (without `tools/`) and publishes a GitHub release. Test textures
 from `tools/` are git-ignored, so release zips do not include them and `/sc comic` shows green squares there.
 
