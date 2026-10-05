@@ -335,6 +335,18 @@ local function showCopy(text)
     window.edit:HighlightText()
 end
 
+-- Chat colour codes removed, for text that is going to be pasted.
+function Check.Plain(text)
+    return (tostring(text or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+end
+
+-- Opens the copy window with this text (the Tools tab's COPY button: the output box there cannot be selected).
+function Check.Copy(text)
+    text = Check.Plain(text)
+    if text == "" then return ST.print("There is nothing to copy yet. Run something first.") end
+    if CreateFrame then showCopy(text) end
+end
+
 -- /sc check [auto | trace | report | reset | <id> | pass|fail|skip <id> [note]]
 function Check.Command(rest)
     rest = rest or ""

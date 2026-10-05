@@ -570,7 +570,11 @@ local function buildTools(f)
     end
 
     local out = bodyText(f, 16, -300, 740, 140)
-    local function show(text) out:SetText(text) end
+    local shown = "" -- what the output box says, so COPY can hand it over: the box itself cannot be selected
+    local function show(text)
+        shown = text
+        out:SetText(text)
+    end
 
     local windows = column(16, "WINDOWS")
     tool(windows, "IMPORT / EXPORT", function() ST.Export.Open("import") end)
@@ -760,6 +764,7 @@ local function buildTools(f)
         show(#lines > 0 and table.concat(lines, "\n") or "Nothing traced yet: it records the summon prompt and the answers as they happen.")
     end)
     button(checkRow, "REPORT", 514, 0, 80, function() ST.Check.Command("report") end)
+    button(checkRow, "COPY", 598, 0, 60, function() ST.Check.Copy(shown) end)
 
     return function()
         paintChecks()
