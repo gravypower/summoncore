@@ -45,6 +45,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Resonance | Does the game ring true to what summoning someone in WoW is really like? | Answered; the real prompt answers, and a writ makes a decline cost; the popup's position waits for the game |
 | Balance (dominant strategies) | After the decline and the writ, is any choice strictly better than the others? | Answered; found one (a free decline); fixed: one free decline a week |
 | Flow | Can the group play WoW, and the contest, without stopping to do the addon's chores? | Answered; A, B and C built |
+| Accessibility | A friend installs it in week three: what does their first hour say, and what must they learn? | Answered; A, B and C proposed; D waits on audio |
 
 ## Entries
 
@@ -1595,6 +1596,75 @@ top of it. So the sharpest form of the question is: *how often does the addon ma
 - Does anyone forget to arm a writ, or ask how? Does Zennit use dice at all, now that a free decline exists?
 - Does a dice roll ever outlast the game's prompt?
 - Nothing here has run in the live client.
+
+### 2026-10-05 · Lens of Accessibility: a friend installs it mid-season
+
+**The questions (paraphrased):** how will a player who has never seen the game know how to begin? Does it look like something they
+already know how to play? What do they need to learn before they can take part, and how much of that can wait? Is there anything that
+shuts some players out: the way it reads, colour, sound, or the effort to get started?
+
+**How to read it.** Every lens so far has looked at the group that built the game with us. The first live week is also when people
+install it for the first time, and a group of friends grows: someone's alt, a partner, a guildie who heard about it. So the player in
+question here is **a friend who installs Summon Core in week three** and logs in. The question is what the first hour gives them, in
+the order they get it, and whether they can take part without reading the README.
+
+**The first hour, as built** (`Core.lua`, `Intro.lua`, `Week.lua`, `Sync.lua`, `Detector.lua`)
+
+| When | What they see | Notes |
+|---|---|---|
+| Login | "loaded v0.20.0. /sc for commands." and "New here? Type /sc intro for the story so far." | The only line written for a newcomer |
+| +5 s | Their client says hello; anyone with more summons answers, and the log streams in at about 3 a second | Silent until "Sync: received N new summons" |
+| +60 s | The week's whim, "The Index closes this week on ...", a tip, and what they owe (nothing, yet) | Written for someone who knows the race |
+| `/sc intro` | Ten narrated scenes, **about four minutes**; scenes 9 and 10 are the rules | The rules there predate Resonance and Balance (below) |
+| `/sc rules` | Ten lines with this week's numbers | Up to date; nothing points a newcomer to it |
+| Their first ritual on Zennit | The **short** briefing: "Summoning Zennit: summon 4 of 10, the group leads by 3, 2 dice left." | The long one is for the week's first summons, not the player's |
+
+**Findings**
+1. **Taking part asks almost nothing, and nobody says so.** A helper clicks the portal as they always would; the caster casts; Zennit
+   answers in the game's own prompt. No one has to learn a command to play. That is the best possible answer to this lens, and it is
+   invisible: the welcome says "the story so far", not "you do not have to do anything".
+2. **The one thing a newcomer must do is install it if they cast, and nothing says that.** Only the caster's client sees a ritual
+   (`Detector.lua`); everyone else is credited from its snapshot. A warlock without the addon logs nothing, so their summons of Zennit
+   do not count. A helper without it loses only their credit. Zennit without it answers nothing, and unanswered summons count as
+   accepted. Who needs it, and how much it matters, is written nowhere a player would look.
+3. **The welcome points at four minutes of story, and the story's rules are out of date.** Scenes 9 and 10 say he "may refuse", ask for
+   silver or roll dice, and close the Index. They do not mention that his answer is now the game's own prompt, that his first decline
+   of a week is free and later ones cost, or that the group has two writs. A newcomer who does what the welcome says learns the race
+   as it was before 0.20.0. The rules card (`/sc rules`) is current, a minute's read, and not mentioned.
+4. **A newcomer's first briefing is the short one.** The long briefing (the helper bonus, the catch-up, the whim, the writ) is given
+   for the week's first summons of Zennit. A newcomer's first cast is usually later in the week, so they get "summon 4 of 10, the group
+   leads by 3, 2 dice left", which assumes they know what a summons counts for and what the dice are.
+5. **The vocabulary is the Index's, and it is small.** To follow the chat a player needs about eight words: the Index, filed, filler,
+   a writ, his list, closing the Index, the whim, the week off. Each is explained in the rules card or the line that uses it, and the
+   theme is the fun of it (Unification). Nothing to change, but it is why the rules card matters to a newcomer.
+6. **Reading, colour and sound hold up.** The answers are words as well as colours (accepted, refused, paid, won), so red against green
+   is never the only signal; the band labels its meters ZENNIT and GROUP rather than relying on pink and cyan; the intro types its
+   narration on screen as it plays, so it works with the sound off; sound has a switch. The one doubt is the VT323 pixel font at 18 px
+   in the window, which may be hard going on a small or high-DPI screen. It has never been seen in the client.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A newcomer's welcome**: the first login replaces "New here?" with three lines: you do not have to do anything (cast and click as usual; your summons of Zennit count for the group); `/sc rules` is the race in a minute; `/sc intro` is the story | 1, 3 | Wording; the `introSeen` flag already marks a first login |
+| B | **Say who needs it**: the welcome, the README's Install, and the rules card say a caster must run the addon for their summons to count, and Zennit for his answers to be his | 2 | Wording |
+| C | **A newcomer's first briefing in full**: the long briefing for a caster's first summons of Zennit ever, as well as the week's first | 4 | A flag and a test |
+| D | **Bring the intro's rules up to date**: re-word scenes 9 and 10 for the game's prompt, the free decline and the writs, and re-render them | 3 | Wording now; the audio needs the Windows narrator tools (`tools/intro`), as Elegance's re-wording did |
+| E | **Who in the group is missing it**: the Sync tab lists the group's members whose client has not said hello, warlocks first | 2 | Remembering who said hello; a roster check; a layout to see in the client |
+| F | **Leave it**: the group is six friends who can explain it to each other in voice chat | | Nothing |
+
+**Recommendation:** A, B and C together: they are wording and one flag, and they change what a newcomer's first hour says without
+adding a surface. D is right but waits on the audio, so its wording can be written now and rendered with the next batch of narration.
+E is the strongest fix for finding 2 but adds a list to a tab, and the group may simply say "install it" in voice chat; leave it until
+a summons is lost that way.
+
+**Live checks to add with whatever is built** (step 6): the welcome on a fresh install (`/sc reset`, then log in, or a new character's
+saved variables), and the newcomer's first briefing on a test summons.
+
+**To watch in playtests**
+- When someone new joins, what do they ask first? Did they read the rules card, watch the intro, or ask in voice?
+- Does a summons ever go unlogged because the caster did not have the addon?
+- Is the window readable for everyone at its size, on their screens?
 
 ## Decisions
 
