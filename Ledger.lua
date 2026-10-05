@@ -98,6 +98,8 @@ function Ledger.Collect(events, from, to, ctx)
     local run = 0
     d.postcards = {} -- the first landed summons of him to each far-flung place, in order (design/lenses.md, Secrets)
     d.leave = { n = 0, by = {} } -- summons of him on his week off (design/lenses.md, Inner Contradiction)
+    -- what the titles praise beyond effort and luck (design/lenses.md, Judgment): the summons he went on, and the writs that bit
+    d.went, d.wentFarthest, d.writs = 0, nil, {}
     local stamped = {}
     for _, item in ipairs(list) do
         local ev = item.ev
@@ -129,6 +131,14 @@ function Ledger.Collect(events, from, to, ctx)
         end
         local r = ev.response
         local result = r and r.result
+        if result == "accepted" or result == "owed" or result == "paid" then -- he went
+            d.went = d.went + 1
+            local far = ctx.remote and ev.mapID and ctx.remote(ev.mapID)
+            if far and (not d.wentFarthest or ev.time < d.wentFarthest.time) then d.wentFarthest = { place = far, time = ev.time } end
+        end
+        if result == "refused" and ev.writ and ctx.writCounts and ctx.writCounts(ev) then -- a writ that cost him
+            d.writs[caster] = (d.writs[caster] or 0) + (ev.points or 0)
+        end
         local amount = (r and r.amount) or ctx.silver
         if result == "paid" then d.silverPaid, me.paid = d.silverPaid + amount, me.paid + amount end
         if result == "owed" then d.silverOwed, me.owed = d.silverOwed + amount, me.owed + amount end
@@ -226,6 +236,8 @@ local function duration(sec)
     return math.floor(sec / 3600) .. " hours"
 end
 
+Ledger.GOOD_SPORT = 10 -- summons of him he went on in a season before he is the Good Sport
+
 -- Titles: praise in words, no points, for what the log shows (design/lenses.md, Reward). The same people can hold several, and
 -- Zennit has some too. Each is { id, title, text, next } where `next` says who is close behind (for the mid-season standings).
 -- `d` is a Ledger.Collect result.
@@ -253,6 +265,11 @@ function Ledger.Titles(d)
         add("lucky", "The Lucky Pair", joined(lucky.names), string.format(", whose bonus tipped %d roll%s.", lucky.n, lucky.n == 1 and "" or "s"),
             nextOf(lucky))
     end
+    local server = leaders(d.writs or {}, 1)
+    if server then
+        add("server", "The Process Server", who(server), string.format(", whose writs cost him %d point%s.", server.n, server.n == 1 and "" or "s"),
+            nextOf(server, " points"))
+    end
     local paid = {}
     for name, e in pairs(d.by) do
         if e.paid > 0 then paid[name] = e.paid end
@@ -267,6 +284,10 @@ function Ledger.Titles(d)
     end
     if d.maxAsk and d.maxAsk.amount >= 2 * (d.usualAsk or 50) then
         add("bargain", "The Hard Bargain", "Zennit", string.format(", who asked %s for %d silver.", d.maxAsk.caster, d.maxAsk.amount))
+    end
+    if (d.went or 0) >= Ledger.GOOD_SPORT then
+        add("sport", "The Good Sport", "Zennit", string.format(", who went where he was sent %d times%s.", d.went,
+            d.wentFarthest and (", including " .. d.wentFarthest.place) or ""))
     end
     local mid = #d.delays >= 5 and median(d.delays)
     if mid and mid <= 3600 then
@@ -328,7 +349,7 @@ function Ledger.Context()
             return edges[start]
         end,
         resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax, weekStart = W.Start,
-        remote = function(id) return ST.Scoring.remoteNames[id] end, lands = ST.Store.Lands,
+        remote = function(id) return ST.Scoring.remoteNames[id] end, lands = ST.Store.Lands, writCounts = W.WritCounts,
         off = function(ev)
             local start = W.Start(ev.time)
             if offs[start] == nil then offs[start] = W.IsOff(start) end
