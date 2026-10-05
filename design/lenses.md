@@ -29,6 +29,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Story and Emotion | The story now follows the tree; does it make the group feel something, or is it only a reward track? | Answered; A, C and D built; playtest |
 | Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; A, B, C and D built; playtest |
 | Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; A, C built and D worded (audio pending); B (the head start) left |
+| Playtesting | Every lens ended with questions for a playtest; the first new-rules week starts today | Answered; the report and the script built |
 
 ## Entries
 
@@ -708,6 +709,46 @@ and nobody asked for it to go.
 - How wide does Zennit make his list, and how often does the Index say "again"?
 - Can the group say the rules back? (If not, the card is not enough and the intro needs redoing.)
 
+### 2026-10-05 · Lens of Playtesting: the first season
+
+**The questions (paraphrased):** why am I playtesting, and what do I want to learn? Who should test, when, where, and how will I
+learn it: by watching, listening, asking, or reading what the game recorded? Every lens so far ended in a list of things "to watch
+in playtests"; the new rules start **today, Monday 5 October 2026 (UTC)**, so this is the moment to turn them into a plan.
+
+**The lists, sorted.** Across the nine entries there are about 30 open questions.
+
+| Kind | How many | How we learn |
+|---|---|---|
+| Numbers the log already holds (how many summons a week, how he spends his dice, whether he closes, the list's hit rate, who wins the weeks) | About 14 | **Read the log**: no one has to remember or keep notes |
+| Feelings (what the group quotes back, what they stop reading, what Zennit enjoys, which ending he wants) | About 12 | **Ask people**, separately, and watch |
+| Things never run in the live client (`/sc synctest`, the intro's new scene, the dice between two real clients, a real Monday rollover) | 6 | **A smoke test first**, before judging any design |
+
+**Findings**
+1. **The group dislikes bookkeeping (the Player entry), so the plan cannot rely on notes.** Most of the numbers are already in the log
+   (every summon, helper, answer and roll is there); they only need counting.
+2. **A design question is only settled by evidence we can name.** Each open decision (five wins or four, the list's bound, the cap
+   and the close, the whim, the catch-up steps) now has the number that would change it, in the table at the end of the script.
+3. **Several things we shipped have never run in the game.** The self-tests added since 4 October, the Ledger scene, the new dice
+   edge flow and the whim: the first job of the playtest is a ten-minute smoke test, not a verdict on the design.
+4. **A report in the group's own chat is also a way to play.** Pasting the week's numbers each Monday gives the group something to
+   argue about (banter, the thing they like) while it gives us the data.
+
+**Built**
+- **`/sc report`** (`Report.lua`, and the Tools tab's **Playtest report**): what the log says about how the race is being played.
+  Weeks with and without a summons of him, how many a week, the group's wins by how many summons counted, his answers and how fast
+  he gives them, how he spends his dice (on the first three summons of a week or not, what a rolled summons is worth against an
+  unrolled one, and what comes after his last die), how often the list hits, helpers per summons and the rolls they tipped, and
+  when he closes. Nothing is stored or synced; paste it into the group chat.
+- **`design/playtest.md`**, the script: the ten-minute smoke test, what to watch while playing, one command and three questions
+  each Monday, the report-to-question table with the number that would change each decision, the questions only people can
+  answer (separately for everyone, the warlocks, the helpers and Zennit), and the table of open decisions and what settles them.
+
+**Not built.** No in-game survey or note-taking: it would be exactly the bookkeeping the group dislikes.
+
+**To watch in playtests**
+- Does the group paste the report, or does it have to be asked for? (If it is not read, it is not worth the chat lines.)
+- Which question in the script gets the most honest answer, and which gets a shrug?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -725,3 +766,4 @@ and nobody asked for it to go.
 | 2026-10-04 | The Index remembers named moments, the silver he is paid, and a keepsake of each finished season; players named by character | Story and Emotion | The personal material was in the log and scrolled away; naming players is what a friend group repeats |
 | 2026-10-04 | Pools of lines, a whim of the week (four small twists, about half the weeks), a recording sheet and a list that remembers | Surprise | The surprises were in the people and the story only; the repeating lines were wallpaper by week 9 and every week played under the same rules |
 | 2026-10-04 | Bound the list (five places of four letters or more), add a rules card (`/sc rules`), and re-word intro scenes 9 and 10 (audio to be re-rendered); keep the head start | Elegance | An unbounded list could decide every week; no one place said all the rules; the narration predated four rules |
+| 2026-10-05 | Playtest from the log: `/sc report` counts the numbers, `design/playtest.md` is the script (smoke test, Monday routine, questions for people, what settles each open decision) | Playtesting | The group dislikes bookkeeping; most of the open questions are numbers the log already holds, and nothing had ever been run live |
