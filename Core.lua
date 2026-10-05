@@ -333,6 +333,33 @@ function commands.week(rest)
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end
 end
 
+-- Summon cards (the coffee card): prepaid silver, sold by Zennit. /sc cards lists the balances; /sc card sell <name> [punches
+-- [silver]] and /sc card offer <punches> <silver> are his.
+function commands.cards()
+    for _, line in ipairs(ST.Cards.Lines()) do print_(line) end
+end
+
+function commands.card(rest)
+    local verb, a, b, c = (rest or ""):match("^(%S*)%s*(%S*)%s*(%S*)%s*(%S*)")
+    if verb == "sell" then
+        local offer = ST.Cards.Offers()[1]
+        local punches = tonumber(b) or offer.punches
+        local silver = tonumber(c) or math.floor(offer.silver * punches / offer.punches + 0.5) -- the usual price per punch
+        local card, why = ST.Cards.Issue(a, punches, silver)
+        if not card then print_(why) end
+    elseif verb == "offer" then
+        if ST.Cards.SetOffer(a, b) then
+            print_(string.format("offer: %d punches for %d silver", ST.Cards.Offers()[1].punches, ST.Cards.Offers()[1].silver))
+        else
+            print_("usage: /sc card offer <punches> <silver>")
+        end
+    else
+        local offer = ST.Cards.Offers()[1]
+        print_(string.format("A card is prepaid silver. Zennit sells %d punches for %d silver; each time he demands the fifty silver from the holder, a punch pays it.", offer.punches, offer.silver))
+        print_("/sc cards lists who holds what; his: /sc card sell <name> [punches [silver]], /sc card offer <punches> <silver>")
+    end
+end
+
 -- Listens to trade and mail events and prints what the client lets an addon see, to learn how silver could be detected.
 function commands.probe()
     ST.Silver.Probe()
@@ -411,6 +438,7 @@ local HELP = {
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); a key plays that chapter of the story",
+    "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",
     "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)",
     "/sc report - what the log says about how the race is being played (for a playtest)",
     "/sc rules - the rules of the race, with this week's live numbers",

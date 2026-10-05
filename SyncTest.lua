@@ -1357,6 +1357,60 @@ add("silver owed: counted by week and overall, shown to both sides, and payable 
     end)
 end)
 
+add("summon cards: sold by Zennit, synced to everyone, punched by his demand for silver, counted from the log", function()
+    return newRules(function()
+        local W, R, C, Sy = ST.Week, ST.Respond, ST.Cards, ST.Sync
+        local z, a = newClient("Zennit"), newClient("Alpha")
+        local out = {}
+        local realClosed = W.EventClosed
+        with(z, function()
+            z.db.settings.zenitNames = { "Zennit" }
+            out.card = C.Issue("Bo-Realm", 2, 100)                       -- he sells Bo a card of two punches
+            out.sold = Sy.state.queue[#Sy.state.queue] and Sy.state.queue[#Sy.state.queue].payload
+        end)
+        out.noOne = select(2, with(a, function() return C.Issue("Bo", 2, 100) end)) -- anyone else cannot
+        -- another client takes the card, from Zennit only
+        with(a, function()
+            local body = out.sold and out.sold:match("^%d+~K~(.*)$")
+            out.fromZennit = body and Sy.OnMessage("1~K~" .. body, "PARTY", "Zennit")
+            out.fromAnyone = body and Sy.OnMessage("1~K~" .. body, "PARTY", "Mallory")
+            out.again = body and Sy.OnMessage("1~K~" .. body, "PARTY", "Zennit")
+            out.bad = Sy.OnMessage("1~K~card-1|Bo|99|10|" .. time(), "PARTY", "Zennit")
+        end)
+        local n = 0
+        with(a, function()
+            for _ in pairs(a.db.cards or {}) do n = n + 1 end
+            out.cards = n
+            out.left = C.Left("Bo")
+            -- Bo summons Zennit twice; Zennit demands the silver both times: the card pays, a third time it does not
+            local this = W.Start()
+            local function put(key, at) a.db.events[key] = { caster = "Bo", target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone" } end
+            put("b1", this + 10); put("b2", this + 20); put("b3", this + 30)
+            a.db.settings.zenitNames = { "Zennit" }
+            for _, id in ipairs({ "b1", "b2" }) do
+                a.db.events[id].response = { result = "paid", zroll = 0, sroll = 0, time = this + 40, card = true }
+            end
+            out.after = C.Left("Bo")
+            out.lines = table.concat(C.Lines(), " ")
+            out.paidLine = R.Announce(a.db.events.b2, a.db.events.b2.response)
+            -- the card flag survives the wire
+            local id, ev = Sy.Decode(Sy.Encode("Bo-1", { caster = "Bo", target = "Zennit", assistants = {}, time = this, wrote = this,
+                response = { result = "paid", zroll = 0, sroll = 0, time = this + 5, card = true, listed = true } }))
+            out.flag = ev and ev.response and ev.response.card and ev.response.listed and not ev.response.closes
+        end)
+        local m = ST.Silver.Match(30000, { { id = "s1" }, { id = "s2" } }, { { punches = 5, silver = 200 } }, 50)
+        local m2 = ST.Silver.Match(1200, {}, { { punches = 5, silver = 200 } }, 50)
+        local ok = out.card and out.card.punches == 2 and out.noOne == "only Zennit can sell cards"
+            and out.fromZennit == "card" and out.fromAnyone == "rejected:sender" and out.again == "kept" and out.bad == "rejected:values"
+            and out.cards == 1 and out.left == 2 and out.after == 0 and out.lines:find("0 of 2 punches left", 1, true)
+            and out.paidLine:find("card pays the 50 silver", 1, true) and out.flag
+            and #m.owed == 2 and m.card and m.card.punches == 5 and m.left == 0
+            and #m2.owed == 0 and m2.card == nil and m2.left == 12
+        return ok, string.format("sold %s, synced %s/%s, left %s then %s; 300s pays 2 owed + a card: %s", tostring(out.card ~= nil),
+            tostring(out.fromZennit), tostring(out.fromAnyone), tostring(out.left), tostring(out.after), tostring(m.card ~= nil))
+    end)
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")

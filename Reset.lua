@@ -30,7 +30,8 @@ function Reset.Apply(stamp)
     ST.db.resetAt = stamp
     ST.db.badges = {}
     ST.db.deleted = nil -- tombstones older than the reset are redundant
-    if ST.db.settings then ST.db.settings.weekSeen, ST.db.settings.weekFrozen = nil, nil end
+    ST.db.cards = nil   -- a card's punches are counted from the summons, so with them gone every card would be full again
+    if ST.db.settings then ST.db.settings.weekSeen, ST.db.settings.weekFrozen = nil, nil; ST.db.settings.weekAnnounced = nil end
     if ST.Hub then ST.Hub.Refresh() end
     return removed
 end

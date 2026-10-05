@@ -152,6 +152,10 @@ function Respond.Announce(ev, resp)
             "%s asks for %d silver, in cash, and would prefer no receipt. The points land when he says it was paid.",
             "%s has named his price: %d silver, in cash, no receipt. The points land when he says it was paid." }, who, SILVER)
     end
+    if r == "paid" and resp.card then
+        return string.format("%s's card pays the %d silver: a punch used, %d left. +%d point%s.%s", ev.caster, SILVER,
+            ST.Cards.Left(ev.caster), pts, plural(pts), bonus)
+    end
     if r == "paid" then
         return say("answer.paid", {
             "%s says the %d silver was paid. +%d point%s.%s",
@@ -288,10 +292,14 @@ function Respond.Decide(id, result, zroll, sroll)
     if not ev or not ST.Store.RESULTS[result] then return nil end
     -- that week is over; answers no longer change it, except the silver being paid, which does not move a decided week
     if ST.Week.EventClosed(ev) and not (result == "paid" and ev.response and ev.response.result == "owed") then return nil end
+    -- the holder of a card pays the silver with a punch, there and then
+    local card
+    if result == "owed" and not ev.fake and ST.Cards.Left(ev.caster) > 0 then result, card = "paid", true end
     -- a new answer is always later than the one it replaces, or other clients keep the old one (sync takes the later)
     local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0,
         time = math.max(time(), ev.response and ev.response.time + 1 or 0),
-        listed = Respond.OnList(ev) or nil, closes = ev.response and ev.response.closes or nil }
+        listed = Respond.OnList(ev) or nil, closes = ev.response and ev.response.closes or nil,
+        card = card or (ev.response and ev.response.card) or nil }
     ST.Store.SetResponse(id, resp)
     if not ev.fake then ST.Sync.SendResponse(id, resp) end
     ST.print(Respond.Announce(ev, resp))
@@ -509,7 +517,8 @@ local function render(s, stage, extra)
         setButtons(s, {
             { "Accept it", function() Respond.Decide(id, "accepted") end },
             { free and "Refuse (free)" or "Refuse", function() Respond.Decide(id, Respond.OnList(ev) and "excused" or "refused") end },
-            { "Demand " .. SILVER .. " silver, in cash, no receipt", function() Respond.Decide(id, "owed") end },
+            { ST.Cards.Left(ev.caster) > 0 and string.format("Take a punch (%d silver; card: %d left)", SILVER, ST.Cards.Left(ev.caster))
+                or ("Demand " .. SILVER .. " silver, in cash, no receipt"), function() Respond.Decide(id, "owed") end },
             dice == 0 and { "No dice left this week", function() end, true }
                 or { "Suggest dice (1-100)", function() render(s, "roll") end },
         })

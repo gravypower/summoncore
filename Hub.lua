@@ -604,6 +604,10 @@ local function buildTools(f)
         for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
         show("What the log says about how the race is being played is in the chat window.")
     end)
+    tool(try, "SUMMON CARDS", function()
+        for _, line in ipairs(ST.Cards.Lines()) do ST.print(line) end
+        show("Who holds a summon card, and the punches left, are in the chat window.")
+    end)
     tool(try, "THE RULES", function() -- long: it goes to the chat window, which scrolls
         for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
         show("The rules of the race, with this week's numbers, are in the chat window.")

@@ -76,9 +76,10 @@ local function split(s, sep)
     return out
 end
 
--- An answer's flags as one digit: 1 = the place is on his list, 2 = he closed the Index with it. "" for none.
+-- An answer's flags as one digit: 1 = the place is on his list, 2 = he closed the Index with it, 4 = the silver was paid by a
+-- punch of a card (Cards.lua). "" for none.
 local function respFlags(r)
-    local n = (r.listed and 1 or 0) + (r.closes and 2 or 0)
+    local n = (r.listed and 1 or 0) + (r.closes and 2 or 0) + (r.card and 4 or 0)
     return n > 0 and tostring(n) or ""
 end
 
@@ -86,7 +87,8 @@ end
 local function applyFlags(resp, digit)
     local n = tonumber(digit) or 0
     resp.listed = n % 2 == 1 or nil
-    resp.closes = n >= 2 or nil
+    resp.closes = math.floor(n / 2) % 2 == 1 or nil
+    resp.card = math.floor(n / 4) % 2 == 1 or nil
     return resp
 end
 
@@ -244,7 +246,10 @@ function Sync.Hello(channel, target)
         enqueue(channel, target, "H", helloBody())
     else
         for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "H", helloBody()) end
-        if ST.IsZennitAccount() then Sync.SendAlt() end
+        if ST.IsZennitAccount() then
+            Sync.SendAlt()
+            Sync.SendCards()
+        end
     end
 end
 
@@ -259,6 +264,31 @@ function Sync.SendResponse(id, resp)
     local body = string.format("%s|%s|%d|%d|%d%s", esc(id), resp.result, resp.zroll or 0, resp.sroll or 0, resp.time,
         flags ~= "" and ("|" .. flags) or "")
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Z", body) end
+end
+
+-- A card Zennit has sold (Cards.lua): "id|holder|punches|silver|time". Only his own client sends them, and everyone keeps
+-- them, so a holder can see their punches. They are sent when a card is sold, with his hello, and to anyone who asks for events.
+local MAX_CARDS = 200
+function Sync.SendCard(card, target)
+    local body = string.format("%s|%s|%d|%d|%d", esc(card.id), esc(card.holder), card.punches, card.silver, card.time)
+    if target then
+        enqueue("WHISPER", target, "K", body)
+    else
+        for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "K", body) end
+    end
+end
+
+-- Resends every card that still has a punch (up to 20), if this client is Zennit's.
+function Sync.SendCards(target)
+    if not (ST.Cards and ST.Week.IsZennit(Sync.myName())) then return end
+    local sent = 0
+    for _, card in ipairs(ST.Cards.Sorted()) do
+        if sent >= 20 then break end
+        if ST.Cards.PunchesLeft(card) > 0 then
+            Sync.SendCard(card, target)
+            sent = sent + 1
+        end
+    end
 end
 
 -- Zennit's own client says "the character I am playing is his": everyone else cannot see his Battle.net account,
@@ -375,6 +405,7 @@ function Sync.OnMessage(text, channel, sender)
             if enqueue("WHISPER", sender, "B", Sync.Encode(r.id, r.ev)) then sent = sent + 1 end
         end
         Sync.SendTombstones(sender)
+        Sync.SendCards(sender)
         return "batch:" .. sent
 
     elseif typ == "E" or typ == "B" then
@@ -414,6 +445,24 @@ function Sync.OnMessage(text, channel, sender)
         ST.Store.SetResponse(rid, resp)
         if Sync.onResponse then Sync.onResponse(rid, ev, resp, before) end
         return "applied"
+
+    elseif typ == "K" then
+        -- a card Zennit sold: only his characters can issue one
+        if not ST.Week.IsZennit(sender) then return "rejected:sender" end
+        local cid, holder, punches, silver, ct = body:match("^([^|]+)|([^|]+)|(%d+)|(%d+)|(%d+)$")
+        if not cid then return "bad" end
+        cid, holder, punches, silver, ct = unesc(cid), unesc(holder), tonumber(punches), tonumber(silver), tonumber(ct)
+        if #cid > 48 or not validName(holder) or punches < 1 or punches > 50 or silver > 100000 or ct <= 0 or ct > time() + 86400 then
+            return "rejected:values"
+        end
+        ST.db.cards = ST.db.cards or {}
+        if ST.db.cards[cid] then return "kept" end
+        local count = 0
+        for _ in pairs(ST.db.cards) do count = count + 1 end
+        if count >= MAX_CARDS then return "rejected:full" end
+        ST.db.cards[cid] = { id = cid, holder = holder, punches = punches, silver = silver, time = ct }
+        if Sync.onCard then Sync.onCard(ST.db.cards[cid]) end
+        return "card"
 
     elseif typ == "A" then
         if not validName(sender) then return "bad" end

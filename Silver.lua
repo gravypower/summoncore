@@ -1,6 +1,7 @@
--- Silver: the money side of the game. Zennit's "50 silver, in cash, no receipt" is paid in person, by trade or by mail; this
--- module is where the addon learns to see that. So far it only has the probe: /sc probe listens for trade and mail events and
--- prints what the client lets an addon see (who, how much, or a secret value), so the detection can be built on what is real.
+-- Silver: the money side of the game. Zennit's "50 silver, in cash, no receipt" is paid in person, by trade or by mail. On his
+-- client only, this module watches both: when money arrives from someone, it works out what it pays (their owed summons, a card
+-- he sells) and ASKS him before it touches anything. /sc probe listens to the same events and prints what the client lets an
+-- addon see (who, how much, or a secret value), to learn what is real if detection does not fire.
 local ADDON, ST = ...
 local Silver = {}
 ST.Silver = Silver
@@ -91,4 +92,173 @@ function Silver.Probe()
     say(try("GetTargetTradeMoney"))
     say(try("GetInboxNumItems"))
     say(try("GetMoney"))
+end
+
+----------------------------------------------------------------------
+-- What a payment pays
+----------------------------------------------------------------------
+local function base(name)
+    return ST.baseName(name) or name or ""
+end
+
+-- Zennit's summons that this person owes the silver for, oldest first: { { id, ev } }.
+function Silver.OwedBy(payer)
+    local list = {}
+    for id, ev in pairs(ST.db.events) do
+        if not ev.fake and ev.response and ev.response.result == "owed" and ST.Week.IsZennit(ev.target)
+            and base(ev.caster) == base(payer) then
+            list[#list + 1] = { id = id, ev = ev }
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.ev.time ~= b.ev.time then return a.ev.time < b.ev.time end
+        return tostring(a.id) < tostring(b.id)
+    end)
+    return list
+end
+
+-- What `copper` paid by `payer` would settle: { silver, owed = { ids of the oldest summons it covers }, card = an offer or nil,
+-- left = the silver nothing claims }. `owed` is Silver.OwedBy(payer), `offers` is Cards.Offers().
+function Silver.Match(copper, owed, offers, price)
+    local silver = math.floor(copper / 100)
+    local out = { silver = silver, owed = {}, left = silver }
+    for _, item in ipairs(owed) do
+        if out.left < price then break end
+        out.owed[#out.owed + 1] = item.id
+        out.left = out.left - price
+    end
+    local best
+    for _, offer in ipairs(offers) do
+        if offer.silver <= out.left and (not best or offer.silver > best.silver) then best = offer end
+    end
+    if best then
+        out.card = best
+        out.left = out.left - best.silver
+    end
+    return out
+end
+
+StaticPopupDialogs["SUMMONCORE_SILVER"] = {
+    text = "%s",
+    button1 = "Yes",
+    button2 = "Not now",
+    OnAccept = function(_, data) if data then data() end end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-- Money has arrived from `payer` (by "trade" or "mail"): say what it would settle and ask Zennit.
+local seen = {}
+function Silver.Paid(payer, copper, via)
+    if not payer or payer == "" or type(copper) ~= "number" or copper <= 0 then return end
+    local key = base(payer) .. ":" .. copper .. ":" .. math.floor(time() / 60)
+    if seen[key] then return end -- one payment, however many events it raised
+    seen[key] = true
+    local m = Silver.Match(copper, Silver.OwedBy(payer), ST.Cards.Offers(), ST.Respond.SILVER)
+    local who = base(payer)
+    if #m.owed == 0 and not m.card then
+        return ST.print(string.format("%s sent you %s by %s. It does not settle anything owed, and no card costs that much, so the Index has not touched the books.",
+            who, coin(copper), via))
+    end
+    local parts = {}
+    if #m.owed > 0 then
+        parts[#parts + 1] = string.format("mark %d of %s's summons paid (%d silver each)", #m.owed, who, ST.Respond.SILVER)
+    end
+    if m.card then
+        parts[#parts + 1] = string.format("sell %s a card of %d punches (%d silver)", who, m.card.punches, m.card.silver)
+    end
+    local text = string.format("%s paid you %s by %s. %s?%s", who, coin(copper), via,
+        (parts[1]:gsub("^%l", string.upper)) .. (parts[2] and (" and " .. parts[2]) or ""),
+        m.left > 0 and string.format(" (%d silver is left over.)", m.left) or "")
+    StaticPopup_Show("SUMMONCORE_SILVER", text, nil, function()
+        for _, id in ipairs(m.owed) do ST.Respond.Decide(id, "paid") end
+        if m.card then ST.Cards.Issue(who, m.card.punches, m.card.silver) end
+        if ST.Hub then ST.Hub.Refresh() end
+    end)
+end
+
+----------------------------------------------------------------------
+-- Watching the client (Zennit's only)
+----------------------------------------------------------------------
+local function known(v)
+    return type(v) == "number" and not secret(v)
+end
+
+local function call(name, ...)
+    local fn = _G[name]
+    if type(fn) ~= "function" then return nil end
+    local results = { pcall(fn, ...) }
+    if not results[1] then return nil end
+    return unpack(results, 2)
+end
+
+local trade = { accepted = false, offer = 0 }
+local inbox = {}
+local warned
+
+local function hidden(what)
+    if warned then return end
+    warned = true
+    ST.print("The client hides " .. what .. " from addons, so the silver cannot be seen automatically. /sc probe shows what it lets through.")
+end
+
+local function snapshotInbox()
+    inbox = {}
+    local count = call("GetInboxNumItems")
+    if not known(count) then return hidden("the mailbox") end
+    for i = 1, math.min(count, 50) do
+        local _, _, sender, _, money = call("GetInboxHeaderInfo", i)
+        if type(sender) == "string" and not secret(sender) then
+            inbox[i] = { sender = sender, money = known(money) and money or 0 }
+        end
+    end
+end
+
+local function tookMail(index)
+    if not ST.Gag.IsZennit() then return end
+    local entry = inbox[index]
+    if entry and entry.money > 0 then
+        local copper = entry.money
+        entry.money = 0
+        Silver.Paid(entry.sender, copper, "mail")
+    end
+end
+
+local function onTrade(event, a, b)
+    if event == "TRADE_SHOW" then
+        local partner = call("UnitName", "NPC")
+        trade = { partner = type(partner) == "string" and not secret(partner) and partner or nil,
+            before = call("GetMoney"), offer = 0, accepted = false }
+    elseif event == "TRADE_MONEY_CHANGED" or event == "TRADE_ACCEPT_UPDATE" then
+        local offer = call("GetTargetTradeMoney")
+        if known(offer) then trade.offer = offer elseif offer ~= nil then hidden("trade money") end
+        if event == "TRADE_ACCEPT_UPDATE" then trade.accepted = (a == 1 or a == true) and (b == 1 or b == true) end
+    elseif event == "TRADE_REQUEST_CANCEL" then
+        trade.accepted = false
+    elseif event == "TRADE_CLOSED" then
+        local t = trade
+        trade = { accepted = false, offer = 0 }
+        if not (t.accepted and t.partner) then return end
+        C_Timer.After(0.5, function()
+            local after = call("GetMoney")
+            local copper = (known(after) and known(t.before) and after - t.before > 0) and (after - t.before) or t.offer
+            if copper and copper > 0 then Silver.Paid(t.partner, copper, "trade") end
+        end)
+    end
+end
+
+local watcher = CreateFrame("Frame")
+for _, event in ipairs({ "TRADE_SHOW", "TRADE_MONEY_CHANGED", "TRADE_ACCEPT_UPDATE", "TRADE_CLOSED", "TRADE_REQUEST_CANCEL",
+    "MAIL_INBOX_UPDATE" }) do
+    pcall(watcher.RegisterEvent, watcher, event)
+end
+watcher:SetScript("OnEvent", function(_, event, ...)
+    if not (ST.db and ST.Gag and ST.Gag.IsZennit()) then return end -- only his client watches the money
+    if event == "MAIL_INBOX_UPDATE" then snapshotInbox() else onTrade(event, ...) end
+end)
+if hooksecurefunc then
+    pcall(hooksecurefunc, "TakeInboxMoney", tookMail)
+    pcall(hooksecurefunc, "AutoLootMailItem", tookMail)
 end

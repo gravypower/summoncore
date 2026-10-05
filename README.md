@@ -37,6 +37,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
 | `/sc intro [scene\|z1..z5\|g1..g5\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter, `now` plays only "The Index today", `check` tests the sound files |
+| `/sc cards` | Who holds a summon card and how many punches are left. `/sc card` explains cards; Zennit's own: `/sc card sell <name> [punches [silver]]` and `/sc card offer <punches> <silver>`. Also the Tools tab's **Summon cards** |
 | `/sc probe` | Listens to trade and mail events and prints what the client lets an addon see (who, how much, or a secret value), to learn how the fifty silver could be detected. Run it again to stop |
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. Paste it into the group chat. Also the Tools tab's **Playtest report**; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). Also the Tools tab's **The rules** |
@@ -66,7 +67,8 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
 | `Voice.lua` | Voice | Pools of lines: the Index says a fact that repeats a few different ways, never the same one twice running |
-| `Silver.lua` | Silver | The money side: so far the `/sc probe` listener for trade and mail |
+| `Cards.lua` | Cards | Summon cards: prepaid silver Zennit sells, with punches counted from the log |
+| `Silver.lua` | Silver | The money side: on Zennit's client, sees silver arrive by trade or mail and asks him what it pays; `/sc probe` |
 | `Report.lua` | Report | `/sc report`: the playtest numbers, worked out from the log |
 | `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays; and the log's memory of a season (named moments, the silver, the keepsake) |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
@@ -200,6 +202,25 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 The clips are committed with the rest of the addon (and so go into the release zip), which means Zennit can listen to them in the
 repo: the lines meant to surprise him will not be a surprise if he looks. Run the manifest script after adding clips and commit
 `ClipList.lua` with them.
+
+### Silver and summon cards
+
+The fifty silver is paid in person. Two things make it visible and countable:
+
+- **Seeing it arrive** (Zennit's client only, `Silver.lua`). When money comes in by **trade** (a completed trade where the other side
+  offered money) or **mail** (taking money from the mailbox), the addon works out what it pays and **asks him before touching anything**:
+  "Bo paid you 50s by trade. Mark 1 of Bo's summons paid (50 silver each)?" Each fifty covers the payer's oldest owed summons; if what is
+  left covers his card offer, it offers to sell a card as well. A payment that settles nothing is only mentioned in chat. If the client
+  hides the money from addons (the 12.0 API hides some values), it says so once, and `/sc probe` shows what does come through: it listens
+  to the same trade and mail events and prints who, how much, or a secret value. **None of this has been tried in the live client.**
+- **Summon cards, like a coffee card** (`Cards.lua`). A card is **prepaid silver**: N punches bought once at a price Zennit sets
+  (`/sc card offer 5 200`: five punches for 200 silver, against 250 at the counter). Each time he demands the fifty silver from the
+  holder, **a punch pays it** and the Index says so ("Bo's card pays the 50 silver: a punch used, 3 left"); his popup's button reads
+  "Take a punch (card: 3 left)". Cards are issued only by Zennit's client (`/sc card sell Bo`, or from the payment popup) and sent to
+  everyone (message `K`, with his hello and to anyone who asks for events), so a holder can see their balance in `/sc cards`.
+  **Punches are not stored anywhere:** they are counted from the summons he settled with a punch (an answer carrying the card flag),
+  oldest card first, so every client agrees and nothing drifts. A reset clears the cards with the summons. The answer's flags digit gains
+  a bit (4 = paid by a punch): older clients would read it as "closed the Index", so update everyone together.
 
 ### Zennit's answer
 
