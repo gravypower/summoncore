@@ -9,7 +9,7 @@ while you play, remembers each result in your saved variables, and prints a repo
 
 | Command | What it does |
 |---|---|
-| The **Tools tab** (`/sc`, then Tools), the CHECKS row | The same, with buttons: RUN AUTO, NEXT (the steps for the next check go to the chat window, with a headline in the box), PASS / FAIL / SKIP (record it and move on), TRACE, REPORT and COPY (opens whatever the output box says in a window you can select and copy: Ctrl+A, Ctrl+C). The label shows how many have passed (3/25) |
+| The **Tools tab** (`/sc`, then Tools > Checks) | The same, with buttons: RUN AUTO, NEXT (the steps for the next check go to the chat window, with a headline in the box), PASS / FAIL / SKIP (record it and move on), TRACE, REPORT and COPY (opens whatever the output box says in a window you can select and copy: Ctrl+A, Ctrl+C). The label shows how many have passed (3/32) |
 | `/sc check` | The list with a result against each, and the next thing to do |
 | `/sc check auto` | Runs the automatic checks (nothing to do but read) |
 | `/sc check <id>` | The steps for one check, what to expect, and what breaks if it fails |
@@ -31,7 +31,10 @@ caught (`/sc errors`) and the trace. That is enough to fix most things without a
    the message prefix is registered (a-prefix) and nothing has thrown (a-errors).
 2. **Stop here if a-api, a-hooks or a-selftest fail.** Send the report: the rest depends on them.
 3. `/sc check s-popup` (a pretend summons: the form, one-click dice), `s-key` (bind the writ key and press it), `s-fit` (click through
-   every tab), `s-lines` (read the chat lines on a test summons), and `s-sound` after a full restart.
+   every tab), `s-lines` (read the chat lines on a test summons), `s-login` (`/sc week login`: the week's close in your time, a tip),
+   `s-band` (the window's band against `/sc week`), and `s-sound` after a full restart. `s-lastcall` waits for a week's final
+   day (Sunday UTC) and marks itself when the line is said; `s-welcome` marks itself on a character's first login (`/sc welcome` to read
+   it again).
 
 ## Phase 2: with one friend, an hour, both on the same version
 
@@ -44,7 +47,11 @@ Both run `/sc check auto` first. Decide who is the warlock and who is Zennit (hi
    (a second decline), then `d-writ` (a writ armed with the key, then a decline).
 5. `d-dice` (one click each) and `d-dice-ends` (accept in the game during a roll).
 6. `d-expire`: let the prompt run out and read the trace. This is the one most likely to surprise us.
-7. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
+7. `d-firstbrief`: a first ritual on Zennit gets the long briefing whatever the day. If the warlock had never cast on him before
+   `d-ritual`, that briefing was it; otherwise someone who never has casts one.
+8. `d-witness`: the warlock turns Summon Core off and casts on Zennit with a helper who runs it; Zennit's client files the
+   summons with the caster and the helper (it marks this itself).
+9. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
 
 ## Phase 3: a week with the group
 

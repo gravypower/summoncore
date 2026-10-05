@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.20.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.21.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -13,6 +13,16 @@ match `summoncore.toc`). The TOC uses interface `16001`, which matches client 1.
 addon does not appear, enable "Load out of date AddOns".
 
 Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`SummonTrackerDB`).
+
+**Who needs it.** Only the caster's client sees a Ritual of Summoning, so whoever casts should run Summon Core for the summons to be
+logged with its place and helpers; Zennit needs it for his answers (what he presses at the game's prompt) to be his. Helpers are
+credited from the caster's snapshot either way. **When the caster does not have it,** Zennit's client files the summons itself once he
+answers the game's prompt and no record of it has arrived within a few seconds: the caster from the prompt (or the only warlock in his
+group), the place from where he arrives (or, if he declines, from a helper's client), and the helpers only if someone in the group
+runs the addon. Every client in the group that is not casting watches who channels a ritual and sends Zennit's client a note (`W`);
+a helper's own client also gives the place. If the caster's own record turns up later, it replaces the filed one and his answer
+moves to it. Nothing is filed if he never answers the prompt, and no writ can be played without the caster's addon. On the first login the addon says a
+three-line welcome to this effect (`/sc welcome` says it again).
 
 ## Commands
 
@@ -28,7 +38,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc badges` | Badge list |
 | `/sc writ` | Arm a writ for your next ritual on Zennit (two a week): if he declines that summons in the game, it costs him its points. Again to withdraw it. It is also a **key binding** (Esc > Options > Key Bindings > AddOns > Summon Core: "Play a writ on your next summons of Zennit"), so it is one key in the middle of play; the binding (`Bindings.xml`) has never been tried in the client |
 | `/sc week say` | Tell the group (party or raid chat) where the week stands, in one line: the lead, his dice left, the last call. It uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
-| `/sc check` | The live-client checklist (`design/verification.md`), also on the Tools tab as the CHECKS row (RUN AUTO, NEXT, PASS, FAIL, SKIP, TRACE, REPORT, COPY: the output box cannot be selected, so COPY opens its text in a window that can): `/sc check auto` runs the automatic checks, `/sc check <id>` gives the steps for the rest, `pass`/`fail`/`skip <id> [note]` records a result, `trace` shows what the summon prompt did, `report` opens a copyable report to send back. Some checks turn green on their own when they happen for real |
+| `/sc check` | The live-client checklist (`design/verification.md`), also the Tools tab's Checks section (RUN AUTO, NEXT, PASS, FAIL, SKIP, TRACE, REPORT, COPY: the output box cannot be selected, so COPY opens its text in a window that can): `/sc check auto` runs the automatic checks, `/sc check <id>` gives the steps for the rest, `pass`/`fail`/`skip <id> [note]` records a result, `trace` shows what the summon prompt did, `report` opens a copyable report to send back. Some checks turn green on their own when they happen for real |
 | `/sc where` | Current map ID, subzone and how it scores |
 | `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
 | `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
@@ -50,6 +60,8 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. Paste it into the group chat. Also the Tools tab's **Playtest report**; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). Also the Tools tab's **The rules** |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
+| `/sc welcome` | The three lines a newcomer gets at their first login: taking part needs nothing new, who needs the addon, and where the rules and the story are |
+| `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting |
@@ -124,7 +136,7 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts) and `X` (a request to reset). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
+alts), `X` (a request to reset) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from
@@ -133,7 +145,8 @@ Zennit, and the last reset time, so a peer notices a missing summon, a changed a
 Merge rules:
 - Same event ID: keep the confirmed copy; if both are (or neither is), keep the earlier write.
 - Your own events are authoritative and nobody can add one against you.
-- A live `E` is accepted only if the sender is the caster.
+- A live `E` is accepted only if the sender is the caster, or, for a record Zennit's client filed (a 12th field names him), Zennit.
+  Only the summoned can file one, and only a summons of himself.
 - A `B` is accepted only by whisper and only soon after you sent a `R` to that sender (the window renews with
   each batch message, so a long log still arrives whole).
 - A deleted summon stays deleted: only its caster can send the `T`, and a copy of it is refused afterwards.
@@ -419,8 +432,12 @@ things out of the way but is not security.
 
 ### Tools tab, BattleTags and reset
 
-The Tools tab now has a button for every command that has no tab of its own: week and season, Battle.net check, undo the last
-summon, reset, and (admin only) the sync self-test, a test summon, the BattleTag tests and the debug switches.
+The Tools tab has a button for every command that has no tab of its own, in three sections under a row of small buttons, like
+the Party tab: **General** (windows, the record: week and season, the rules, the titles, the tab, cards, past seasons and the
+playtest report; the sound switch, undo the last summon and reset), **Testing** (where am I, the Battle.net check, voice clips and,
+admin only, the test summoning, the gags, the test modes, a test summon, the sync self-test and the BattleTag tests) and
+**Checks** (the live checklist). The output box sits under whichever section is on show; admin-only buttons are hidden for
+everyone else and the rows close up around them.
 `/sc admin` (or the Battle.net check button) shows the BattleTag the game reports and whether it is the admin's or Zennit's; the
 admin's **Run tag tests** button, and the last two lines of `/sc synctest`, check the matching with sample tags.
 

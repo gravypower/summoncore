@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.20.0"
+ST.version = "0.21.0"
 
 local DB_VERSION = 1
 
@@ -230,6 +230,11 @@ end
 
 function commands.writ() ST.ToggleWrit() end
 
+-- The welcome a newcomer gets at their first login (Intro.lua), again.
+function commands.welcome()
+    for _, line in ipairs(ST.Intro.WelcomeLines(ST.Gag.IsZennit())) do print_(line) end
+end
+
 -- The key binding (Bindings.xml) calls this global: one key to arm or withdraw a writ, with nothing typed in the middle of play.
 _G["SummonCore_ToggleWrit"] = ST.Safe("the writ key", ST.ToggleWrit)
 _G["BINDING_HEADER_SUMMONCORE"] = "Summon Core"
@@ -385,6 +390,7 @@ end
 function commands.week(rest)
     local W = ST.Week
     if rest == "victory" or rest == "group" or rest:match("^[zg]%d$") then return ST.Intro.Toggle(rest) end
+    if rest == "login" then return W.Replay() end
     if rest == "say" then
         local ok, text = W.SayWeek({
             channel = function() return IsInRaid() and "RAID" or IsInGroup() and "PARTY" or nil end,
@@ -550,12 +556,12 @@ local HELP = {
     "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
     "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",
     "/sc export / /sc import - copy-paste strings of the summon log",
-    "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files)",
+    "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files)    /sc welcome - the newcomer's welcome again",
     "/sc clip [category|file] - list or play voice clips from Media/clips",
     "/sc zennit list [add <place>|remove <n>|clear] - his secret list: refusing a summon there is free",
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
-    "/sc week [say|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, a key plays that chapter of the story",
+    "/sc week [say|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, login says this week's login lines again, a key plays that chapter of the story",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",

@@ -568,6 +568,7 @@ function Week.RulesCard(start)
             Week.ClosesText(start)),
         string.format("The season: win %d weeks to take its finale. A week he wins is followed by his week off, when summons of him are filler.",
             Week.WINS),
+        "Who needs Summon Core: whoever casts the ritual, for the summons to count, and Zennit, for his answers to be his. Helpers are credited either way.",
     }
     local whim = Week.WhimLine(start)
     card[#card + 1] = whim and ("This week's whim: " .. whim) or "No whim this week."
@@ -594,6 +595,7 @@ function Week.AnnounceClock()
             side == "group" and string.format("The group leads by %d", by) or
                 (by == 0 and "It is level, and a tie goes to Zennit" or string.format("Zennit leads by %d", by)),
             r.counted, Week.RULES.cap))
+        if ST.Check then ST.Check.Seen("s-lastcall", "said at login with " .. leftText(left) .. " left") end
     end
 end
 
@@ -643,6 +645,15 @@ function Week.Check()
     ST.Guard("the week's clock", Week.AnnounceClock)
     ST.Guard("the Monday tip", Week.AnnounceTip)
     ST.Guard("the waiting summons", Week.AnnounceWaiting)
+end
+
+-- Says this week's login lines again (/sc week login): the whim, the clock, a last call, a tip, and what is waiting or owed.
+-- Last week's result is left alone, since announcing it also plays the week's opening and records the result.
+function Week.Replay()
+    local s = ST.db and ST.db.settings
+    if not s then return end
+    s.whimSeen, s.clockSeen, s.lastCallSeen, s.tipSeen = nil, nil, nil, nil
+    Week.Check()
 end
 
 -- Zennit's client says what is waiting for him; everyone else's says what they owe.
@@ -759,6 +770,17 @@ end
 
 -- What the caster should know as a ritual on `target` begins, or nil when it is not Zennit or the old rules apply:
 -- whether it will count, where the week stands, his dice, and what helpers add.
+-- True when this player has never cast a summons of Zennit (in the log as synced): their first one gets the full briefing,
+-- whatever day of the week it is (design/lenses.md, Accessibility).
+function Week.FirstCast()
+    local me = ST.baseName(ST.Sync.myName())
+    if not me then return false end
+    for _, ev in pairs(ST.db.events) do
+        if not ev.fake and isZennit(ev.target) and ST.baseName(ev.caster) == me then return false end
+    end
+    return true
+end
+
 function Week.Briefing(target, mapID, subzone, writ)
     if not isZennit(target) then return nil end
     local now = time()
@@ -775,9 +797,9 @@ function Week.Briefing(target, mapID, subzone, writ)
     end
     local dice = Week.DiceLeft(start)
     local edge, moved = Week.Edge(start)
-    -- The first summons of the week says everything (the helper rule, the catch-up, the whim). Later ones say only what
-    -- changes from one cast to the next, since the rest is on /sc rules and was said a few summons ago.
-    local first = r.counted == 0
+    -- The first summons of the week says everything (the helper rule, the catch-up, the whim), and so does a player's first ever.
+    -- Later ones say only what changes from one cast to the next, since the rest is on /sc rules and was said a few summons ago.
+    local first = r.counted == 0 or Week.FirstCast()
     local text
     if first then
         text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,

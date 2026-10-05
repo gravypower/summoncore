@@ -6,7 +6,10 @@
 --   E  EVENT    body: record               (live broadcast of a new summon; sender must be the caster)
 --   R  REQUEST  body: since                (asks the whisper target for events with time > since)
 --   B  BATCH    body: record               (one record per message, whispered in reply to R)
--- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote
+--   W  WITNESS  body: caster|target|helpers|mapID|subzone|time|helping   (what a group member saw of a ritual, for Zennit's client)
+-- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote[|answer[|w[|by]]]
+-- A record filed by Zennit's client for a caster without the addon carries "by" (his name): its id starts with it, and only he
+-- can send or delete it (design/lenses.md, Accessibility, G).
 -- Fields are percent-escaped. Points and kind are never trusted from the wire: they are recomputed.
 local ADDON, ST = ...
 local Sync = {}
@@ -26,7 +29,7 @@ local HELLO_BACK_COOLDOWN = 30
 local REQUEST_WINDOW = 120 -- how long after our REQUEST (or the last BATCH message) we accept more from that sender
 
 local function newState()
-    return { queue = {}, requested = {}, lastReq = {}, lastHelloBack = {}, added = 0 }
+    return { queue = {}, requested = {}, lastReq = {}, lastHelloBack = {}, added = 0, witness = {} }
 end
 Sync.newState = newState
 Sync.state = newState()
@@ -147,12 +150,13 @@ end
 function Sync.Encode(id, ev)
     local assist = {}
     for _, a in ipairs(ev.assistants or {}) do assist[#assist + 1] = esc(a) end
-    -- an 11th field "w" marks a summons the group played a writ on; most records stay 10 fields, as before
+    -- an 11th field "w" marks a summons the group played a writ on, and a 12th names who filed it when the caster did not (Zennit's
+    -- client); most records stay 10 fields, as before
     return table.concat({
         esc(id), esc(ev.caster), esc(ev.target), table.concat(assist, ","),
         ev.mapID and tostring(ev.mapID) or "", esc((ev.subzone or ""):sub(1, MAX_SUBZONE)),
         tostring(ev.time), ev.confirmed and "1" or "0", tostring(ev.wrote or ev.time),
-        respString(ev.response), ev.writ and "w" or nil,
+        respString(ev.response), (ev.writ and "w") or (ev.by and "") or nil, ev.by and esc(ev.by) or nil,
     }, "|")
 end
 
@@ -163,11 +167,15 @@ end
 -- Returns id, ev on success, or nil, reason. Never trusts the sender's field values.
 function Sync.Decode(record)
     local f = split(record, "|")
-    if #f < 9 or #f > 11 then return nil, "fields" end
-    if f[11] ~= nil and f[11] ~= "w" then return nil, "writ" end
+    if #f < 9 or #f > 12 then return nil, "fields" end
+    if f[11] ~= nil and f[11] ~= "w" and not (f[11] == "" and f[12]) then return nil, "writ" end
     local id, caster, target = unesc(f[1]), unesc(f[2]), unesc(f[3])
     if not validName(caster) or not validName(target) then return nil, "name" end
-    if #id > 48 or id:sub(1, #caster + 1) ~= caster .. "-" then return nil, "id" end
+    -- only Zennit files a summons for someone else, and only a summons of himself
+    local by = f[12] and unesc(f[12]) or nil
+    if by and (not validName(by) or by ~= target) then return nil, "by" end
+    local author = by or caster
+    if #id > 48 or id:sub(1, #author + 1) ~= author .. "-" then return nil, "id" end
     local assistants = {}
     if f[4] ~= "" then
         for _, a in ipairs(split(f[4], ",")) do
@@ -193,14 +201,14 @@ function Sync.Decode(record)
     return id, {
         caster = caster, target = target, assistants = assistants, mapID = mapID,
         subzone = subzone, time = t, wrote = wrote, confirmed = f[8] == "1",
-        response = resp, writ = f[11] == "w" or nil,
+        response = resp, writ = f[11] == "w" or nil, by = by,
     }
 end
 
 ----------------------------------------------------------------------
 -- Merge (pure rules; the only DB access is through Store)
 ----------------------------------------------------------------------
--- live: the record arrived as an EVENT broadcast, so the sender must be the caster.
+-- live: the record arrived as an EVENT broadcast, so the sender must be the caster (or, for a record Zennit filed, Zennit).
 -- opts.dryRun: report what would happen without writing.
 -- opts.allowSelf: accept your own events that you do not have (a user-initiated import restoring a
 --   lost log); an existing copy of your own event is still never overwritten.
@@ -208,12 +216,13 @@ end
 function Sync.Merge(id, ev, sender, live, opts)
     opts = opts or {}
     local store = ST.Store
-    if live and ev.caster ~= sender then return "rejected:sender" end
+    local author = ev.by or ev.caster
+    if live and author ~= sender then return "rejected:sender" end
     -- anything from before the last reset stays gone, even if another client still holds it
     if ST.db.resetAt and ev.time <= ST.db.resetAt then return "rejected:reset" end
     if store.IsDeleted(id) then return "rejected:deleted" end
     local cur = store.Get(id)
-    if ev.caster == Sync.myName() then
+    if author == Sync.myName() then
         -- Nobody can write entries against the receiver. Our own copy is authoritative.
         if cur then
             if not opts.dryRun then cur.response = laterResponse(cur.response, ev.response) end
@@ -305,6 +314,67 @@ end
 function Sync.BroadcastEvent(id, ev)
     local rec = Sync.Encode(id, ev)
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "E", rec) end
+end
+
+-- What a group member saw of a ritual (Detector): sent to the group, where only Zennit's client keeps it.
+-- note: caster, target (or nil), helpers (list), mapID, subzone, time, helping (the witness clicked the portal itself)
+function Sync.EncodeWitness(n)
+    local helpers = {}
+    for i, h in ipairs(n.helpers or {}) do if i <= 4 then helpers[#helpers + 1] = esc(h) end end
+    return table.concat({ esc(n.caster or ""), esc(n.target or ""), table.concat(helpers, ","), n.mapID and tostring(n.mapID) or "",
+        esc((n.subzone or ""):sub(1, MAX_SUBZONE)), tostring(n.time), n.helping and "1" or "0" }, "|")
+end
+
+function Sync.DecodeWitness(body, sender)
+    local f = split(body, "|")
+    if #f ~= 7 then return nil end
+    local caster, target = unesc(f[1]), unesc(f[2])
+    if caster ~= "" and not validName(caster) then return nil end
+    if target ~= "" and not validName(target) then return nil end
+    local helpers = {}
+    if f[3] ~= "" then
+        for _, h in ipairs(split(f[3], ",")) do
+            h = unesc(h)
+            if not validName(h) or #helpers >= 4 then return nil end
+            helpers[#helpers + 1] = h
+        end
+    end
+    local mapID = f[4] ~= "" and tonumber(f[4]) or nil
+    if f[4] ~= "" and (not mapID or mapID < 0 or mapID ~= math.floor(mapID)) then return nil end
+    local subzone, t = unesc(f[5]), tonumber(f[6])
+    if #subzone > MAX_SUBZONE or not t or t <= 0 or t > time() + 86400 then return nil end
+    if f[7] ~= "0" and f[7] ~= "1" then return nil end
+    return { caster = caster ~= "" and caster or nil, target = target ~= "" and target or nil, helpers = helpers, mapID = mapID,
+        subzone = subzone, time = t, helping = f[7] == "1", from = sender }
+end
+
+local WITNESS_KEEP = 300 -- seconds a note is kept
+function Sync.AddWitness(note)
+    local list = Sync.state.witness
+    list[#list + 1] = note
+    local cutoff = time() - WITNESS_KEEP
+    for i = #list, 1, -1 do
+        if list[i].time < cutoff or #list > 20 then table.remove(list, i) end
+    end
+end
+
+-- Notes about rituals from `since` on, newest first.
+function Sync.Witnessed(since)
+    local out = {}
+    for i = #Sync.state.witness, 1, -1 do
+        local n = Sync.state.witness[i]
+        if n.time >= since then out[#out + 1] = n end
+    end
+    return out
+end
+
+-- Sends a note to the group (party or raid only: the guild was not there). Zennit's own client keeps its note as well.
+function Sync.SendWitness(note)
+    if ST.Gag.IsZennit() then Sync.AddWitness(note) end
+    local body = Sync.EncodeWitness(note)
+    for _, ch in ipairs(Sync.channels()) do
+        if ch ~= "GUILD" then enqueue(ch, nil, "W", body) end
+    end
 end
 
 -- Zennit tells everyone how he dealt with a summon of him.
@@ -484,7 +554,8 @@ function Sync.OnMessage(text, channel, sender)
             -- Zennit hears a recorded complaint when a friend summons him (live events only, not history).
             if typ == "E" and ev.target == Sync.myName() and ST.Gag.IsZennit() then
                 ST.Clips.Play("zenit_land")
-                if ST.Respond then ST.Respond.Incoming(id, ev) end
+                -- a summons he has already answered, filed by his own client while this record was on its way: the answer moves over
+                if ST.Respond and not ST.Respond.Adopt(id, ev) then ST.Respond.Incoming(id, ev) end
             end
         end
         return result
@@ -535,6 +606,14 @@ function Sync.OnMessage(text, channel, sender)
         if #s.zenitAlts >= MAX_ALTS then return "rejected:full" end
         s.zenitAlts[#s.zenitAlts + 1] = sender
         return "learned"
+
+    elseif typ == "W" then
+        -- what a group member saw of a ritual: kept a few minutes on Zennit's client, for a summons whose caster has no addon
+        if not ST.Gag.IsZennit() then return "ignored" end
+        local note = Sync.DecodeWitness(body, sender)
+        if not note then return "bad" end
+        Sync.AddWitness(note)
+        return "noted"
 
     elseif typ == "T" then
         -- the caster deleted this summon: nobody else can, so the sender must be the one named in the id

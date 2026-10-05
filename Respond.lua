@@ -745,26 +745,13 @@ end
 -- summons did not happen: no points either way), or "refused" if the group played a writ on it. If nothing is seen, the form works
 -- as it always did, and an unanswered summons still counts as accepted.
 local SUMMON_WINDOW = 150   -- the game's prompt lasts about two minutes; a later answer is not about this summons
+local FILE_WAIT = 5         -- seconds to wait for the caster's own record before his client files the summons itself
 local lastSummoner          -- who the game's prompt named, when the client says (a plain first name, or nil)
+local promptAt, promptArea  -- when the game's prompt last came up, and the place it named
+Respond.later = function(fn) C_Timer.After(FILE_WAIT, fn) end -- a seam: the self-test runs it at once
 
--- kind: "accept" or "decline". summoner: the plain name the prompt named, if known. Returns the answer recorded, or nil when this
--- was not about a summons we are waiting on (a warlock without the addon, or a summons already answered). A dice roll in flight is
--- ended by it: one answer per summons.
-function Respond.Real(kind, summoner)
-    if not ST.Gag.IsZennit() then return nil end
-    local now, pick = time(), nil
-    for _, r in ipairs(Respond.Pending()) do -- newest first
-        local ev = r.ev
-        if not ev.response and not ev.fake and now - ev.time <= SUMMON_WINDOW
-            and (not summoner or ST.baseName(ev.caster) == summoner) then
-            pick = r
-            break
-        end
-    end
-    if not pick then
-        ST.Trace(kind .. ": no summons of him is waiting, so nothing is recorded")
-        return nil
-    end
+-- What he pressed, recorded on the summons `pick` ({ id, ev }).
+local function answer(pick, kind)
     local rolling = state[pick.id] ~= nil
     state[pick.id] = nil -- a roll in flight is over: the game's prompt is his answer, and no die is spent
     if pendingRoll and pendingRoll.id == pick.id then pendingRoll = nil end
@@ -788,6 +775,135 @@ function Respond.Real(kind, summoner)
     return resp
 end
 
+-- kind: "accept" or "decline". summoner: the plain name the prompt named, if known. Returns the answer recorded, or nil when this
+-- was not about a summons we are waiting on. A dice roll in flight is ended by it: one answer per summons. When no record of the
+-- summons has arrived (a caster without the addon), his client looks again in a few seconds and then files it itself (`final`).
+function Respond.Real(kind, summoner, final)
+    if not ST.Gag.IsZennit() then return nil end
+    local now, pick = time(), nil
+    for _, r in ipairs(Respond.Pending()) do -- newest first
+        local ev = r.ev
+        if not ev.response and not ev.fake and now - ev.time <= SUMMON_WINDOW
+            and (not summoner or ST.baseName(ev.caster) == summoner) then
+            pick = r
+            break
+        end
+    end
+    if pick then return answer(pick, kind) end
+    if final then return Respond.FileWitnessed(kind, summoner) end
+    if promptAt and now - promptAt <= SUMMON_WINDOW then
+        ST.Trace(kind .. ": no record of this summons yet; the Index looks again in a few seconds")
+        Respond.later(function() ST.Guard("the summon prompt", Respond.Real, kind, summoner, true) end)
+    else
+        ST.Trace(kind .. ": no summons of him is waiting, so nothing is recorded")
+    end
+    return nil
+end
+
+----------------------------------------------------------------------
+-- A summons whose caster has no addon (design/lenses.md, Accessibility, G)
+----------------------------------------------------------------------
+-- The game puts its prompt in front of him whoever cast the ritual, so his client can file the summons itself. Who cast it comes
+-- from the prompt, or from what a group member's client saw (Detector's witness), or is the only warlock in his group; the helpers
+-- only from a witness; the place from where he arrives when he accepts, else from a helper's note or the prompt's area name.
+
+-- Sets what the game's prompt said (the prompt's own handler does this; the self-test calls it).
+function Respond.SetPrompt(at, area) promptAt, promptArea = at, area end
+
+-- The only warlock in his group, or nil.
+local function loneWarlock()
+    local found
+    local units = {}
+    if IsInRaid() then for i = 1, GetNumGroupMembers() do units[#units + 1] = "raid" .. i end
+    else for i = 1, 4 do units[#units + 1] = "party" .. i end end
+    for _, unit in ipairs(units) do
+        local ok, _, class = pcall(UnitClass, unit)
+        if ok and class == "WARLOCK" and not UnitIsUnit(unit, "player") then
+            if found then return nil end
+            found = ST.baseName(UnitName(unit))
+        end
+    end
+    return found
+end
+
+-- The record to file, from what is known (pure, for the self-test). k: me, kind, summoner, notes (newest first), warlock,
+-- here = { mapID, subzone } (where he is now), area (the prompt's place name), at (when the prompt came up).
+function Respond.Witnessed(k)
+    local caster = k.summoner
+    local notes = {}
+    for _, n in ipairs(k.notes or {}) do
+        if (not n.target or n.target == k.me) and n.caster and (not caster or n.caster == caster) then notes[#notes + 1] = n end
+    end
+    caster = caster or (notes[1] and notes[1].caster) or k.warlock or "Unknown"
+    local helpers, seen = {}, {}
+    for _, n in ipairs(notes) do
+        if n.caster == caster then
+            for _, h in ipairs(n.helpers) do
+                if h ~= caster and h ~= k.me and not seen[h] then seen[h] = true helpers[#helpers + 1] = h end
+            end
+        end
+    end
+    table.sort(helpers)
+    while #helpers > 2 do table.remove(helpers) end
+    local mapID, subzone
+    if k.kind == "accept" and k.here then
+        mapID, subzone = k.here.mapID, k.here.subzone
+    else
+        for _, n in ipairs(notes) do
+            if n.helping and n.caster == caster then mapID, subzone = n.mapID, n.subzone break end
+        end
+        if not (mapID or subzone) then subzone = k.area end
+    end
+    return { caster = caster, target = k.me, assistants = helpers, mapID = mapID, subzone = subzone or "",
+        confirmed = #helpers == 2, by = k.me, time = k.at }
+end
+
+-- Files the summons he just answered, when no record of it came (`final` above), and records the answer on it.
+function Respond.FileWitnessed(kind, summoner)
+    local me, now = ST.Store.me(), time()
+    if not promptAt or now - promptAt > SUMMON_WINDOW then return nil end
+    -- a record of it may be here after all, already answered (the Index's form): nothing to file
+    for _, r in ipairs(ST.Store.Recent(30)) do
+        if r.ev.target == me and not r.ev.fake and math.abs(r.ev.time - promptAt) <= SUMMON_WINDOW
+            and (not summoner or ST.baseName(r.ev.caster) == summoner) then
+            ST.Trace(kind .. ": a record of this summons is here already; nothing to file")
+            return nil
+        end
+    end
+    local mapID = C_Map.GetBestMapForUnit("player")
+    local rec = Respond.Witnessed({ me = me, kind = kind, summoner = summoner, notes = ST.Sync.Witnessed(promptAt - 90),
+        warlock = loneWarlock(), here = { mapID = mapID, subzone = GetSubZoneText() }, area = promptArea, at = promptAt })
+    local id, ev = ST.Store.Add(rec)
+    ST.print(string.format("The Index filed this summons itself: %s cast it without Summon Core%s.", ev.caster,
+        #ev.assistants > 0 and (", helped by " .. table.concat(ev.assistants, " and ")) or ""))
+    ST.Trace(string.format("filed %s for %s (helpers %s, %s)", id, ev.caster, table.concat(ev.assistants, ","), ev.subzone ~= "" and ev.subzone or "?"))
+    if ST.Check then ST.Check.Seen("d-witness", string.format("filed for %s, %d helpers", ev.caster, #ev.assistants)) end
+    return answer({ id = id, ev = ev }, kind)
+end
+
+-- The caster's own record arrived after his client filed the same summons: the answer moves to it, and the filed one goes.
+-- Returns true when it did, so the Index's form does not open for a summons already answered.
+function Respond.Adopt(id, ev)
+    local me = ST.Store.me()
+    for fid, f in pairs(ST.db.events) do
+        if fid ~= id and f.by == me and f.target == ev.target and math.abs(f.time - ev.time) <= SUMMON_WINDOW
+            and (f.caster == ev.caster or f.caster == "Unknown") then
+            if f.response and not ev.response then
+                local resp = {}
+                for key, v in pairs(f.response) do resp[key] = v end
+                resp.time = math.max(time(), f.response.time + 1)
+                ST.Store.SetResponse(id, resp)
+                ST.Sync.SendResponse(id, resp)
+            end
+            ST.Store.Remove(fid)
+            ST.Trace(string.format("%s's own record replaced the one the Index filed (%s)", ev.caster, fid))
+            if ST.Hub then ST.Hub.Refresh() end
+            return true
+        end
+    end
+    return false
+end
+
 local promptFrame = CreateFrame("Frame")
 Respond.hooks = {} -- what was installed, for /sc check
 Respond.hooks.event = pcall(promptFrame.RegisterEvent, promptFrame, "CONFIRM_SUMMON") and true or false
@@ -795,6 +911,12 @@ pcall(promptFrame.RegisterEvent, promptFrame, "CANCEL_SUMMON") -- only traced: i
 promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function(_, event)
     if event == "CANCEL_SUMMON" then return ST.Trace("CANCEL_SUMMON: the game closed the prompt") end
     lastSummoner = nil
+    promptAt, promptArea = time(), nil
+    local area = C_SummonInfo and C_SummonInfo.GetSummonConfirmAreaName
+    if area then
+        local ok, name = pcall(area)
+        promptArea = ok and type(name) == "string" and not ST.isSecret(name) and name:sub(1, 40) or nil
+    end
     local get = C_SummonInfo and C_SummonInfo.GetSummonConfirmSummoner
     if get then
         local ok, name = pcall(get)

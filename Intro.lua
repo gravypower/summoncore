@@ -693,12 +693,23 @@ function Intro.Play(arg, whenClosed)
     end
 end
 
--- Mention the intro once, the first time the addon loads.
+-- The welcome, said once, the first time the addon loads (design/lenses.md, Accessibility): that taking part needs nothing new,
+-- who needs the addon for it to count, and where the rules and the story are.
+function Intro.WelcomeLines(zennit)
+    return {
+        zennit and "Welcome to Summon Core. You do not have to do anything new: answer summons in the game's own prompt, as you always have, and the Index takes that as your answer."
+            or "Welcome to Summon Core. You do not have to do anything new: cast and click portals as usual, and your summons of Zennit count for the group.",
+        "Whoever casts the ritual needs Summon Core for the summons to count, and Zennit needs it for his answers to be his. Helpers are credited either way.",
+        "|cffffd100/sc rules|r is the race in a minute, |cffffd100/sc intro|r is the story (about four minutes), and |cffffd100/sc|r opens the window.",
+    }
+end
+
 local hint = CreateFrame("Frame")
 hint:RegisterEvent("PLAYER_LOGIN")
-hint:SetScript("OnEvent", function()
+hint:SetScript("OnEvent", ST.Safe("the welcome", function()
     if ST.db and not ST.db.settings.introSeen then
         ST.db.settings.introSeen = true
-        ST.print("New here? Type |cffffd100/sc intro|r for the story so far.")
+        for _, line in ipairs(Intro.WelcomeLines(ST.Gag.IsZennit())) do ST.print(line) end
+        if ST.Check then ST.Check.Seen("s-welcome", "said at the first login") end
     end
-end)
+end))

@@ -26,7 +26,7 @@ function Store.Add(ev, localOnly)
     ev.time = ev.time or time()
     ev.wrote = ev.wrote or time()
     ev.points, ev.kind = ST.Scoring.Score(ev.mapID, ev.subzone)
-    local id = newID(ev.caster, ev.time)
+    local id = newID(ev.by or ev.caster, ev.time) -- a record Zennit's client filed for someone else starts with his name
     ST.db.events[id] = ev
     if Store.onAdd and not localOnly then Store.onAdd(id, ev) end
     if ST.Week and not localOnly then ST.Week.Warn(ev) end
@@ -122,6 +122,17 @@ function Store.Recent(limit)
         for i = #list, limit + 1, -1 do list[i] = nil end
     end
     return list
+end
+
+-- Removes a summons this client wrote (its id starts with our name), leaving a tombstone so sync cannot bring it back.
+function Store.Remove(id)
+    local ev = ST.db.events[id]
+    if not ev or id:sub(1, #ST.Sync.myName() + 1) ~= ST.Sync.myName() .. "-" then return false end
+    ST.db.events[id] = nil
+    ST.db.deleted = ST.db.deleted or {}
+    ST.db.deleted[id] = time()
+    if Store.onRemove then Store.onRemove(id) end
+    return true
 end
 
 -- Removes the newest summon this character cast (nobody can delete someone else's) and leaves a tombstone so
