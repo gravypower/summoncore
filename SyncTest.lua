@@ -515,6 +515,33 @@ add("the Index today: the intro's last scene follows the season, and holds back 
     return key == "g1" and L.ArtKey({ chapters = {} }) == nil, "standing, trunks, last wins and last season all follow the tree"
 end)
 
+add("the Index today: every fixed line has a recorded clip, and a clip sets how long its line lasts", function()
+    local L = ST.Ledger
+    local missing = {}
+    for id in pairs(L.LINES) do
+        if not (ST.ledgerClips and ST.ledgerClips[id]) then missing[#missing + 1] = id end
+    end
+    if #missing > 0 then
+        table.sort(missing)
+        return false, "no clip length for " .. table.concat(missing, ", ") .. " (run tools/intro/build_ledger_audio.py)"
+    end
+    local list = { { text = L.LINES.wait, clip = "wait" }, { text = "Poogs has summoned Zennit 4 times." } }
+    local sentences = L.Timed(list)
+    if sentences[1].clip ~= "wait" or sentences[2].clip ~= nil then return false, "only the fixed line should carry a clip" end
+    if math.abs(sentences[2].t - ST.ledgerClips.wait) > 0.001 then return false, "a clip should set its line's length" end
+    -- every fixed line the scene can say for this season is tagged with the clip that records it
+    local function state(z, g, finales, score)
+        return { wins = 5, cap = 10, immune = false, season = { zennit = z, group = g, finales = finales or {}, chapters = {} },
+            score = score or { summons = 0, group = 0, zennit = 2, counted = 0, new = true } }
+    end
+    for _, s in ipairs({ state(0, 0), state(4, 4, { { side = "zennit" } }), state(0, 4), state(3, 1) }) do
+        for _, item in ipairs(L.Build(s)) do
+            if item.clip and L.LINES[item.clip] ~= item.text then return false, "clip " .. item.clip .. " does not match its line" end
+        end
+    end
+    return true, "all fixed lines are recorded"
+end)
+
 add("Zennit's answer rides on the record; malformed answers are rejected", function()
     local id, ev = sample({ target = "Zennit", response = { result = "won", zroll = 64, sroll = 31, time = BASE + 300 } })
     local rid, back = Sync.Decode(Sync.Encode(id, ev))

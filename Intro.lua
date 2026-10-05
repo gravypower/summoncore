@@ -233,6 +233,7 @@ end
 
 -- Narration: one clip per scene (PlaySoundFile cannot start mid-file), so pausing replays the scene.
 local clipHandle, clipScene, clipToken, audioMissing
+local lineHandle, lastLine -- the Ledger scene's recorded line now playing, and the last line started
 
 -- Key clicks run for as long as the text is typing. PlaySoundFile cannot loop or be cut short, so a long clip is
 -- started with the sentence and stopped when the typing is done (or the scene is stopped).
@@ -248,6 +249,10 @@ local function stopClip()
     stopKeys()
     clipToken = (clipToken or 0) + 1
     clipScene = nil
+    if lineHandle then
+        pcall(StopSound, lineHandle)
+        lineHandle = nil
+    end
     if clipHandle then
         pcall(StopSound, clipHandle)
         clipHandle = nil
@@ -267,6 +272,15 @@ local function playClip(si, natural)
     local ok, willPlay, handle = pcall(PlaySoundFile, audioPath(si), "Dialog")
     audioMissing = not (ok and willPlay)
     clipHandle = handle
+end
+
+-- The Ledger scene has no clip of its own: its fixed sentences each have a recording (Media\ledger), played as the
+-- line starts. The lines built from names and numbers have none and are only typed.
+local function playLine(clip)
+    if lineHandle then pcall(StopSound, lineHandle) end
+    local ok, willPlay, handle = pcall(PlaySoundFile, MEDIA .. "ledger\\" .. clip .. ".ogg", "Dialog")
+    audioMissing = audioMissing or not (ok and willPlay)
+    lineHandle = ok and willPlay and handle or nil
 end
 
 -- A chirp as a key phrase appears, followed a moment later by a burst of key clicks as it types out.
@@ -290,6 +304,7 @@ local function show(sec)
         picture:SetTexture(artPath(si))
         shownFrame = -1
         lastCue = nil
+        lastLine = nil
         if playing then
             playClip(si, true)
             if posOf(si) > 1 and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
@@ -302,6 +317,14 @@ local function show(sec)
     end
 
     local rel = sec - starts[si]
+    if playing and scenes[si].silent and scenes[si].sentences and not ST.db.settings.introMute then
+        local _, line = Intro.SentenceAt(scenes[si].sentences, rel, scenes[si].length)
+        if line and line ~= lastLine then
+            lastLine = line
+            local clip = scenes[si].sentences[line].clip
+            if clip then playLine(clip) end
+        end
+    end
     -- the ending: after the last line the picture and text fade to black and "THE END" fades in
     local fade = 1
     if si == hi then
@@ -381,6 +404,7 @@ local function setPlaying(p)
     if p then
         -- Audio cannot resume mid-clip, so resuming replays the current scene from its start.
         t = starts[sceneAt(t)]
+        lastLine = nil
         playClip(sceneAt(t))
     else
         stopClip()
