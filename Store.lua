@@ -35,10 +35,11 @@ end
 
 
 -- Zennit's answer to a summon of him (set by his client, carried by sync): { result, zroll, sroll, time }.
--- A summon still counts unless it was refused, still owes the 50 silver, or he won the dice.
+-- A summon still counts unless it was refused or he won the dice. A demand for silver does NOT stop it counting: the silver goes
+-- on the caster's tab (design/lenses.md, Meaningful Choices), so it cannot be used to reject a summons.
 -- "excused" is a refusal of a destination on his secret list: no points for the summoner and no penalty for him.
 Store.RESULTS = { accepted = true, refused = true, excused = true, owed = true, paid = true, won = true, lost = true }
-local NO_POINTS = { refused = true, excused = true, owed = true, won = true }
+local NO_POINTS = { refused = true, excused = true, won = true }
 
 function Store.Lands(ev)
     return not (ev.response and NO_POINTS[ev.response.result])

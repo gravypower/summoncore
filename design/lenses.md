@@ -30,6 +30,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Surprise | A season is about 11 weeks of the same rules and the same lines; what will still surprise this group in week 9? | Answered; A, B, C and D built; playtest |
 | Elegance | Twelve or so rules have piled up; which ones earn their place? | Answered; A, C built and D worded (audio pending); B (the head start) left |
 | Playtesting | Every lens ended with questions for a playtest; the first new-rules week starts today | Answered; the report and the script built |
+| Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
 
 ## Entries
 
@@ -749,6 +750,82 @@ in playtests"; the new rules start **today, Monday 5 October 2026 (UTC)**, so th
 - Does the group paste the report, or does it have to be asked for? (If it is not read, it is not worth the chat lines.)
 - Which question in the script gets the most honest answer, and which gets a shrug?
 
+### 2026-10-05 · Lens of Community: what if Zennit is not at his desk?
+
+**The questions (paraphrased):** what kind of community does the game assume, and what does each member owe it? What happens
+when someone joins, leaves or goes quiet? Does the game depend on everyone behaving, and what does it do when they do not?
+The group here is a handful of friends with real lives: holidays, flu, a month off WoW, a bad week.
+
+**What the build assumes about each member** (`Respond.lua`, `Sync.lua`, `Week.lua`, `Store.lua`)
+
+| Member | The game assumes | What happens if they are absent |
+|---|---|---|
+| A warlock | Casts when others want to be summoned | Nothing: the others carry on |
+| A helper | Turns up at the portal | Fewer helpers; the bonus is smaller |
+| A new friend | Joins the guild or party and runs the addon | Sync brings the log across (about three records a second); the story is derived from it, so they are caught up |
+| The admin | One account (`ST.ADMIN_TAG`) | Debug tools wait; nothing in play depends on it |
+| **Zennit** | **Answers every summon of him himself** | **Every unanswered summon counts as accepted, for good** |
+
+**The numbers.** The group's chance of winning a week and of taking the finale, as the share of summons he actually answers falls
+(the weekly model that reproduces the Fairness table; unanswered summons are accepted, and never on his list):
+
+| He answers | Quiet week | Normal week | Trying week | Normal season: group takes the finale |
+|---|---|---|---|---|
+| All of them | 15% | 27% | 63% | 7% |
+| Three in four | 30% | 51% | 74% | **52%** |
+| Half | 49% | 75% | 87% | **95%** |
+| One in four | 72% | 93% | 98% | 100% |
+| None | 100% | 100% | 100% | 100% |
+
+**Findings**
+1. **The whole balance is hostage to his attendance.** If he skips one summons in four, a normal week goes from 27% to 51% and the
+   season from a 7% chance of the group's finale to 52%. Every number in the Fairness, Interest Curve and Skill entries assumes
+   he answers each one.
+2. **Absence pays the group, and the story goes on without him.** An unanswered summons lands and counts as accepted (the popup says
+   so), and there is no limit. A holiday gives the group chapters, and a finale where "Zennit is freed" can happen while he is away.
+3. **Nothing reminds him, and the group cannot see it.** A summons arrives as a popup if he is online; if he is not, nothing greets
+   him at login. The "Week:" line does not say how many are waiting, so the group cannot chase him: the banter the Player entry
+   says they like has nothing to grab.
+4. **A result can be announced and then change.** Monday's chat line (a minute after login) uses the week as it stands; he can still
+   answer until the week closes two days later, so a late roll can reverse a win that was announced and whose chapter was unlocked.
+   (The Interest Curve entry noted this; it is still open.)
+5. **Joining, leaving and roles are fine.** Sync catches a new member up from the log, his alts are learned from his own client,
+   and only the caster can delete a summons. A friend group does not need more machinery here.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A nudge, and a number**: at login (and as a summons arrives while he is away) his client says "N summons are waiting for your answer", and the "Week:" line and the briefing give the count ("2 waiting for his answer") so the group can chase him | 1, 3 | Wording and a count |
+| B | **A provisional Monday**: the week's result is announced as provisional while summons are still unanswered and the week is open, and again as final when it closes (and it says so if it changed) | 4 | Wording and one more line |
+| C | **Held over**: a summons still unanswered when its week closes is filed as filler (the race ignores it), not accepted. An absent Zennit pauses the race; he cannot gain, but he can stall a win by staying silent | 1, 2 | A rule; changes what "ignoring" means |
+| D | **A declared leave** (`/sc away`): he says he is away, the week is filled as filler like a week off, and the Index writes the line. Needs a new sync message and a limit per season | 1, 2 | A protocol change; the largest that stays honest |
+| E | **The Index answers for him** after a day: a roll worked out from the summons' id, the same on every client, so the week keeps its balance without him | 1, 2 | A rule with a subtle consequence: the score can change when the clock passes a day |
+
+**Our answer:** build **A and B**; **C, D and E wait**. An unanswered summons still counts as accepted for now, and the playtest report
+will show how many he leaves, and for how long.
+
+**Built**
+- **A, a nudge and a number.** A summons of Zennit unanswered for an hour (`Week.RULES.overdue`) is "waiting for his answer". The
+  "Week:" line says so ("... 2 waiting for his answer", and "waiting for your answer" on his own client) and so does the briefing as
+  a ritual on him begins ("2 earlier summons of him are still waiting for his answer: a word to him might help"). A fresh summons is
+  not counted, so the line is quiet right after "Summon logged". On his client, a minute after login, the chat says "N summons are
+  waiting for your answer. /sc respond opens the latest."
+- **B, a provisional Monday.** If summons of him are unanswered while his week is still open, the Monday announcement ends
+  "Provisional: N summons of him are still waiting for his answer, and the week closes on Wednesday. The Index will say again if
+  it changes." Once the week has closed, the next login says "The week of 12 Oct is now final: it stays with the group", or "The week
+  of 12 Oct changed after Zennit's late answers: it went to Zennit, not the group." A finale's keepsake is held until the result is
+  final. The announced result is remembered in settings (`weekAnnounced`) on each client; nothing is synced.
+
+**To decide before building**
+- When he does not answer, should the race wait for him (C), go on without him (E), or take his word that he is away (D)? (After the
+  first weeks of the report.)
+
+**To watch in playtests**
+- How many summons does he leave unanswered, and for how long? (`/sc report` shows both.)
+- Does the group chase him when they can see the number, or does it feel like nagging?
+- Has a Monday announcement ever changed by Wednesday?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -767,3 +844,5 @@ in playtests"; the new rules start **today, Monday 5 October 2026 (UTC)**, so th
 | 2026-10-04 | Pools of lines, a whim of the week (four small twists, about half the weeks), a recording sheet and a list that remembers | Surprise | The surprises were in the people and the story only; the repeating lines were wallpaper by week 9 and every week played under the same rules |
 | 2026-10-04 | Bound the list (five places of four letters or more), add a rules card (`/sc rules`), and re-word intro scenes 9 and 10 (audio to be re-rendered); keep the head start | Elegance | An unbounded list could decide every week; no one place said all the rules; the narration predated four rules |
 | 2026-10-05 | Playtest from the log: `/sc report` counts the numbers, `design/playtest.md` is the script (smoke test, Monday routine, questions for people, what settles each open decision) | Playtesting | The group dislikes bookkeeping; most of the open questions are numbers the log already holds, and nothing had ever been run live |
+| 2026-10-05 | The group sees how many summons are waiting for his answer; Monday's result is provisional while he can still answer; unanswered still counts as accepted for now | Community | The balance is hostage to his attendance (a quarter skipped doubles a normal week's chance), nothing reminded him, and a late answer could reverse an announced win |
+| 2026-10-05 | A demand for silver no longer holds the summons back: it counts at once and the silver goes on a tab; Zennit names the price, and a card's punch pays it | Meaningful Choices | Under the new rules a silver demand cost him nothing and blocked the group's points until paid, so it beat refusing, had no weekly limit, and put the blame for paying late on the group |

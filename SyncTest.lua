@@ -544,8 +544,8 @@ add("points only count for summons that land", function()
         tally = ST.Store.Tallies().Alpha
         stats = ST.Store.Stats("Alpha")
     end)
-    -- accepted, paid, lost and the unanswered one land: 4 summons x 3 points
-    return tally.cast == 7 and tally.points == 12 and stats.cast == 4,
+    -- accepted, owed (the silver goes on a tab), paid, lost and the unanswered one land: 5 summons x 3 points
+    return tally.cast == 7 and tally.points == 15 and stats.cast == 5,
         string.format("cast=%d points=%d landed=%d", tally.cast, tally.points, stats.cast)
 end)
 
@@ -1247,6 +1247,201 @@ add("the playtest report: weeks, answers, dice, the list and the helpers, counte
     return ok and #none == 1, "weeks, answers, dice, the list and the helpers read from the log; an empty log says so"
 end)
 
+add("waiting for his answer: counted once overdue, said to the group and in his own words", function()
+    return newRules(function()
+        local W = ST.Week
+        local a = newClient("Alpha")
+        local savedOverdue = W.RULES.overdue
+        local out = {}
+        with(a, function()
+            local this = W.Start()
+            local function put(key, answered)
+                a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this, points = 3, kind = "zone",
+                    response = answered and { result = "accepted", zroll = 0, sroll = 0, time = this + 1 } or nil }
+            end
+            put("a", true); put("b", false); put("c", false)
+            W.RULES.overdue = math.huge
+            out.quiet = W.StatusLine(this)                       -- nothing is overdue yet
+            out.none = W.Overdue(this)
+            W.RULES.overdue = 0
+            out.all = W.Unanswered(this)
+            out.waiting = W.Overdue(this)
+            out.group = W.StatusLine(this)
+            out.you = W.StatusLine(this, true)
+            out.brief = W.Briefing("Zennit")
+            W.RULES.overdue = savedOverdue
+        end)
+        local ok = not out.quiet:find("waiting", 1, true) and out.none == 0 and out.all == 2 and out.waiting == 2
+            and out.group:find("2 waiting for his answer", 1, true) and out.you:find("2 waiting for your answer", 1, true)
+            and out.brief and out.brief:find("2 earlier summons of him are still waiting", 1, true)
+        return ok, tostring(out.group)
+    end)
+end)
+
+add("a provisional Monday: announced as provisional while he can still answer, then said again as final or as changed", function()
+    return newRules(function()
+        local W = ST.Week
+        local a = newClient("Alpha")
+        local printed, realPrint, realTime = {}, ST.print, time
+        local out = {}
+        local function say() return table.concat(printed, "\n") end
+        local ok, err = pcall(function()
+            with(a, function()
+                local monday = W.Start()
+                local last = monday - 7 * 86400
+                -- last week: one summons accepted, one never answered; both land, so the group leads 6 to 2
+                a.db.events.x = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 3600, points = 3, kind = "zone",
+                    response = { result = "accepted", zroll = 0, sroll = 0, time = last + 3700 } }
+                a.db.events.y = { caster = "Alpha", target = "Zennit", assistants = {}, time = last + 7200, points = 3, kind = "zone" }
+                ST.print = function(text) printed[#printed + 1] = text end
+                rawset(_G, "time", function() return monday + 86400 end)          -- Tuesday: he can still answer
+                W.Check()
+                out.first = say()
+                out.provisional = a.db.settings.weekAnnounced and a.db.settings.weekAnnounced.provisional
+                out.announced = a.db.settings.weekAnnounced and a.db.settings.weekAnnounced.winner
+                -- his late answer: he wins the dice, and the week is his
+                a.db.events.y.response = { result = "won", zroll = 90, sroll = 10, time = monday + 80000 }
+                printed = {}
+                rawset(_G, "time", function() return monday + 3 * 86400 end)      -- Thursday: the week has closed
+                W.Check()
+                out.second = say()
+                out.settled = a.db.settings.weekAnnounced and a.db.settings.weekAnnounced.provisional
+            end)
+        end)
+        rawset(_G, "time", realTime)
+        ST.print = realPrint
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local pass = out.first:find("Provisional:", 1, true) and out.first:find("1 summons of him is still waiting", 1, true)
+            and out.provisional == true and out.announced == "group"
+            and out.second:find("changed", 1, true) and out.second:find("went to Zennit, not the group", 1, true) and out.settled == nil
+        return pass, string.format("announced provisional (%s), then: %s", tostring(out.provisional), tostring(out.second):sub(1, 90))
+    end)
+end)
+
+add("silver owed: counted by week and overall, shown to both sides, and payable after the week has closed", function()
+    return newRules(function()
+        local W, R = ST.Week, ST.Respond
+        local a = newClient("Alpha")
+        local out = {}
+        local me = ST.Store.me()
+        local realClosed = W.EventClosed
+        with(a, function()
+            local this = W.Start()
+            local function put(key, caster, target, result, at)
+                a.db.events[key] = { caster = caster, target = target, assistants = {}, time = at, points = 3, kind = "zone",
+                    response = result and { result = result, zroll = 0, sroll = 0, time = at + 1 } or nil }
+            end
+            put("s1", "Bo", "Zennit", "owed", this + 10); put("s2", "Bo", "Zennit", "owed", this + 20)
+            put("s3", "Bo", "Zennit", "paid", this + 30)
+            out.n, out.silver = W.Owed(this)
+            out.group = W.StatusLine(this)
+            out.you = W.StatusLine(this, true)
+            -- what I am owed, and what I owe, across all weeks
+            put("t1", "Bo", me, "owed", this - 21 * 86400); put("t2", me, "Zennit", "owed", this - 21 * 86400 + 5)
+            out.owedToMe, out.silverToMe = R.Owed("target")
+            out.iOwe, out.silverIOwe = R.Owed("caster")
+            -- the silver of a closed week can still be paid, and nothing else can be answered into it
+            W.EventClosed = function() return true end
+            a.db.events.t1.target = me
+            out.paid = R.Decide("t1", "paid")
+            out.lateAccept = R.Decide("t2", "accepted")
+            W.EventClosed = realClosed
+        end)
+        W.EventClosed = realClosed
+        local ok = out.n == 2 and out.silver == 100
+            and out.group:find("100 silver owed to him", 1, true) and out.you:find("100 silver owed to you", 1, true)
+            and out.owedToMe == 1 and out.silverToMe == 50 and out.iOwe == 1 and out.silverIOwe == 50
+            and out.paid and out.paid.result == "paid" and out.lateAccept == nil
+        return ok, string.format("2 owe (%s silver); owed to me %s, I owe %s; closed week: paid %s, accepted %s", tostring(out.silver),
+            tostring(out.silverToMe), tostring(out.silverIOwe), tostring(out.paid ~= nil), tostring(out.lateAccept))
+    end)
+end)
+
+add("summon cards: sold by Zennit, synced to everyone, punched by his demand for silver, counted from the log", function()
+    return newRules(function()
+        local W, R, C, Sy = ST.Week, ST.Respond, ST.Cards, ST.Sync
+        local z, a = newClient("Zennit"), newClient("Alpha")
+        local out = {}
+        local realClosed = W.EventClosed
+        with(z, function()
+            z.db.settings.zenitNames = { "Zennit" }
+            out.card = C.Issue("Bo-Realm", 2, 100)                       -- he sells Bo a card of two punches
+            out.sold = Sy.state.queue[#Sy.state.queue] and Sy.state.queue[#Sy.state.queue].payload
+        end)
+        out.noOne = select(2, with(a, function() return C.Issue("Bo", 2, 100) end)) -- anyone else cannot
+        -- another client takes the card, from Zennit only
+        with(a, function()
+            local body = out.sold and out.sold:match("^%d+~K~(.*)$")
+            out.fromZennit = body and Sy.OnMessage("1~K~" .. body, "PARTY", "Zennit")
+            out.fromAnyone = body and Sy.OnMessage("1~K~" .. body, "PARTY", "Mallory")
+            out.again = body and Sy.OnMessage("1~K~" .. body, "PARTY", "Zennit")
+            out.bad = Sy.OnMessage("1~K~card-1|Bo|99|10|" .. time(), "PARTY", "Zennit")
+        end)
+        local n = 0
+        with(a, function()
+            for _ in pairs(a.db.cards or {}) do n = n + 1 end
+            out.cards = n
+            out.left = C.Left("Bo")
+            -- Bo summons Zennit twice; Zennit demands the silver both times: the card pays, a third time it does not
+            local this = W.Start()
+            local function put(key, at) a.db.events[key] = { caster = "Bo", target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone" } end
+            put("b1", this + 10); put("b2", this + 20); put("b3", this + 30)
+            a.db.settings.zenitNames = { "Zennit" }
+            for _, id in ipairs({ "b1", "b2" }) do
+                a.db.events[id].response = { result = "paid", zroll = 0, sroll = 0, time = this + 40, card = true }
+            end
+            out.after = C.Left("Bo")
+            out.lines = table.concat(C.Lines(), " ")
+            out.paidLine = R.Announce(a.db.events.b2, a.db.events.b2.response)
+            -- the card flag survives the wire
+            local id, ev = Sy.Decode(Sy.Encode("Bo-1", { caster = "Bo", target = "Zennit", assistants = {}, time = this, wrote = this,
+                response = { result = "paid", zroll = 0, sroll = 0, time = this + 5, card = true, listed = true } }))
+            out.flag = ev and ev.response and ev.response.card and ev.response.listed and not ev.response.closes
+        end)
+        local m = ST.Silver.Match(30000, { { id = "s1", amount = 50 }, { id = "s2", amount = 50 } }, { { punches = 5, silver = 200 } })
+        local m2 = ST.Silver.Match(1200, {}, { { punches = 5, silver = 200 } })
+        local ok = out.card and out.card.punches == 2 and out.noOne == "only Zennit can sell cards"
+            and out.fromZennit == "card" and out.fromAnyone == "rejected:sender" and out.again == "kept" and out.bad == "rejected:values"
+            and out.cards == 1 and out.left == 2 and out.after == 0 and out.lines:find("0 of 2 punches left", 1, true)
+            and out.paidLine:find("card pays the 50 silver", 1, true) and out.flag
+            and #m.owed == 2 and m.card and m.card.punches == 5 and m.left == 0
+            and #m2.owed == 0 and m2.card == nil and m2.left == 12
+        return ok, string.format("sold %s, synced %s/%s, left %s then %s; 300s pays 2 owed + a card: %s", tostring(out.card ~= nil),
+            tostring(out.fromZennit), tostring(out.fromAnyone), tostring(out.left), tostring(out.after), tostring(m.card ~= nil))
+    end)
+end)
+
+add("silver is a tab, not a veto: the summons counts, Zennit names the price, and the amount travels with the answer", function()
+    local R, Sy = ST.Respond, ST.Sync
+    local a = newClient("Alpha")
+    local out = {}
+    local id = cast(a, 960, true, { target = "Zennit", assistants = {} })
+    with(a, function()
+        local ev = a.db.events[id]
+        -- he asks 200 silver: the summons still lands, and the tab is 200
+        ev.response = { result = "owed", zroll = 0, sroll = 0, time = BASE + 970, amount = 200 }
+        out.lands = ST.Store.Lands(ev)
+        out.describe = R.Describe(ev)
+        out.amount = R.AmountOf(ev.response)
+        out.default = R.AmountOf({ result = "owed" })
+        out.line = R.Announce(ev, ev.response)
+        local rid, back = Sy.Decode(Sy.Encode(id, ev))
+        out.wire = back and back.response and back.response.amount == 200 and back.response.result == "owed"
+        -- an amount on an answer that asks for none is refused
+        local rec = Sy.Encode(id, ev):gsub("owed:0:0:" .. (BASE + 970) .. ":0:200", "accepted:0:0:" .. (BASE + 970) .. ":0:200")
+        out.refused = select(2, Sy.Decode(rec))
+        local rec2 = Sy.Encode(id, ev):gsub(":0:200$", ":0:0")
+        out.zero = select(2, Sy.Decode(rec2))
+    end)
+    local parse = R.ParseSilver
+    local ok = out.lands and out.describe == "owes 200 silver" and out.amount == 200 and out.default == 50
+        and out.line:find("200 silver", 1, true) and out.line:find("The summons counts", 1, true) and out.wire
+        and out.refused == "response" and out.zero == "response"
+        and parse("50") == 50 and parse("2g") == 200 and parse("1g 20s") == 120 and parse("30s") == 30 and parse("0") == nil
+        and parse("abc") == nil and parse("100001") == nil
+    return ok, string.format("lands %s, %s, wire %s, parse 2g=%s", tostring(out.lands), tostring(out.describe), tostring(out.wire), tostring(parse("2g")))
+end)
+
 add("the last die: said once, for everyone, when his third die is spent", function()
     return newRules(function()
         local a = newClient("Alpha")
@@ -1364,9 +1559,10 @@ function T.Run()
     ST.Week.EventClosed = function() return false end -- the other tests use old summons
     local rulesFrom = ST.Week.RULES.from
     ST.Week.RULES.from = math.huge -- and the old race rules (the new-rules tests switch them on themselves)
-    local whims, fixed = ST.Week.RULES.whims, ST.Voice.fixed
+    local whims, fixed, overdue = ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue
     ST.Week.RULES.whims = false -- no whim of the week, and the plain variant of every line: the tests read exact words
     ST.Voice.fixed = true
+    ST.Week.RULES.overdue = math.huge -- and nothing is "waiting for his answer" unless a test asks
     local pass = 0
     local results = {}
     for _, t in ipairs(tests) do
@@ -1381,6 +1577,6 @@ function T.Run()
     end
     ST.Week.EventClosed = realEventClosed
     ST.Week.RULES.from = rulesFrom
-    ST.Week.RULES.whims, ST.Voice.fixed = whims, fixed
+    ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue = whims, fixed, overdue
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
 end

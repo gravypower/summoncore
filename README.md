@@ -37,13 +37,15 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
 | `/sc intro [scene\|z1..z5\|g1..g5\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter, `now` plays only "The Index today", `check` tests the sound files |
+| `/sc cards` | Who holds a summon card and how many punches are left. `/sc card` explains cards; Zennit's own: `/sc card sell <name> [punches [silver]]` and `/sc card offer <punches> <silver>`. Also the Tools tab's **Summon cards** |
+| `/sc probe` | Listens to trade and mail events and prints what the client lets an addon see (who, how much, or a secret value), to learn how the fifty silver could be detected. Run it again to stop |
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. Paste it into the group chat. Also the Tools tab's **Playtest report**; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). Also the Tools tab's **The rules** |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
 | `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a refusal costs them, and a summon that lands at a place on his list earns them again; refusing a listed place is free. Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting |
-| `/sc respond [test]` | Zennit answers a summon of him (accept, refuse, 50 silver or dice); `test` tries it on a pretend summon |
+| `/sc respond [test]` | Zennit answers a summon of him (accept, refuse, ask for silver or dice); `test` tries it on a pretend summon |
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
 | `/sc party` | Toggle party test mode (admin only): this character acts as an ordinary party member, even on the admin's or Zennit's own account, so Zennit's tab gives the party's gag. It turns Zennit test mode off, and the other way round. Both are also switches on the Tools tab |
@@ -59,12 +61,14 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `Sync.lua` | Sync | The only code that touches the network |
 | `Scoring.lua` | Scoring | Zone value table, points, badge rules |
 | `Theme.lua` | Theme | The "Neon Index" look: windows, buttons, tabs, text boxes and scroll areas, all drawn from flat colours |
-| `Respond.lua` | Respond | Zennit's answer to a summon of him (accept, refuse, 50 silver, dice) |
+| `Respond.lua` | Respond | Zennit's answer to a summon of him (accept, refuse, ask for silver, dice) |
 | `Week.lua` | Week | The weekly contest, his week off, and the season; all derived from the log |
 | `Reset.lua` | Reset | `/sc reset`: wipe this client, and the admin's request to everyone else |
 | `Export.lua` | Export | Import / Export window and the string codec |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
 | `Voice.lua` | Voice | Pools of lines: the Index says a fact that repeats a few different ways, never the same one twice running |
+| `Cards.lua` | Cards | Summon cards: prepaid silver Zennit sells, with punches counted from the log |
+| `Silver.lua` | Silver | The money side: on Zennit's client, sees silver arrive by trade or mail and asks him what it pays; `/sc probe` |
 | `Report.lua` | Report | `/sc report`: the playtest numbers, worked out from the log |
 | `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays; and the log's memory of a season (named moments, the silver, the keepsake) |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
@@ -199,6 +203,28 @@ The clips are committed with the rest of the addon (and so go into the release z
 repo: the lines meant to surprise him will not be a surprise if he looks. Run the manifest script after adding clips and commit
 `ClipList.lua` with them.
 
+### Silver and summon cards
+
+When Zennit asks for silver, **the summons counts at once** and the silver goes on the caster's **tab**: asking can never be a way
+to reject a summons (it used to hold the points back until the silver was paid, which made a free, unlimited refusal that the group got the
+blame for). **He names the price** (50 is only the default), and a holder of a card pays with a punch instead. The silver is paid in person.
+Two things make it visible and countable:
+
+- **Seeing it arrive** (Zennit's client only, `Silver.lua`). When money comes in by **trade** (a completed trade where the other side
+  offered money) or **mail** (taking money from the mailbox), the addon works out what it pays and **asks him before touching anything**:
+  "Bo paid you 200s by trade. Mark 1 of Bo's summons paid (200 silver)?" The payment covers the payer's oldest owed summons, each in full; if what is
+  left covers his card offer, it offers to sell a card as well. A payment that settles nothing is only mentioned in chat. If the client
+  hides the money from addons (the 12.0 API hides some values), it says so once, and `/sc probe` shows what does come through: it listens
+  to the same trade and mail events and prints who, how much, or a secret value. **None of this has been tried in the live client.**
+- **Summon cards, like a coffee card** (`Cards.lua`). A card is **prepaid silver**: N punches bought once at a price Zennit sets
+  (`/sc card offer 5 200`: five punches for 200 silver, against 250 at the counter). Each time he asks for silver from the
+  holder, **a punch pays it** at the card's price per punch and the Index says so ("Bo's card pays the 40 silver: a punch used, 3 left");
+  his popup's button reads "Take a punch (card: 3 left)". Cards are issued only by Zennit's client (`/sc card sell Bo`, or from the payment popup) and sent to
+  everyone (message `K`, with his hello and to anyone who asks for events), so a holder can see their balance in `/sc cards`.
+  **Punches are not stored anywhere:** they are counted from the summons he settled with a punch (an answer carrying the card flag),
+  oldest card first, so every client agrees and nothing drifts. A reset clears the cards with the summons. The answer's flags digit gains
+  a bit (4 = paid by a punch): older clients would read it as "closed the Index", so update everyone together.
+
 ### Zennit's answer
 
 When a live summon of Zennit reaches his client, a dialog gives him four choices:
@@ -207,7 +233,7 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 |---|---|
 | Accept it | Counts. |
 | Refuse | Does not count. |
-| Demand 50 silver, in cash, no receipt | Does not count until he says it was paid ("They paid"); until then the log shows "owes 50 silver". |
+| Ask for silver, in cash, no receipt | **Counts, like an accept.** He names the price (a small box, 50 by default; `50`, `2g`, `1g 20s`) and it goes on the caster's **tab** until he says it was paid ("They paid"); the log shows "owes 200 silver". A holder of a summon card pays with a punch instead, and he is not asked. Asking for silver can never be a way to reject a summons. |
 | Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, each of the summoner's helpers (up to two) adds 5 to theirs, higher wins and a tie goes to him. If Zennit wins, the summon does not count. He has 3 dice a week. |
 
 His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
@@ -285,6 +311,18 @@ numbers behind it, is in `design/lenses.md`):
   he is ahead (to +5), and grows when the group is ahead (to +15). At three or more it moves by **10** (to +0, or +20);
   a lead of one changes nothing. The briefing, the "Week:" line, his popup, the dice prompts and "The Index today" say
   so ("The Index, which takes no sides, has cut his edge on the dice to +5 this week"). Tune it in `Week.RULES.catchup`.
+- **The silver is seen on both sides.** A summons he has asked silver for stays on the tab until he marks it paid, however old it
+  is (it is paid in person, often after the week has closed, and the silver of a closed week can still be marked paid). The "Week:"
+  line says "100 silver owed to him" (to you, on his client); at login his client says how much he is owed, and everyone else's says
+  how much they owe him.
+- **The group can see who is slow.** A summons of Zennit unanswered for an hour (`Week.RULES.overdue`) is counted as *waiting for
+  his answer*, and the "Week:" line ("... 2 waiting for his answer") and the briefing as a ritual on him begins say how many, so the
+  group can chase him. On his own client, a minute after login, the chat says how many summons are waiting for him and that
+  `/sc respond` opens the latest. An unanswered summons still counts as accepted.
+- **A provisional Monday.** He can still answer into a week until it closes, two days after it ends, so a result announced on Monday
+  can change. While summons of him are unanswered, the Monday result ends "Provisional: N summons of him are still waiting for his
+  answer, and the week closes on Wednesday"; once the week has closed, the next login says it is final, or that it changed and who
+  it went to. A finale's keepsake waits for the final word.
 - **A whim of the week.** About half the weeks, the Index draws one small twist, the same on every client (it follows from the week
   number, so nothing is synced or kept): **The Index is distracted** (his dice edge is 5 lower), **attentive** (5 higher), **a
   helpers' feast** (each helper adds +8 instead of +5) or **the helpers are tired** (+2). Each moves a normal week's chance by
