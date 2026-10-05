@@ -400,9 +400,12 @@ numbers behind it, is in `design/lenses.md`):
   first briefing of the week, in "The Index today" and in `/sc week`; never in a week off. `Week.RULES.whims = false`
   turns it off, and `Week.WHIMS` and the deck in `Week.lua` are where to add more.
 - **His week off is real.** After a week Zennit wins, the next week is his: summons of him are still logged, answered and
-  gagged as usual (the warnings, his popup, the dice), but they are filed as **filler**: the race ignores them, nobody
-  wins the week, and no chapter is unlocked. So a win for Zennit is a pause for the group, not a head start; the week
-  after it is a normal one. His leave ends with a line at login.
+  gagged as usual (the warnings, his popup, the dice), but they are filed as **disturbing his leave**: the race ignores them,
+  nobody wins the week, and no chapter is unlocked. They still earn **postcards** from far-flung places and count for the
+  **titles**, and the briefing says so ("it will not count for the race, but a far-flung place still earns a postcard"). The
+  Index counts how often his leave was disturbed and who did it most; `/sc week` and the season's keepsake say so ("The Index
+  notes that his leave was disturbed 6 times; Al did it most (4)."). No points. So a win for Zennit is a pause in the race and a
+  small game of its own; the week after it is a normal one. His leave ends with a line at login.
 - **Zennit can close the Index** for the rest of the week once **5** have been filed and the latest of them answered:
   a "Close the Index" button after his answer, and in the hub's Zennit tab. It is free, and it travels with his answer,
   so every client agrees. Summons after that are filed under 'enthusiasm', and their casters are told.

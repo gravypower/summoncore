@@ -219,7 +219,7 @@ function ST.ToggleWrit()
     end
     local start = W.Start()
     if not W.NewRules(start) then return print_("There are no writs under the old rules.") end
-    if W.IsOff(start) then return print_("It is Zennit's week off: summons of him are filler, so a writ would have nothing to say.") end
+    if W.IsOff(start) then return print_("It is Zennit's week off: the race is off, so a writ would have nothing to say.") end
     local left = W.WritsLeft(start)
     if left == 0 then return print_(string.format("The group has played all %d writs this week.", W.RULES.writs)) end
     D.writ = true
@@ -451,7 +451,10 @@ function commands.week(rest)
     local season = W.Season()
     print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
         season.group, W.WINS, #season.finales))
-    print_(ST.Ledger.PostcardsLine(ST.Ledger.Facts(season)) or
+    local facts = ST.Ledger.Facts(season)
+    local leave = ST.Ledger.LeaveLine(facts)
+    if leave then print_(leave) end
+    print_(ST.Ledger.PostcardsLine(facts) or
         string.format("Postcards from Zennit: none yet this season (0 of %d far-flung places).", ST.Ledger.PostcardPlaces()))
     local immune, untilT = W.Immune(time())
     if immune then print_("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ". /sc week victory plays the story.") end

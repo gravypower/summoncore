@@ -1102,7 +1102,7 @@ add("his week off is real: summons of him are filler, nobody wins it, and the we
             for n = 1, 3 do put("off" .. n, this + 3600 * n, { result = "accepted", zroll = 0, sroll = 0, time = this + 3600 * n + 5 }) end
             out.week = W.Score(this)
             out.counts = W.Counts(a.db.events.off1)
-            out.said = ST.Respond.Announce(a.db.events.off1, a.db.events.off1.response):find("filler") ~= nil
+            out.said = ST.Respond.Announce(a.db.events.off1, a.db.events.off1.response):find("disturbing his leave", 1, true) ~= nil
             out.season = W.Season()
             out.next = W.IsOff(this + 7 * 86400) -- nobody won this week, so the next one is not off
         end)
@@ -2219,8 +2219,42 @@ add("his own lines: a postcard and an out-of-office, sent only by him, the newes
             and out.fromOther == "rejected:sender" and out.older == "kept" and out.badKey == "bad"
             and out.line == "Sand cffff0000againr." and out.postcard and out.postcard:find("in Silithus: 'Sand cffff0000againr.'", 1, true)
             and out.brief:find("His out-of-office says: 'Gone fishing. Do not summon.'", 1, true)
-            and out.cleared:find("is not hopeful", 1, true)
+            and out.cleared:find("still earns a postcard", 1, true) and not out.cleared:find("out-of-office", 1, true)
         return good, string.format("%s | %s", tostring(out.postcard), tostring(out.brief))
+    end)
+end)
+
+add("his week off: summons of him disturb his leave, the briefing says what still counts, and the Index counts who did it", function()
+    return newRules(function()
+        local a, W, L, out = newClient("Alpha"), ST.Week, ST.Ledger, {}
+        local realPrint = ST.print
+        local printed = {}
+        local ok, err = pcall(with, a, function()
+            local this = W.Start()
+            local last = this - 7 * 86400
+            local function put(key, caster, at, resp)
+                a.db.events[key] = { caster = caster, target = "Zennit", assistants = {}, time = at, points = 3, kind = "zone",
+                    response = resp }
+                return a.db.events[key]
+            end
+            put("won", "Cy", last + 3600, { result = "won", zroll = 90, sroll = 10, time = last + 3700 })    -- he won last week
+            put("o1", "Al", this + 3600); put("o2", "Al", this + 7200); put("o3", "Bo", this + 9000)
+            out.brief = W.Briefing("Zennit")
+            ST.print = function(text) printed[#printed + 1] = text end
+            W.Warn(a.db.events.o3)
+            ST.print = realPrint
+            out.facts = L.Facts()
+            out.line = L.LeaveLine(out.facts)
+            out.describe = W.Describe(W.Score(this))
+            out.why = select(2, W.Why(this))
+        end)
+        ST.print = realPrint
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.brief:find("disturbing his leave: it will not count for the race, but a far-flung place still earns a postcard", 1, true)
+            and printed[1] and printed[1]:find("disturbing his leave (3 this week)", 1, true)
+            and out.facts.leave.n == 3 and out.line == "The Index notes that his leave was disturbed 3 times; Al did it most (2)."
+            and out.describe:find("his leave disturbed 3 times", 1, true) and out.why == "disturbing his leave"
+        return good, string.format("%s | %s", tostring(out.line), tostring(printed[1]))
     end)
 end)
 

@@ -49,7 +49,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Simplicity/Complexity | Elegance counted a dozen rules; since then the game's prompt, writs and free declines arrived. Which rules buy a decision, and which undo each other? | Answered; A and B built; the head start stays |
 | Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
 | Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
-| Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B proposed |
+| Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
 
 ## Entries
 
@@ -1985,8 +1985,19 @@ but they turn the third of the season the race is off into its own small game th
 running count of how often the group disturbed a man on leave. It also makes his win feel like a win to the group too: something
 new to do.
 
-**Live checks with whatever is built** (step 6): in a week off (or with the week off stubbed on a test character), the briefing's
-line, and the keepsake and `/sc week` count.
+**Our answer (built: A and B).** C stays turned down.
+
+**Built**
+- **A, what still counts.** On his week off the briefing says "The Index will file this summons as disturbing his leave: it will not
+  count for the race, but a far-flung place still earns a postcard, and the titles still see it" (and his out-of-office, if he has
+  written one). The logged line says "filed as disturbing his leave (3 this week): not for the race, but the titles saw it". The rules
+  card, the Week line and `/sc writ` say the race is off rather than "filler".
+- **B, disturbing his leave.** The word replaces "filler" in the lines, the week's description ("his leave disturbed 3 times") and
+  what the Index files it under. `Ledger.Collect` counts summons of him in his weeks off and who cast them; `Ledger.LeaveLine` says
+  "The Index notes that his leave was disturbed 6 times; Al did it most (4)." in `/sc week` and the season's keepsake. No points.
+- **Not changed:** the narrated "The Index today" line for his week (`Ledger.LINES.week_leave`) still says "filler", because it has
+  a recording; it changes with the next batch of narration. The intro's scene 10 is the same.
+- **Live check** `d-leave` (marks itself when a summons of him on his leave is logged); a self-test of the lines and the count.
 
 **To watch in playtests**
 - Does the group still summon him in his week off? Does the count make them try?
@@ -2030,3 +2041,4 @@ line, and the keepsake and `/sc week` count.
 | 2026-10-05 | One rule for no: a decline in the game or on the form is free at a place on his list or with his free decline, otherwise it costs, and a writ always costs; every no reads as "declined (free)" or "declined (cost him N)" | Simplicity/Complexity | The two surfaces followed different rules, so a form refusal at a list place dodged a writ and the form's Refuse could only hurt him; three words for one act |
 | 2026-10-05 | His list is set for the week (a new place counts from Monday); the briefing says a writ only bites at his list once his free decline is used; postcards from far-flung places, once each a season, no points | Secrets | The list could be changed with a summons on screen, which made every decline free; the group could not see when a writ mattered; the far-flung trips earned points but no part in the joke |
 | 2026-10-05 | Zennit writes his own postcards and an out-of-office for his week off; sent from his characters only, the newest kept, used on every client in place of ours | Character | Every word about him was ours; the two moments the joke is about him (where he was dragged, where he went on leave) are where his own line is funniest |
+| 2026-10-05 | A summons of him on his week off is "disturbing his leave": the lines say the race is off but postcards and titles still count, and the Index counts who disturbed it most; the week off itself stays | Inner Contradiction | About a third of weeks are his weeks off, and the only line the caster read said "do not bother", though most of the game still ran |

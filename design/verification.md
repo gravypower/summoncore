@@ -9,7 +9,7 @@ while you play, remembers each result in your saved variables, and prints a repo
 
 | Command | What it does |
 |---|---|
-| The **Tools tab** (`/sc`, then Tools > Checks) | The same, with buttons: RUN AUTO, NEXT (the steps for the next check go to the chat window, with a headline in the box), PASS / FAIL / SKIP (record it and move on), TRACE, REPORT and COPY (opens whatever the output box says in a window you can select and copy: Ctrl+A, Ctrl+C). The label shows how many have passed (3/36) |
+| The **Tools tab** (`/sc`, then Tools > Checks) | The same, with buttons: RUN AUTO, NEXT (the steps for the next check go to the chat window, with a headline in the box), PASS / FAIL / SKIP (record it and move on), TRACE, REPORT and COPY (opens whatever the output box says in a window you can select and copy: Ctrl+A, Ctrl+C). The label shows how many have passed (3/37) |
 | `/sc check` | The list with a result against each, and the next thing to do |
 | `/sc check auto` | Runs the automatic checks (nothing to do but read) |
 | `/sc check <id>` | The steps for one check, what to expect, and what breaks if it fails |
@@ -53,7 +53,8 @@ Both run `/sc check auto` first. Decide who is the warlock and who is Zennit (hi
    summons with the caster and the helper (it marks this itself).
 9. `d-postcard`: a summons of him to a far-flung place that he accepts sends one postcard (it marks this itself).
 10. `d-lines`: Zennit writes a postcard and an out-of-office; the friend reads his words with `/sc zennit postcard` and `/sc zennit away`.
-11. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
+11. `d-leave`: in a week off, a summons of him says it disturbs his leave and what still counts (it marks this itself).
+12. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
 
 ## Phase 3: a week with the group
 
