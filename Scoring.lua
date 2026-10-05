@@ -11,7 +11,7 @@ Scoring.defaultKind = "zone"
 Scoring.mapKinds = {}
 -- The names are what the Index expects each map to be called, so /sc places can ask the game and catch a wrong ID.
 local cities = {
-    [1453] = "Stormwind", [1455] = "Ironforge", [1457] = "Darnassus",
+    [1453] = "Stormwind City", [1455] = "Ironforge", [1457] = "Darnassus",
     [1454] = "Orgrimmar", [1456] = "Thunder Bluff", [1458] = "Undercity",
 }
 for id in pairs(cities) do Scoring.mapKinds[id] = "city" end

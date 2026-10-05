@@ -69,13 +69,20 @@ Check.LIST = {
               return ok and type(info) == "table" and type(info.name) == "string" and info.name or nil
           end)
           local last = lines[#lines]
-          return last:find("knows every map", 1, true) ~= nil, last
+          if last:find("knows every map", 1, true) then return true, last end
+          local wrong = {}
+          for _, line in ipairs(lines) do
+              for part in line:gmatch("([^,:]+ %(%d+: the client[^%)]*%))") do wrong[#wrong + 1] = part:gsub("^%s+", "") end
+          end
+          return false, last .. (#wrong > 0 and (" Wrong: " .. table.concat(wrong, "; ") .. ".") or "")
       end },
     { id = "a-selftest", kind = "auto", title = "The self-tests (/sc synctest) pass in the game",
       fails = "a rule or the sync format behaves differently in the game than in the stubs",
       run = function()
-          local pass, total = ST.SyncTest.Run(true)
-          return pass == total, string.format("%d of %d passed", pass, total)
+          local pass, total, failed = ST.SyncTest.Run(true)
+          local detail = string.format("%d of %d passed", pass, total)
+          if failed and #failed > 0 then detail = detail .. "; failed: " .. table.concat(failed, "; ") end
+          return pass == total, detail
       end },
     { id = "a-window", kind = "auto", title = "Every tab of the window builds and refreshes without an error",
       fails = "a tab shows nothing or stops the window",
