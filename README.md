@@ -324,7 +324,7 @@ numbers behind it, is in `design/lenses.md`):
 - **The Index keeps the season close.** Zennit's edge on the dice (the +10) moves with the season's lead, worked out from
   the weeks before the current one. At a lead of two weekly wins it is **+5** for the side behind: his edge shrinks when
   he is ahead (to +5), and grows when the group is ahead (to +15). At three or more it moves by **10** (to +0, or +20);
-  a lead of one changes nothing. The briefing, the "Week:" line, his popup, the dice prompts and "The Index today" say
+  a lead of one changes nothing. The first briefing of the week, the "Week:" line, his popup, the dice prompts and "The Index today" say
   so ("The Index, which takes no sides, has cut his edge on the dice to +5 this week"). Tune it in `Week.RULES.catchup`.
 - **The silver is seen on both sides.** A summons he has asked silver for stays on the tab until he marks it paid, however old it
   is (it is paid in person, often after the week has closed, and the silver of a closed week can still be marked paid). The "Week:"
@@ -333,6 +333,9 @@ numbers behind it, is in `design/lenses.md`):
 - **The week's clock is said in your own time.** The week turns over at Monday 00:00 UTC, which is Monday 11:00 on the east coast of
   Australia in summer (10:00 from April). The rules card ("The clock: this week closes Monday 11:00, your time") and a line at the
   Monday login say when it closes and when answers stop (two days later), using the player's own clock.
+- **The briefing is long once and short after.** The first ritual on him each week (nothing filed yet) says everything: the helper
+  rule, the catch-up and the whim. Later ones say only what changes cast to cast ("Summoning Zennit: summon 4 of 10, Zennit leads
+  by 2, 2 dice left. From here (a zone) the summons is worth 3..."), the last call and anything waiting; the rest is on `/sc rules`.
 - **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the
   briefing as a ritual on him begins ends "Last call: the week closes in 9 hours (Monday 11:00).", and a login in that stretch says it
   once with the standing ("The group leads by 1, 2 of 10 summons filed"). Not in a week off.
@@ -348,7 +351,7 @@ numbers behind it, is in `design/lenses.md`):
   number, so nothing is synced or kept): **The Index is distracted** (his dice edge is 5 lower), **attentive** (5 higher), **a
   helpers' feast** (each helper adds +8 instead of +5) or **the helpers are tired** (+2). Each moves a normal week's chance by
   about 5 or 6 points, so no week is much easier than another, and the group can plan around it. It is said at login, in the
-  briefing as a ritual on Zennit begins, in "The Index today" and in `/sc week`; never in a week off. `Week.RULES.whims = false`
+  first briefing of the week, in "The Index today" and in `/sc week`; never in a week off. `Week.RULES.whims = false`
   turns it off, and `Week.WHIMS` and the deck in `Week.lua` are where to add more.
 - **His week off is real.** After a week Zennit wins, the next week is his: summons of him are still logged, answered and
   gagged as usual (the warnings, his popup, the dice), but they are filed as **filler**: the race ignores them, nobody

@@ -724,15 +724,24 @@ function Week.Briefing(target, mapID, subzone)
     end
     local dice = Week.DiceLeft(start)
     local edge, moved = Week.Edge(start)
-    local text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
-        Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
-        string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.Rule("helperBonus", start)))
+    -- The first summons of the week says everything (the helper rule, the catch-up, the whim). Later ones say only what
+    -- changes from one cast to the next, since the rest is on /sc rules and was said a few summons ago.
+    local first = r.counted == 0
+    local text
+    if first then
+        text = string.format("Summoning %s: summon %d of %d this week, and %s. He has %s%s", target, r.counted + 1,
+            Week.RULES.cap, leadText(r), diceText(dice), dice == 0 and ": he must accept, refuse or ask for the silver." or
+            string.format("; each helper adds +%d to your roll if he suggests dice (two helpers at most).", Week.Rule("helperBonus", start)))
+    else
+        text = string.format("Summoning %s: summon %d of %d, %s, %s.%s", target, r.counted + 1, Week.RULES.cap, leadText(r),
+            diceText(dice), dice == 0 and " He must accept, refuse or ask for the silver." or "")
+    end
     if mapID ~= nil or subzone ~= nil then text = text .. " " .. Week.PlaceLine(mapID, subzone, start) end
-    if moved ~= 0 and dice > 0 then
+    if first and moved ~= 0 and dice > 0 then
         text = text .. string.format(" The Index, which takes no sides, has %s his edge on the dice to +%d this week.",
             moved < 0 and "cut" or "raised", edge)
     end
-    local whim = Week.WhimLine(start)
+    local whim = first and Week.WhimLine(start)
     if whim then text = text .. " This week's whim: " .. whim end
     local left = Week.LastCall(now)
     if left then text = text .. string.format(" Last call: the Index closes the week in %s (%s).", leftText(left), (Week.ClosesText(start))) end

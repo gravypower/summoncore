@@ -1792,11 +1792,12 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
                 a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + 60 * n, points = pts, kind = "zone" }
             end
             out.empty, out.emptyYou = W.StatusLine(this), W.StatusLine(this, true) -- only his head start of 2
+            out.first = W.Briefing("Zennit", 1436, "Sentinel Hill")                  -- nothing filed yet: the full briefing
             put("a", 1, 2)
             out.tie = W.StatusLine(this)
             put("b", 2, 3)
             out.ahead = W.StatusLine(this)
-            out.brief = W.Briefing("Zennit")
+            out.brief = W.Briefing("Zennit", 1436, "Sentinel Hill")
             out.notHim = W.Briefing("Bob")
             W.RULES.from = math.huge
             out.old, out.oldBrief = W.StatusLine(this), W.Briefing("Zennit")
@@ -1806,7 +1807,9 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
             and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left."
             and out.tie == "Week: it is level, and a tie goes to Zennit, 1 of 10 filed, 3 dice left."
             and out.ahead == "Week: the group leads by 3, 2 of 10 filed, 3 dice left."
-            and out.brief ~= nil and out.brief:find("summon 3 of 10", 1, true) ~= nil and out.brief:find("+5", 1, true) ~= nil
+            and out.first:find("each helper adds +5 to your roll", 1, true) and out.first:find("summon 1 of 10 this week", 1, true)
+            and out.brief ~= nil and out.brief:find("Summoning Zennit: summon 3 of 10, the group leads by 3, 3 dice left. From here", 1, true) ~= nil
+            and not out.brief:find("each helper adds", 1, true) and #out.brief < #out.first
             and out.notHim == nil and out.old == nil and out.oldBrief == nil
         return ok, string.format("%s | %s | %s | %s", tostring(out.empty), tostring(out.tie), tostring(out.ahead), tostring(out.brief))
     end)

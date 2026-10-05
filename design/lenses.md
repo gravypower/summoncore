@@ -39,7 +39,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
 | Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
-| The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; the change waits for a decision (below) |
+| The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
 
 ## Entries
 
@@ -1379,7 +1379,7 @@ dungeons where chat is already scrolling.
 4. **What works as a toy:** the answer lines are pooled and in the Index's voice; the popup is a real choice; the clips play on the
    best moments. Nothing here needs to be cut, only trimmed.
 
-**Proposed changes** (none built yet)
+**Proposed changes**
 
 | # | Change | Fixes | Cost |
 |---|---|---|---|
@@ -1388,8 +1388,13 @@ dungeons where chat is already scrolling.
 | C | **A chat setting**, `/sc chat short`: only "Summon logged", his answer and the standing after it; the rest on `/sc rules` and `/sc week`. Off by default | 1 | A setting, the print sites, tests |
 | D | **Leave it**: the chat is the only place the rules show up, and a new group needs it | | Nothing |
 
-**To decide before building**
-- Is the chat too much, or does the group read it? (A playtest question; the report cannot see it.)
+**Our answer (built: A)**
+- **A.** The first ritual on Zennit in a week (nothing filed yet) keeps the full briefing: the helper rule, the catch-up and the whim.
+  Every later one says only what changes: "Summoning Zennit: summon 4 of 10, Zennit leads by 2, 2 dice left. From here (a zone) the
+  summons is worth 3: his roll could take 3, and so could yours." The last call and any earlier summons waiting for his answer still
+  appear, since those change. With no dice left it still says he must accept, refuse or ask for the silver. A normal mid-week
+  briefing falls from about 335 characters to about 190.
+- **B, C and D** are left: the second Week line and a chat setting wait for a playtest to say whether the chat is read at all.
 
 **To watch in playtests**
 - Does anyone mute or move the addon's chat, or stop reading it? Which lines do they still quote?
@@ -1424,3 +1429,4 @@ dungeons where chat is already scrolling.
 | 2026-10-05 | The lines read while playing, the silver and card lines and the badge names are in the Index's voice; a plain `how` line says what each badge takes; `design/voice.md` is the house style | Unification | The theme was strong in the story and thin in the play; the newest systems had no voice, and the badges read as any game's |
 | 2026-10-05 | The ritual briefing says what the place is worth and what it puts at stake for both sides; `/sc places` checks every map ID against the game's own name; the point values stay | Endogenous Value | A place's worth is the stake of a summons and was invisible when the choice was made; the place table was from memory and never checked |
 | 2026-10-05 | The Party tab and `/sc tally` rank by summons of Zennit this season (an "Of Zennit" column), then points; `/sc week say` tells the group where the week stands; the cheap-slot order is left to the group | Cooperation | The one list everyone reads counted all-time points of every summons, not what the race counts, and the plan for the order lived in the caster's chat alone |
+| 2026-10-05 | The ritual briefing is long once a week (the first summons of him) and short after; the second Week line and a chat setting wait for a playtest | The Toy | One summons cost about six wrapped lines of chat, and the longest, most repeated line arrived while the caster was channelling |
