@@ -299,6 +299,14 @@ from `tools/` are git-ignored, so release zips do not include them and `/sc comi
 
 ## Parked for later
 
+**The world tour** (from the group, for later). A challenge to take Zennit on a world tour: summon him to every capital city, and the
+group is Alliance, so the Alliance capitals. Notes so far: a city is worth only 1 point and the `/sc places` table already knows the
+six cities by map ID (Stormwind, Ironforge, Darnassus and the three Horde ones), so the tour would be its own tally, not a points
+thing; it could ride on the log (a summons of Zennit whose place is in the list), the way the badges "Stamped in Five Places" and
+"Beyond the Index's Jurisdiction" do, with the Index's voice ("filed in the capital of the Dwarves"). Open questions: which
+capitals count on the client's Alliance side (the Exodar, if the client has it), whether it runs inside a season or beside it, and
+whether his answer matters (a refused summons is not a stop on the tour).
+
 Challenge import strings, emote bonus challenges, Zennit's objective, a notice when a summon is declined in game, and
 catching summons by warlocks who do not run the addon (the target's client could use `CONFIRM_SUMMON`).
 
