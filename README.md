@@ -26,7 +26,7 @@ Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`Summ
 | `/sc log [n]` | Recent summons |
 | `/sc tally` | Cast, received and assisted counts and points per player, ranked by summons of Zennit this season (what the race counts), then points. The Party tab's Tally is the same list, with an "Of Zennit" column |
 | `/sc badges` | Badge list |
-| `/sc writ` | Arm a writ for your next ritual on Zennit (two a week): if he declines that summons in the game, it costs him its points. Again to withdraw it |
+| `/sc writ` | Arm a writ for your next ritual on Zennit (two a week): if he declines that summons in the game, it costs him its points. Again to withdraw it. It is also a **key binding** (Esc > Options > Key Bindings > AddOns > Summon Core: "Play a writ on your next summons of Zennit"), so it is one key in the middle of play; the binding (`Bindings.xml`) has never been tried in the client |
 | `/sc week say` | Tell the group (party or raid chat) where the week stands, in one line: the lead, his dice left, the last call. It uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
 | `/sc where` | Current map ID, subzone and how it scores |
 | `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
@@ -242,14 +242,14 @@ When a live summon of Zennit reaches his client, a dialog gives him four choices
 | Accept it | Counts. |
 | Refuse | Does not count. |
 | Ask for silver, in cash, no receipt | **Counts, like an accept.** He names the price (a small box, 50 by default; `50`, `2g`, `1g 20s`) and it goes on the caster's **tab** until he says it was paid ("They paid"); the log shows "owes 200 silver". A holder of a summon card pays with a punch instead, and he is not asked. Asking for silver can never be a way to reject a summons. |
-| Suggest dice | He rolls 1-100 (a real `/roll`, so the party sees it); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, each of the summoner's helpers (up to two) adds 5 to theirs, higher wins and a tie goes to him. If Zennit wins, the summon does not count. He has 3 dice a week. |
+| Roll the dice | One click: he rolls 1-100 (a real `/roll`, so the party sees it, and the rules are said as he waits); the summoner gets a prompt to roll back; Zennit adds 10 to his roll, each of the summoner's helpers (up to two) adds 5 to theirs, higher wins and a tie goes to him. If Zennit wins, the summon does not count. He has 3 dice a week. |
 
 **What he presses in the game is his answer** (`Respond.Real`, and the lens of Resonance in `design/lenses.md`). The game puts its own
 Accept / Decline prompt in front of him at the same moment. If he accepts it, the Index records "accepted" and the form is done.
 If he declines it, the Index records **"declined in the game"** for his **first decline of the week** (`Week.RULES.declines`): the summons did
 not happen, so there are no points for the caster and none for him. A **later decline costs him the summons' points**, as a refusal
 does (a free decline with no limit would beat refusing every time: design/lenses.md, Balance), and a decline of a summons the group
-played a **writ** on is always a refusal (below). His popup and his own "Week:" line say how many free declines he has left. If nothing
+played a **writ** on is always a refusal (below). His popup and his own "Week:" line say how many free declines he has left. A dice roll in flight is ended by what he presses in the game: that is his answer, and no die is spent. If nothing
 is seen, the form works as above, and an unanswered summons still counts as accepted. This reads the prompt's own buttons
 (`C_SummonInfo.ConfirmSummon` and `CancelSummon`, hooked, not changed), which has never been tried in the live client; where those
 are missing it does nothing.

@@ -466,6 +466,7 @@ function Respond.GotRoll(kind, id, value)
     local ev = ST.Store.Get(id)
     if not ev then return end
     if kind == "zennit" then
+        if ev.response then return end -- answered in the game while the roll was on its way: no dice
         Respond.StartDice(id, value)
     elseif kind == "summoner" then
         ST.Sync.SendDiceReply(id, value, ev.target)
@@ -596,7 +597,7 @@ local function diceLeft(id, ev)
     return math.max(0, left)
 end
 
--- Draws one stage on a surface: "choose", "roll", "waiting" (extra = Zennit's roll), "noanswer" or "done".
+-- Draws one stage on a surface: "choose", "waiting" (extra = Zennit's roll), "noanswer" or "done".
 local function render(s, stage, extra)
     if not s.current then return end
     local id, ev = s.current.id, s.current.ev
@@ -620,22 +621,18 @@ local function render(s, stage, extra)
             { ST.Cards.Left(ev.caster) > 0 and string.format("Stamp the card (%d left)", ST.Cards.Left(ev.caster))
                 or "Name a price, in silver (no receipt)", function() Respond.AskSilver(id, ev) end },
             dice == 0 and { "No dice left this week", function() end, true }
-                or { "Suggest dice (1-100)", function() render(s, "roll") end },
-        })
-    elseif stage == "roll" then
-        local bonus = ST.Week.HelperBonus(ev)
-        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add %d to your roll%s; higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
-            ev.caster, edgeFor(ev), bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or ""))
-        setButtons(s, {
-            { "Roll 1-100", function()
-                if diceLeft(id, ev) == 0 then return render(s, "choose") end -- the last die went on another summon
-                Respond.RequestRoll("zennit", id)
-                render(s, "waiting")
-            end },
-            { "Back", function() render(s, "choose") end },
+                or { "Roll the dice (1-100)", function()
+                    if diceLeft(id, ev) == 0 then return render(s, "choose") end -- the last die went on another summon
+                    Respond.RequestRoll("zennit", id)
+                    render(s, "waiting")
+                end },
         })
     elseif stage == "waiting" then
-        s.text:SetText(extra and string.format("You rolled %d. Waiting for %s to roll back...", extra, ev.caster) or "Rolling...")
+        -- the rules are said here, once the die is cast, so that rolling is one click (design/lenses.md, Flow)
+        local bonus = ST.Week.HelperBonus(ev)
+        local rules = string.format("\n\nYou add %d to your roll%s; higher wins and a tie goes to you. If you win, the summon does not count.",
+            edgeFor(ev), bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or "")
+        s.text:SetText((extra and string.format("You rolled %d. Waiting for %s to roll back...", extra, ev.caster) or "Rolling...") .. rules)
         setButtons(s, { { "Choose something else", function() state[id] = nil render(s, "choose") end } })
     elseif stage == "noanswer" then
         s.text:SetText(string.format("%s did not roll back.\n\nChoose again.", ev.caster))
@@ -750,19 +747,22 @@ local SUMMON_WINDOW = 150   -- the game's prompt lasts about two minutes; a late
 local lastSummoner          -- who the game's prompt named, when the client says (a plain first name, or nil)
 
 -- kind: "accept" or "decline". summoner: the plain name the prompt named, if known. Returns the answer recorded, or nil when this
--- was not about a summons we are waiting on (a warlock without the addon, a summons already answered, or a dice roll in progress).
+-- was not about a summons we are waiting on (a warlock without the addon, or a summons already answered). A dice roll in flight is
+-- ended by it: one answer per summons.
 function Respond.Real(kind, summoner)
     if not ST.Gag.IsZennit() then return nil end
     local now, pick = time(), nil
     for _, r in ipairs(Respond.Pending()) do -- newest first
         local ev = r.ev
-        if not ev.response and not ev.fake and not state[r.id] and now - ev.time <= SUMMON_WINDOW
+        if not ev.response and not ev.fake and now - ev.time <= SUMMON_WINDOW
             and (not summoner or ST.baseName(ev.caster) == summoner) then
             pick = r
             break
         end
     end
     if not pick then return nil end
+    state[pick.id] = nil -- a roll in flight is over: the game's prompt is his answer, and no die is spent
+    if pendingRoll and pendingRoll.id == pick.id then pendingRoll = nil end
     if kind == "accept" then return Respond.Decide(pick.id, "accepted") end
     if ST.Week.WritCounts(pick.ev) then return Respond.Decide(pick.id, "refused") end
     if ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then return Respond.Decide(pick.id, "declined") end

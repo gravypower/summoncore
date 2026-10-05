@@ -1911,6 +1911,38 @@ add("what he presses at the game's own prompt is his answer: accept, a free decl
     end)
 end)
 
+add("the game's prompt ends a dice roll in flight: one answer per summons, and no die is spent", function()
+    return newRules(function()
+        local a, R, S, G, W, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, ST.Week, {}
+        local realMe, realIs = S.me, G.IsZennit
+        S.me = function() return "Zennit" end
+        G.IsZennit = function() return true end
+        local ok, err = pcall(with, a, function()
+            local now = time()
+            local this = W.Start(now)
+            local function put(key, age, caster)
+                a.db.events[key] = { caster = caster, target = "Zennit", assistants = {}, time = now - age, points = 3, kind = "zone" }
+            end
+            local function result(key) return a.db.events[key].response and a.db.events[key].response.result end
+            put("d1", 20, "Jo")
+            R.StartDice("d1", 40)                                   -- a roll is in flight
+            out.accepted = R.Real("accept", "Jo")                   -- he accepts in the game meanwhile
+            R.OnDiceReply("d1", a.db.events.d1, 5)                  -- the summoner's roll comes back: too late
+            put("d2", 10, "Kay")
+            R.StartDice("d2", 90)
+            out.declined = R.Real("decline", "Kay")                 -- he declines in the game: his free decline
+            R.OnDiceReply("d2", a.db.events.d2, 5)
+            out.results = result("d1") .. " " .. result("d2")
+            out.diceLeft = W.DiceLeft(this)                         -- no die was spent
+        end)
+        S.me, G.IsZennit = realMe, realIs
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.accepted and out.accepted.result == "accepted" and out.declined and out.declined.result == "declined"
+            and out.results == "accepted declined" and out.diceLeft == W.RULES.dice
+        return good, string.format("%s, dice left %s", tostring(out.results), tostring(out.diceLeft))
+    end)
+end)
+
 add("the briefing says what the place is worth: both sides of the stakes, and a city is worth less than his head start", function()
     return newRules(function()
         local W, a = ST.Week, newClient("Alpha")

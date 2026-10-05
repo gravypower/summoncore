@@ -205,7 +205,7 @@ function commands.places()
 end
 
 -- Arms (or withdraws) a writ for your next ritual on Zennit: if he declines that summons in the game, it costs him its points.
-function commands.writ()
+function ST.ToggleWrit()
     local W, D = ST.Week, ST.Detector
     if D.writ then
         D.writ = false
@@ -220,6 +220,13 @@ function commands.writ()
     print_(string.format("A writ is armed for your next summons of Zennit (%d left this week). If he declines it in the game, it costs him " ..
         "its points. If he accepts, the writ is spent anyway. /sc writ again withdraws it.", left))
 end
+
+function commands.writ() ST.ToggleWrit() end
+
+-- The key binding (Bindings.xml) calls this global: one key to arm or withdraw a writ, with nothing typed in the middle of play.
+_G["SummonCore_ToggleWrit"] = ST.Safe("the writ key", ST.ToggleWrit)
+_G["BINDING_HEADER_SUMMONCORE"] = "Summon Core"
+_G["BINDING_NAME_SUMMONCORE_WRIT"] = "Play a writ on your next summons of Zennit"
 
 -- Adds a test summon at your current location. It is never put on the network.
 function ST.AddFake(target, assistants)

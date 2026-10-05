@@ -1,0 +1,5 @@
+<Bindings>
+    <Binding name="SUMMONCORE_WRIT" header="SUMMONCORE" category="ADDONS">
+        SummonCore_ToggleWrit()
+    </Binding>
+</Bindings>
