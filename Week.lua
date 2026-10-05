@@ -131,7 +131,7 @@ end
 -- Why a summon of Zennit in the week starting at `start` does not count, and what the Index files it under. `you` words
 -- it for Zennit's own client.
 function Week.Why(start, you)
-    if Week.IsOff(start) then return you and "It is your week off" or "It is his week off", "filler" end
+    if Week.IsOff(start) then return you and "It is your week off" or "It is his week off", "disturbing his leave" end
     if Week.IsClosed(start) then
         return you and "You have closed the Index for the week" or "He has closed the Index for the week", "enthusiasm"
     end
@@ -405,8 +405,8 @@ end
 -- One line saying how the week is going, or how it ended.
 function Week.Describe(r)
     if r.off then
-        return (r.over and "Zennit's week off: " or "Zennit's week off, ") .. (r.summons == 0 and "nobody summoned him" or
-            string.format("%d summon%s filed as filler", r.summons, r.summons == 1 and "" or "s")) ..
+        return (r.over and "Zennit's week off: " or "Zennit's week off, ") .. (r.extra == 0 and "nobody summoned him" or
+            string.format("his leave disturbed %d time%s", r.extra, r.extra == 1 and "" or "s")) ..
             ", and the race skipped the week"
     end
     if r.summons == 0 then return "no summons that week" end
@@ -495,7 +495,7 @@ local function checkLastWeek()
     local last = Week.Score(Week.Start() - LENGTH)
     if last.off and ST.db.settings.weekSeen ~= last.start then
         ST.db.settings.weekSeen = last.start
-        ST.print("Zennit's week off is over. He is back on the list, and the Index has filed the week as filler.")
+        ST.print("Zennit's week off is over. He is back on the list, and the Index has filed the week's summons as disturbing his leave.")
         return
     end
     if not last.winner or ST.db.settings.weekSeen == last.start then return end
@@ -569,13 +569,13 @@ function Week.RulesCard(start)
             R.catchup[2] or 0, R.catchup[3] or 0, moved ~= 0 and string.format(" This week it has moved %+d.", moved) or ""),
         string.format("The clock: this week closes %s, your time (answers stop %s). A week is Monday to Monday, UTC.",
             Week.ClosesText(start)),
-        string.format("The season: win %d weeks to take its finale. A week he wins is followed by his week off, when summons of him are filler.",
+        string.format("The season: win %d weeks to take its finale. A week he wins is followed by his week off: summons of him disturb his leave, which the race ignores but the postcards and the titles do not.",
             Week.WINS),
         "Who needs Summon Core: whoever casts the ritual, for the summons to count, and Zennit, for his answers to be his. Helpers are credited either way.",
     }
     local whim = Week.WhimLine(start)
     card[#card + 1] = whim and ("This week's whim: " .. whim) or "No whim this week."
-    if Week.IsOff(start) then card[#card + 1] = "This is his week off: summons of him are filler, and nobody wins the week." end
+    if Week.IsOff(start) then card[#card + 1] = "This is his week off: nobody wins the week, but summons of him still earn postcards and count for the titles, and the Index counts who disturbs his leave." end
     return card
 end
 
@@ -722,7 +722,7 @@ function Week.StatusLine(start, you)
     start = start or Week.Start()
     if not Week.NewRules(start) then return nil end
     local r = Week.Score(start)
-    if r.off then return "Week: Zennit's week off, so summons of him are filler and nothing counts." end
+    if r.off then return "Week: Zennit's week off, so the race is off; summons of him disturb his leave, and still earn postcards and titles." end
     local parts = { leadText(r, you), string.format("%d of %d filed", r.counted, Week.RULES.cap),
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }
     if you and not r.closed and Week.NewRules(start) and not r.off then parts[#parts + 1] = declinesText(Week.DeclinesLeft(start)) end
@@ -792,8 +792,10 @@ function Week.Briefing(target, mapID, subzone, writ)
     -- his out-of-office, when he has written one (design/lenses.md, Character), in place of the Index's hopes
     local away = ST.Sync.ZennitLine("away")
     if Week.IsOff(start) then
-        return target .. " is on his week off. The Index will file this summon as filler: it will not count" ..
-            (away and string.format(". His out-of-office says: '%s'", away) or ", and it is not hopeful.")
+        -- what still counts on his leave (design/lenses.md, Inner Contradiction): the race is off, the rest is not
+        return target .. " is on his week off. The Index will file this summons as disturbing his leave: it will not count for the race, " ..
+            "but a far-flung place still earns a postcard, and the titles still see it." ..
+            (away and string.format(" His out-of-office says: '%s'", away) or "")
     end
     if Week.Immune(now) then
         return target .. " is on his week off. The Index will note the summons" ..
@@ -851,7 +853,9 @@ end
 function Week.Warn(ev)
     if ev.fake or not isZennit(ev.target) then return end
     if Week.IsOff(Week.Start(ev.time)) then
-        ST.print(ev.target .. " is on his week off. The Index has filed the summons as filler, and is not hopeful: it does not count.")
+        ST.print(string.format("%s is on his week off. The Index has filed the summons as disturbing his leave (%d this week): not for the race, but the titles saw it.",
+            ev.target, #summonsOfZennit(Week.Start(ev.time))))
+        if ST.Check then ST.Check.Seen("d-leave", "a summons of him on his week off was filed as disturbing his leave") end
     elseif Week.Immune(ev.time) then
         ST.print(ev.target .. " is on his week off. The Index has noted the summons, and is not hopeful.")
     elseif not Week.Counts(ev) then

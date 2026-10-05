@@ -97,10 +97,15 @@ function Ledger.Collect(events, from, to, ctx)
     end)
     local run = 0
     d.postcards = {} -- the first landed summons of him to each far-flung place, in order (design/lenses.md, Secrets)
+    d.leave = { n = 0, by = {} } -- summons of him on his week off (design/lenses.md, Inner Contradiction)
     local stamped = {}
     for _, item in ipairs(list) do
         local ev = item.ev
         local caster = ctx.name(ev.caster)
+        if ctx.off and ctx.off(ev) then
+            d.leave.n = d.leave.n + 1
+            d.leave.by[caster] = (d.leave.by[caster] or 0) + 1
+        end
         local place = ctx.remote and ev.mapID and ctx.remote(ev.mapID)
         if place and not stamped[ev.mapID] and ctx.lands(ev) then
             stamped[ev.mapID] = true
@@ -300,6 +305,8 @@ function Ledger.Keepsake(number, finale, d)
     if silver then out[#out + 1] = silver end
     local cards = Ledger.PostcardsLine(d)
     if cards then out[#out + 1] = cards end
+    local leave = Ledger.LeaveLine(d)
+    if leave then out[#out + 1] = leave end
     for _, m in ipairs(Ledger.Moments(d)) do out[#out + 1] = m.text end
     for _, t in ipairs(Ledger.Titles(d)) do out[#out + 1] = t.text end
     return out
@@ -313,7 +320,7 @@ end
 
 function Ledger.Context()
     local W, R = ST.Week, ST.Respond
-    local edges = {}
+    local edges, offs = {}, {}
     return { isZennit = W.IsZennit, name = function(n) return ST.baseName(n) or n end, bonus = W.HelperBonus,
         edge = function(ev)
             local start = W.Start(ev.time)
@@ -321,7 +328,12 @@ function Ledger.Context()
             return edges[start]
         end,
         resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax, weekStart = W.Start,
-        remote = function(id) return ST.Scoring.remoteNames[id] end, lands = ST.Store.Lands }
+        remote = function(id) return ST.Scoring.remoteNames[id] end, lands = ST.Store.Lands,
+        off = function(ev)
+            local start = W.Start(ev.time)
+            if offs[start] == nil then offs[start] = W.IsOff(start) end
+            return offs[start]
+        end }
 end
 
 ----------------------------------------------------------------------
@@ -381,6 +393,21 @@ function Ledger.PostcardFor(ev, before)
         end
     end
     return nil
+end
+
+-- How often the group disturbed his leave, and who did it most: "His leave was disturbed 6 times; Al did it most (4)." Nil when
+-- nobody did (design/lenses.md, Inner Contradiction).
+function Ledger.LeaveLine(d)
+    if not d.leave or d.leave.n == 0 then return nil end
+    local best, most, tie = nil, 0, false
+    for name, n in pairs(d.leave.by) do
+        if n > most or (n == most and best and name < best) then best, most, tie = name, n, false end
+    end
+    for name, n in pairs(d.leave.by) do if n == most and name ~= best then tie = true end end
+    local times = d.leave.n == 1 and "once" or (d.leave.n .. " times")
+    if d.leave.n == 1 then return string.format("The Index notes that %s disturbed his leave once.", best) end
+    return string.format("The Index notes that his leave was disturbed %s; %s did it most (%d)%s.", times, best, most,
+        tie and ", jointly with others" or "")
 end
 
 -- The facts for the season in progress.
