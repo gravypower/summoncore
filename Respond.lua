@@ -265,6 +265,36 @@ function Respond.ListAdd(text)
     return true
 end
 
+-- Place names to suggest while he types an entry, sorted: the places the Index scores, the world's zones as the client names
+-- them, and every place a summons has landed. Names already on his list are left out.
+function Respond.ListSuggestions()
+    local seen, out = {}, {}
+    for _, word in ipairs(Respond.List()) do seen[word:lower()] = true end
+    local function add(name)
+        if type(name) ~= "string" or #name < Respond.LIST_MIN then return end
+        local key = name:lower()
+        if seen[key] then return end
+        seen[key] = true
+        out[#out + 1] = name
+    end
+    for _, n in pairs(ST.Scoring.cityNames) do add(n) end
+    for _, n in pairs(ST.Scoring.remoteNames) do add(n) end
+    for sz in pairs(ST.Scoring.subzoneKinds) do -- kept lowercase for matching: capitalise each word to show
+        add((sz:gsub("(%a)([%w']*)", function(a, b) return a:upper() .. b end):gsub(" Of ", " of ")))
+    end
+    if C_Map and C_Map.GetMapChildrenInfo and Enum and Enum.UIMapType then
+        for _, root in ipairs({ 947, 1414, 1415 }) do -- Azeroth, Kalimdor, Eastern Kingdoms
+            local ok, maps = pcall(C_Map.GetMapChildrenInfo, root, Enum.UIMapType.Zone, true)
+            if ok and type(maps) == "table" then
+                for _, m in ipairs(maps) do add(m.name) end
+            end
+        end
+    end
+    for _, ev in pairs(ST.db.events or {}) do add(ev.subzone) end
+    table.sort(out, function(a, b) return a:lower() < b:lower() end)
+    return out
+end
+
 function Respond.ListRemove(n)
     return table.remove(Respond.List(), tonumber(n) or 0) ~= nil
 end

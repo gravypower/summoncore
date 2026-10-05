@@ -254,6 +254,34 @@ local function buildAnswer(f)
         Hub.Refresh()
     end
     entry:SetScript("OnEnterPressed", addEntry)
+    -- autocomplete: as he types, the rest of the first place that starts with it is filled in and highlighted, so typing on
+    -- replaces it, Tab or Enter takes it, and Backspace drops it
+    local typed, places = 0, nil
+    entry:HookScript("OnEditFocusGained", function(self) -- hooked: the box lights its outline on focus too
+        places = ST.Respond.ListSuggestions()
+        typed = #self:GetText()
+    end)
+    entry:SetScript("OnTextChanged", function(self, userInput)
+        if not userInput then return end
+        local text = self:GetText()
+        local grew = #text > typed
+        typed = #text
+        if not grew or text == "" or not places then return end
+        local low = text:lower()
+        for _, name in ipairs(places) do
+            if #name > #text and name:sub(1, #text):lower() == low then
+                self:SetText(text .. name:sub(#text + 1))
+                self:SetCursorPosition(#text)
+                self:HighlightText(#text, #name)
+                return
+            end
+        end
+    end)
+    entry:SetScript("OnTabPressed", function(self)
+        self:HighlightText(0, 0)
+        self:SetCursorPosition(#self:GetText())
+        typed = #self:GetText()
+    end)
     button(secret, "ADD", 616, -228, 60, addEntry)
     button(secret, "CLEAR", 682, -228, 74, function() ST.Respond.ListClear() Hub.Refresh() end, "danger")
     local listText = label(secret, "", 360, -256, "violet")
