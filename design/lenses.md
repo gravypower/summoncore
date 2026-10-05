@@ -38,6 +38,8 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
 | Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; A built, B became `/sc places`, C kept |
+| Cooperation | The group is one team against Zennit and also a ranked list of individuals; do those two pull the same way? | Answered; A and B built; the order is left to the group |
+| The Toy | Is it pleasant to cast, answer and read, before any goal? | Answered; A built; B, C and D left |
 
 ## Entries
 
@@ -1283,6 +1285,122 @@ real week.
 - Does anyone say "that should have been worth more"? That is a table entry to fix.
 - Does `/sc places` flag anything? (It has never run in the live client, and neither has the lookup it relies on.)
 
+### 2026-10-05 · Lens of Cooperation, with Competition: one team, or a list of people?
+
+**The questions (paraphrased):** who is cooperating with whom, and who is competing with whom? Does the game make people need each other,
+and can they talk enough to cooperate? Where a team contains a ranking, do the two pull the same way?
+
+**The layers, as built**
+
+| Layer | Who | What decides it |
+|---|---|---|
+| Team against the opponent | The group against Zennit, who is also a friend | The weekly race and the season (`Week.lua`) |
+| Cooperation inside the team | A caster and two helpers on each summons | The helpers' +5 each to the roll (two at most), and what they are credited with |
+| Competition inside the team | The casters, with each other | The Party tab's ranking, the Heaviest Hand title, the badges |
+| Opposition by agreement | Zennit | His four answers; nobody else sees his dice until he rolls |
+
+**Findings**
+1. **The team layer works, and it is mostly built into the game.** The ritual itself needs two other people to click, so the helpers are
+   always there, and the helpers' +5 is nearly always +10. Cooperation here is not a decision the rules make for the group; it is
+   what warlocks and their friends do anyway, and the addon only notices it (the Lucky Pair, the Best Supporting Role).
+2. **The ranking counts something the race does not.** The Party tab sorts by *all-time points of every summons a caster has
+   landed* (`Store.Tallies`): summons of anyone, from before 5 October, with no cap. The race counts only summons of Zennit, ten a
+   week. So the one list everyone looks at says nothing about who is carrying *this* race. The nearest thing is the Heaviest Hand
+   title (summons of him, by count) in `/sc titles`, which is a different place and a different number.
+3. **The one real pull in two directions is the order.** The Skill entry found that a good week puts the cheap summons first, where
+   his dice are spent, and the dear ones after. A caster who takes the cheap slot for the team earns the fewest points on the Party
+   tab, and no far-flung badge. The Heaviest Hand counts summons, not points, so that title is not hurt, but the Party tab's ranking is.
+   This only bites a group with two or more warlocks, and the group has not said how many it has.
+4. **What the plan needs is seen by the caster only.** After an answer, every client prints where the week stands. But the briefing
+   (his dice left, what the place is worth, the last call) prints on the caster's client alone, as the ritual starts. The people
+   who would plan the order, "you take the cheap one, then I go to Silithus", do it in voice chat from memory unless each runs
+   `/sc week`.
+
+**Proposed changes**
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Count the race on the Party tab**: a column "Of Zennit" (summons of him cast this season) beside Cast and Points, and sort by it, so the list ranks what the race counts and the cheap slot is not last | 2, 3 | One column on the tab, one count in `Store.Tallies`, one test |
+| B | **A way to say the week to the group**: `/sc week say` sends the "Week:" line (the lead, his dice left, the last call) to party chat, so the plan starts from one shared line | 4 | One argument; it uses `SendChatMessage`, which has never been tried under the 12.0 chat rules |
+| C | **Do nothing about the order**: it is a good tension (a friend takes the cheap slot for the team, and that is a story), and the group may have one warlock | 3 | Nothing; recorded as a decision |
+
+**Our answer (built: A and B; C is the decision on the order)**
+- **Warlocks:** two or more (the answer to the question above), so the cheap-slot tension is real and A is worth having.
+- **A.** The Party tab's Tally has an **Of Zennit** column, the summons of him each person has cast this season, and is ranked by it,
+  then by points, then by name. `/sc tally` prints the same list with "(N of Zennit this season)". The count is the Ledger's
+  season facts, so it follows the season and the same names the titles use (`Store.Ranked`).
+- **B.** `/sc week say` sends the "Week:" line (the lead, his dice left, the last call) to party or raid chat as "Summon Core: Week: ...".
+  Anyone can run it; it says why when it cannot (not in a group, the old rules, or the game refusing the message). It uses
+  `SendChatMessage`, which has never been tried in the live client under the 12.0 chat rules, so it is the first thing to try there.
+- **C.** The order is left to the group: nobody is made to take the cheap slot, and nothing advises them (the Skill entry: the best
+  order depends on how he rolls).
+
+**Decided:** the Party tab ranks by what the race counts; the group can say the week to itself in one command; the cheap-slot
+trade stays a thing friends do for each other.
+
+**To watch in playtests**
+- Does anyone say "I'll take the cheap one"? That is the cooperation working, and a line for the Index to quote.
+- Does anyone run `/sc week` before a cast, or ask in chat where the week stands?
+- Does `/sc week say` actually send? If the game blocks it, it says so in chat and the line is still on `/sc week`.
+- Nothing here has run in the live client.
+
+### 2026-10-05 · Lens of the Toy: is it nice to play with, before the goals?
+
+**The questions (paraphrased):** if you took away the score, the week and the story, would summoning someone, and answering a summons,
+still be pleasant to do? Does it respond when you touch it? Is there something worth doing for its own sake?
+
+**What the toy is.** The goals are the weeks and the season; the *toy* is one cycle: cast the ritual, see what it is worth, hear it,
+watch Zennit's answer arrive, read what it did. Most of that is a recorded line, a dice popup and chat text.
+
+**What one summons costs the reader, in chat** (measured on the stub, from the real functions, in a normal mid-season week)
+
+| Moment | Where | Characters |
+|---|---|---|
+| The briefing as the ritual starts | the caster only | about 335 (about 400 in a week with a whim and a last call) |
+| "Summon logged: Zennit in Sentinel Hill (+3, zone)" | the caster | about 50 |
+| "Week: the group leads by 1, 1 of 10 filed, 2 dice left." | the caster, straight after | about 80 |
+| His answer ("Zennit accepted the summon from Alpha. +3 points.") | everyone | about 75 |
+| "Week: ..." again after the answer | everyone | about 80 |
+| Sometimes: the last-die line, a badge, a list note | varies | 60 to 120 |
+
+That is about 600 characters, or six wrapped chat lines (at an assumed 110 characters a line), for one summons, on the caster's client;
+the others see about three lines. A busy week of ten summons is sixty lines on the caster's chat, and the group plays in raids and
+dungeons where chat is already scrolling.
+
+**Findings**
+1. **The toy is the ritual, the popup and the answer; the chat is the bookkeeping.** The group hates bookkeeping. The recorded lines
+   (his refusal, his dice win, the ritual) and the dice popup are the parts that respond when you touch them; the chat is the part that
+   was added to make the rules visible, and it is now most of the text.
+2. **The longest line arrives at the worst moment.** The briefing prints as the cast begins, when the caster is channelling and
+   watching the helpers, and it is the longest line of the cycle. Most of it is the same every time: "each helper adds +5 to your roll
+   if he suggests dice (two helpers at most)" is true in week one and still printed on the tenth summons of the week.
+3. **Two Week lines per summons, nearly the same.** One prints straight after "Summon logged", the next after his answer. The first
+   repeats the standing the briefing gave a few seconds earlier; only the second changes (the answer moves the points).
+4. **What works as a toy:** the answer lines are pooled and in the Index's voice; the popup is a real choice; the clips play on the
+   best moments. Nothing here needs to be cut, only trimmed.
+
+**Proposed changes**
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **A short briefing after the first of the week**: the first summons of the week keeps the full text (with the helper rule and the whim), later ones say only what changed: "Summon 4 of 10, Zennit leads by 2, 2 dice left. From here (a zone) worth 3." | 1, 2 | A second form of `Week.Briefing`; its tests |
+| B | **Drop the Week line straight after "Summon logged"** when a briefing has just been printed (the answer's line is the one that moves) | 3 | A few lines in `Detector.lua`; the "Week:" test that reads it |
+| C | **A chat setting**, `/sc chat short`: only "Summon logged", his answer and the standing after it; the rest on `/sc rules` and `/sc week`. Off by default | 1 | A setting, the print sites, tests |
+| D | **Leave it**: the chat is the only place the rules show up, and a new group needs it | | Nothing |
+
+**Our answer (built: A)**
+- **A.** The first ritual on Zennit in a week (nothing filed yet) keeps the full briefing: the helper rule, the catch-up and the whim.
+  Every later one says only what changes: "Summoning Zennit: summon 4 of 10, Zennit leads by 2, 2 dice left. From here (a zone) the
+  summons is worth 3: his roll could take 3, and so could yours." The last call and any earlier summons waiting for his answer still
+  appear, since those change. With no dice left it still says he must accept, refuse or ask for the silver. A normal mid-week
+  briefing falls from about 335 characters to about 240 (the place line is most of what is left).
+- **B, C and D** are left: the second Week line and a chat setting wait for a playtest to say whether the chat is read at all.
+
+**To watch in playtests**
+- Does anyone mute or move the addon's chat, or stop reading it? Which lines do they still quote?
+- Does the caster read the briefing at all while the ritual is channelling?
+- The measurements above are from stubs; the wrapped-line count depends on the player's chat window.
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -1310,3 +1428,5 @@ real week.
 | 2026-10-05 | Errors are caught, said once and kept for `/sc errors`, and a friend on another version is noticed; the clock check and a season cache wait | Risk Mitigation | The biggest risk is code that has never run in the game, and with script errors off a bug is silent; a mixed-version group reads answers wrongly |
 | 2026-10-05 | The lines read while playing, the silver and card lines and the badge names are in the Index's voice; a plain `how` line says what each badge takes; `design/voice.md` is the house style | Unification | The theme was strong in the story and thin in the play; the newest systems had no voice, and the badges read as any game's |
 | 2026-10-05 | The ritual briefing says what the place is worth and what it puts at stake for both sides; `/sc places` checks every map ID against the game's own name; the point values stay | Endogenous Value | A place's worth is the stake of a summons and was invisible when the choice was made; the place table was from memory and never checked |
+| 2026-10-05 | The Party tab and `/sc tally` rank by summons of Zennit this season (an "Of Zennit" column), then points; `/sc week say` tells the group where the week stands; the cheap-slot order is left to the group | Cooperation | The one list everyone reads counted all-time points of every summons, not what the race counts, and the plan for the order lived in the caster's chat alone |
+| 2026-10-05 | The ritual briefing is long once a week (the first summons of him) and short after; the second Week line and a chat setting wait for a playtest | The Toy | One summons cost about six wrapped lines of chat, and the longest, most repeated line arrived while the caster was channelling |

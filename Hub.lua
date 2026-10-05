@@ -309,19 +309,14 @@ local function buildAnswer(f)
 end
 
 local function buildTally(f)
-    local list = scrollList(f, { { "Player", 220 }, { "Cast", 80, "RIGHT" }, { "Received", 90, "RIGHT" },
-        { "Assisted", 90, "RIGHT" }, { "Points", 90, "RIGHT" } })
+    local list = scrollList(f, { { "Player", 200 }, { "Cast", 70, "RIGHT" }, { "Of Zennit", 90, "RIGHT" },
+        { "Received", 85, "RIGHT" }, { "Assisted", 85, "RIGHT" }, { "Points", 80, "RIGHT" } })
     return function()
-        local rows = {}
-        for name, t in pairs(ST.Store.Tallies()) do rows[#rows + 1] = { name, t } end
-        table.sort(rows, function(a, b)
-            if a[2].points ~= b[2].points then return a[2].points > b[2].points end
-            return a[1] < b[1]
-        end)
         local out = {}
-        for _, r in ipairs(rows) do
-            out[#out + 1] = { who(r[1]), tostring(r[2].cast), tostring(r[2].received), tostring(r[2].assisted),
-                T.Paint("amber", r[2].points) }
+        for _, r in ipairs(ST.Store.Ranked(ST.Store.Tallies(), ST.Ledger.Facts().casters)) do
+            local t = r[2]
+            out[#out + 1] = { who(r[1]), tostring(t.cast), T.Paint("amber", r[3]), tostring(t.received), tostring(t.assisted),
+                T.Paint("amber", t.points) }
         end
         list.Set(out, "No summons logged yet.")
     end

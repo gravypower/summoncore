@@ -846,6 +846,47 @@ add("places: /sc places checks each map ID against the game's name for it, and f
     return ok, bad:sub(1, 160)
 end)
 
+add("the Party tab ranks by summons of Zennit this season, then points, then name", function()
+    local tallies = {
+        ["Al-Realm"] = { cast = 9, received = 0, assisted = 1, points = 60 },   -- many summons of others, none of him
+        ["Bo"] = { cast = 3, received = 0, assisted = 0, points = 3 },          -- took the cheap slots for the team
+        ["Cy"] = { cast = 3, received = 0, assisted = 2, points = 15 },
+        ["Di"] = { cast = 0, received = 0, assisted = 4, points = 0 },
+        ["Zennit"] = { cast = 0, received = 12, assisted = 0, points = 5 },
+    }
+    local rows = ST.Store.Ranked(tallies, { Bo = 3, Cy = 3, Al = 0 })
+    local order = {}
+    for _, r in ipairs(rows) do order[#order + 1] = r[1] .. ":" .. r[3] end
+    local got = table.concat(order, " ")
+    return got == "Cy:3 Bo:3 Al-Realm:0 Zennit:0 Di:0", got
+end)
+
+add("/sc week say: one line to the party or the raid, and a reason when it cannot", function()
+    return newRules(function()
+        local W, a = ST.Week, newClient("Alpha")
+        local out, sent = {}, {}
+        local function chat(channel, fail)
+            return { channel = function() return channel end,
+                send = function(text, ch) if fail then error("blocked") end sent[#sent + 1] = ch .. ": " .. text end }
+        end
+        with(a, function()
+            out.party = { W.SayWeek(chat("PARTY")) }
+            out.raid = { W.SayWeek(chat("RAID")) }
+            out.alone = { W.SayWeek(chat(nil)) }
+            out.blocked = { W.SayWeek(chat("PARTY", true)) }
+            W.RULES.from = math.huge
+            out.old = { W.SayWeek(chat("PARTY")) }
+            W.RULES.from = 0
+        end)
+        local ok = out.party[1] and out.party[2]:find("^Summon Core: Week:") and sent[1]:find("^PARTY: Summon Core: Week:")
+            and out.raid[1] and sent[2]:find("^RAID: ")
+            and not out.alone[1] and out.alone[2]:find("not in a group", 1, true) and #sent == 2
+            and not out.blocked[1] and out.blocked[2]:find("would not send", 1, true)
+            and not out.old[1] and out.old[2]:find("old rules", 1, true)
+        return ok, tostring(out.party[2])
+    end)
+end)
+
 add("voice clips: a refusal and a dice win each play their own category, other answers are silent", function()
     local a = newClient("Alpha")
     local id = cast(a, 950, true, { target = "Zennit" })
@@ -1751,11 +1792,12 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
                 a.db.events[key] = { caster = "Alpha", target = "Zennit", assistants = {}, time = this + 60 * n, points = pts, kind = "zone" }
             end
             out.empty, out.emptyYou = W.StatusLine(this), W.StatusLine(this, true) -- only his head start of 2
+            out.first = W.Briefing("Zennit", 1436, "Sentinel Hill")                  -- nothing filed yet: the full briefing
             put("a", 1, 2)
             out.tie = W.StatusLine(this)
             put("b", 2, 3)
             out.ahead = W.StatusLine(this)
-            out.brief = W.Briefing("Zennit")
+            out.brief = W.Briefing("Zennit", 1436, "Sentinel Hill")
             out.notHim = W.Briefing("Bob")
             W.RULES.from = math.huge
             out.old, out.oldBrief = W.StatusLine(this), W.Briefing("Zennit")
@@ -1765,7 +1807,9 @@ add("where the week stands: the lead, a tie, Zennit's wording, and the briefing 
             and out.emptyYou == "Week: you lead by 2, 0 of 10 filed, 3 dice left."
             and out.tie == "Week: it is level, and a tie goes to Zennit, 1 of 10 filed, 3 dice left."
             and out.ahead == "Week: the group leads by 3, 2 of 10 filed, 3 dice left."
-            and out.brief ~= nil and out.brief:find("summon 3 of 10", 1, true) ~= nil and out.brief:find("+5", 1, true) ~= nil
+            and out.first:find("each helper adds +5 to your roll", 1, true) and out.first:find("summon 1 of 10 this week", 1, true)
+            and out.brief ~= nil and out.brief:find("Summoning Zennit: summon 3 of 10, the group leads by 3, 3 dice left. From here", 1, true) ~= nil
+            and not out.brief:find("each helper adds", 1, true) and #out.brief < #out.first
             and out.notHim == nil and out.old == nil and out.oldBrief == nil
         return ok, string.format("%s | %s | %s | %s", tostring(out.empty), tostring(out.tie), tostring(out.ahead), tostring(out.brief))
     end)
