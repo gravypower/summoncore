@@ -37,6 +37,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Time | The week runs on UTC, a season runs about eleven weeks from 5 October, and nothing says when either ends | Answered; A and B built; the turnover stays |
 | Risk Mitigation | 0.19.0 carries a great deal of code that has never run in the game; what could go wrong, and what do we do about it? | Answered; A and B built; C and D left |
 | Unification | Is everything we have added still one game with one voice? | Answered; A, B and C built |
+| Endogenous Value | What does the group actually care about inside this game, and is the game paying in it? | Answered; the change waits for a decision (below) |
 
 ## Entries
 
@@ -1220,6 +1221,57 @@ its vocabulary). Most of the rest are diagnostics and labels, where a plain voic
 - Which lines does the group quote? Are they the voiced ones?
 - Does anyone ask what a badge is for? (The `how` line should answer it.)
 - Nothing here has run in the live client; the voiced lines are checked only against stubs.
+
+### 2026-10-05 · Lens of Endogenous Value: what is worth something here?
+
+**The questions (paraphrased):** what do the players value *inside* the game, as opposed to what the designer decided to count? Which
+objects, places and actions have value in the game's own world? Does the game pay out in things players care about, and can they
+see what a choice is worth when they make it?
+
+**What is worth something, as built**
+
+| Thing | Who values it | Is it paid in the game's own currency? |
+|---|---|---|
+| Zennit's week off | Zennit, and the group's pride in earning it | **A promise.** The addon cannot stop anyone summoning him; it files the summons as filler ("not hopeful") and the group keeps the bargain |
+| Winning a week, then the season finale | The group | Yes: the next chapter, the keepsake, the titles (`Week.lua`, `Ledger.lua`) |
+| Silver | Everyone, and the only value that exists outside the addon | Yes, and real: it goes on the tab and is paid in the game (the Economy entry) |
+| A summon's points | Nobody for their own sake | **They are stakes, not wealth.** They cannot be saved or spent, they stand only inside one week, and a week stores nothing but its winner |
+| The place of a summon (1, 3, 5, 10) | The caster, if they can see it | Only as a lever on those stakes (below) |
+| Badges and titles | The caster, a little | Recognition: the Reward entry found that this group does not play for it |
+
+**Findings**
+1. **The things that matter are all outside the points.** A week off, a chapter, silver and a laugh are what the group wants; the
+   points are only how the race is kept. That is how it should be for this group (they hate bookkeeping), and there is no hoard to
+   inflate: nothing carries over from one week to the next except the wins.
+2. **A place's worth is a stake, and it is invisible when the choice is made.** A summons worth P pays the group P if he accepts, pays
+   Zennit P if he wins the roll, and takes P from him if he refuses. So a dearer place raises the stakes on *both* sides; it does not
+   just pay more. By the simulation (five summons of one kind, two helpers, `skill.py`): five cities win 15 to 23% of weeks (his
+   head start of 2 is large against 1-point summons), but zone, dungeon and far-flung all win about 52 to 63%, since the ratio, not
+   the size, decides, and above a city the head start no longer matters. The place matters most through the *mix* and the *order*
+   (the Skill entry: his dice go on the first summons, so put the dear ones after them).
+3. **The briefing does not say what this place is worth.** `Week.Briefing` names the count, the lead, his dice and the helpers, but not
+   the worth of where the caster is standing, which is the one thing they are about to decide. The worth appears only after the cast
+   ("+3, zone") and on the rules card. A group that wants to play the order has to remember the table.
+4. **The table is a guess.** Six cities, ten far-flung zones and thirteen dungeon entrances are from memory and have never been
+   checked in the game; everything else is a zone (3). A far-flung place missing from the table scores 3, quietly, and nobody is told.
+   `/sc where` shows the kind of the place you stand in, but nothing asks anyone to use it.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Say the worth of the place in the ritual briefing**, in the Index's voice and with what is at stake: "From here (a far-flung place) the summons is worth 10: his roll could take 10, and so could yours." A city says it is worth 1 and that his head start is bigger | 3 | The briefing takes the map and subzone (the detector already has them); one test |
+| B | **Check the place table in the playtest script**: stand in each far-flung zone and dungeon entrance you pass, run `/sc where`, and note any that read "zone". `design/playtest.md` says how and what to fix | 4 | A paragraph |
+| C | **Leave the numbers alone** (1, 3, 5, 10): the stakes are doing their job, and a rebalance without a real week is a guess | 1, 2 | Nothing; recorded as a decision |
+
+**To decide before building**
+- Should the briefing name the stakes for Zennit's side too ("his roll could take 10")? It helps the group choose, and it tells him what
+  he is risking, but it is one more sentence in a line that is already long.
+
+**To watch in playtests**
+- Does the group choose where to summon, or only whom? (If they do not, A is only noise.)
+- Does anyone say "that should have been worth more"? That is a table entry to fix.
+- Nothing here has run in the live client.
 
 ## Decisions
 
