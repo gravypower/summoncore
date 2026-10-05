@@ -23,7 +23,7 @@ jobs:
       - name: Package
         run: |
           mkdir -p dist/summoncore
-          cp ./*.lua summoncore.toc README.md dist/summoncore/
+          cp ./*.lua summoncore.toc Bindings.xml README.md dist/summoncore/
           cp -r Media dist/summoncore/Media
           rm -f dist/summoncore/Media/.gitkeep
           (cd dist && zip -r "summoncore-${GITHUB_REF_NAME}.zip" summoncore)

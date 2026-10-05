@@ -1,0 +1,372 @@
+-- Check: the live-client checklist (/sc check). Everything in this addon was built and tested against stubs; this lists what has
+-- to be confirmed in the real game, runs what can be run by itself, watches the rest while you play, and says what to send back.
+-- Results are kept in SummonTrackerDB (ST.db.checks) so they survive a reload, and /sc check report prints them to paste.
+-- The plan around it is design/verification.md.
+local ADDON, ST = ...
+local Check = {}
+ST.Check = Check
+
+----------------------------------------------------------------------
+-- The trace: what the summon prompt and the answers did, newest last (the last 40)
+----------------------------------------------------------------------
+ST.trace = {}
+local TRACE_MAX = 40
+
+function ST.Trace(text)
+    local log = ST.trace
+    log[#log + 1] = { time = time(), text = tostring(text) }
+    if #log > TRACE_MAX then table.remove(log, 1) end
+end
+
+----------------------------------------------------------------------
+-- The list. kind: "auto" runs by itself (/sc check auto), "solo" needs only you, "duo" needs a friend who runs the addon.
+-- seen: marked by the addon itself when it watches it happen (Check.Seen). fails: what the addon does if this does not work.
+----------------------------------------------------------------------
+-- The calls the addon depends on. required ones break something when missing; the optional one only costs a nicety.
+Check.REQUIRED = {
+    "C_SummonInfo.ConfirmSummon", "C_SummonInfo.CancelSummon", "hooksecurefunc", "RandomRoll", "SendChatMessage",
+    "C_Map.GetMapInfo", "C_Map.GetBestMapForUnit", "C_ChatInfo.SendAddonMessage", "C_Timer.NewTicker", "StaticPopup_Show",
+}
+Check.OPTIONAL = { "C_SummonInfo.GetSummonConfirmSummoner" }
+
+-- Which of these dotted names ("C_Map.GetMapInfo") are not functions in `env` (the game's globals).
+function Check.Missing(names, env)
+    local out = {}
+    for _, name in ipairs(names) do
+        local obj = env
+        for part in name:gmatch("[^%.]+") do
+            obj = type(obj) == "table" and obj[part] or nil
+        end
+        if type(obj) ~= "function" then out[#out + 1] = name end
+    end
+    return out
+end
+
+local function joined(list) return #list == 0 and "none" or table.concat(list, ", ") end
+
+Check.LIST = {
+    -- ---------------------------------------------------------------- by themselves
+    { id = "a-api", kind = "auto", title = "The game gives the addon the calls it relies on",
+      fails = "the summon prompt is not read and the Index's form answers as it always did",
+      run = function()
+          local missing = Check.Missing(Check.REQUIRED, _G)
+          local soft = Check.Missing(Check.OPTIONAL, _G)
+          return #missing == 0, "missing: " .. joined(missing) .. "; optional missing: " .. joined(soft)
+      end },
+    { id = "a-hooks", kind = "auto", title = "The summon prompt's Accept and Decline calls are hooked",
+      fails = "what he presses in the game is not seen; the Index's form answers as before",
+      run = function()
+          local h = ST.Respond and ST.Respond.hooks
+          if not h then return false, "the hooks were never installed" end
+          return h.confirm and h.cancel and h.event or false,
+              string.format("accept hook %s, decline hook %s, CONFIRM_SUMMON event %s", tostring(h.confirm), tostring(h.cancel), tostring(h.event))
+      end },
+    { id = "a-places", kind = "auto", title = "Every city and far-flung map ID is a real map with the expected name",
+      fails = "a place scores as a plain zone (3) instead of its kind",
+      run = function()
+          local lines = ST.Scoring.Places(function(id)
+              local ok, info = pcall(C_Map.GetMapInfo, id)
+              return ok and type(info) == "table" and type(info.name) == "string" and info.name or nil
+          end)
+          local last = lines[#lines]
+          return last:find("knows every map", 1, true) ~= nil, last
+      end },
+    { id = "a-selftest", kind = "auto", title = "The self-tests (/sc synctest) pass in the game",
+      fails = "a rule or the sync format behaves differently in the game than in the stubs",
+      run = function()
+          local pass, total = ST.SyncTest.Run(true)
+          return pass == total, string.format("%d of %d passed", pass, total)
+      end },
+    { id = "a-window", kind = "auto", title = "Every tab of the window builds and refreshes without an error",
+      fails = "a tab shows nothing or stops the window",
+      run = function()
+          local ok, err = ST.Hub.SelfCheck()
+          return ok, ok and "all tabs refreshed" or tostring(err)
+      end },
+    { id = "a-binding", kind = "auto", title = "The writ key binding's function and names are registered",
+      fails = "no key for the writ; /sc writ still works",
+      run = function()
+          local ok = type(_G["SummonCore_ToggleWrit"]) == "function" and type(_G["BINDING_NAME_SUMMONCORE_WRIT"]) == "string"
+          return ok, ok and "the global and the binding names are set (the binding itself is checked by s-key)" or "not set"
+      end },
+    { id = "a-prefix", kind = "auto", title = "The addon message prefix is registered",
+      fails = "friends' addons cannot hear each other",
+      run = function()
+          local reg = C_ChatInfo and C_ChatInfo.IsAddonMessagePrefixRegistered
+          if not reg then return false, "this client cannot say" end
+          local ok, got = pcall(reg, ST.prefix)
+          return ok and got == true, ok and tostring(got) or tostring(got)
+      end },
+    { id = "a-errors", kind = "auto", title = "No script error has been caught this session",
+      fails = "something is breaking; /sc errors says what",
+      run = function()
+          local n = #ST.errors
+          return n == 0, n == 0 and "none" or string.format("%d caught: /sc errors", n)
+      end },
+    -- ---------------------------------------------------------------- by yourself
+    { id = "s-popup", kind = "solo", title = "A pretend summons: the Index's form, one-click dice, an answer",
+      steps = { "/sc respond test opens the form for a pretend summons from Tester.",
+          "It should say what a decline would do (free, with 1 free decline left) and the place's points.",
+          "Click Roll the dice (1-100): it should roll at once and show the rules on the waiting screen, and a pretend roll should come back within a couple of seconds and give an answer line in chat." },
+      expect = "the form, then a dice result line, with no extra click", fails = "answers cannot be given, or the dice need a click they should not" },
+    { id = "s-key", kind = "solo", title = "The writ key binding exists and arms a writ",
+      steps = { "Esc > Options > Key Bindings > AddOns: find Summon Core and bind a key to Play a writ on your next summons of Zennit.",
+          "Press it: chat says a writ is armed (or why not). Press again: it says it is withdrawn." },
+      expect = "the binding is listed and the key does what /sc writ does", fails = "no key; /sc writ still works" },
+    { id = "s-fit", kind = "solo", title = "The window fits: Party (Of Zennit column), Badges, Tools",
+      steps = { "/sc and click through Party, Zennit, Log, Story, Sync and Tools.",
+          "Nothing should run off the edge: the Party tab's Of Zennit column, the Badges tab's third column and the Tools tab's five columns." },
+      expect = "no clipped text or overlapping buttons", fails = "layout needs a fix (say which tab)" },
+    { id = "s-lines", kind = "solo", title = "The chat lines read well on a test summons",
+      steps = { "On a Zennit test (/sc zenit) or an alt: /sc fake Zennit, then /sc week, /sc rules, /sc tab and /sc report.",
+          "Read them as the group would: are any too long, or wrong?" },
+      expect = "short, plain, in the Index's voice", fails = "wording or length to fix (paste the line)" },
+    { id = "s-sound", kind = "solo", title = "The intro sound files play after a full restart",
+      steps = { "After a full WoW restart: /sc intro check." }, expect = "every file plays", fails = "a recording is missing or misnamed" },
+    -- ---------------------------------------------------------------- with a friend (both on the same version)
+    { id = "d-sync", kind = "duo", title = "Two clients hear each other and are on the same version",
+      steps = { "Both run /sc sync, then /sc.", "Each should see the other's summons arrive, and no 'is on another version' notice." },
+      expect = "hello received both ways", fails = "nothing shared; check the prefix (a-prefix) and the channel" },
+    { id = "d-ritual", kind = "duo", title = "A real ritual on Zennit: briefing, log line and his form",
+      steps = { "The warlock casts a real Ritual of Summoning on Zennit with two helpers.",
+          "The caster sees the briefing as it starts (long for the first of the week, short after, with the place's worth) and 'Summon logged'.",
+          "Zennit's form should open within a few seconds, with his free decline line." },
+      expect = "all three", fails = "the ritual is not seen, or the form does not arrive" },
+    { id = "d-overlap", kind = "duo", title = "On his screen, the Index's form and the game's prompt do not cover each other",
+      steps = { "When the game's own summon prompt and the Index's form are both up, look at where they sit.",
+          "Mark pass if both can be read; fail if one hides the other (say which is on top)." },
+      expect = "both readable", fails = "move the Index's form (design/lenses.md, Resonance, A)" },
+    { id = "d-name", kind = "duo", title = "The game names the summoner at the prompt (informational)",
+      steps = { "After a summons, /sc check trace: the CONFIRM_SUMMON line says summoner=Name or summoner=hidden.",
+          "Either is fine: with a name the right summons is matched; hidden falls back to the newest one waiting." },
+      expect = "a line is there", fails = "no CONFIRM_SUMMON line: the event does not fire in this client" , seen = true },
+    { id = "d-accept", kind = "duo", title = "Pressing Accept in the game records 'accepted' by itself", seen = true,
+      steps = { "Zennit presses the game's Accept without touching the Index's form.",
+          "The Index should record accepted and everyone should see the answer line. The addon marks this one itself." },
+      expect = "accepted, no click on the form", fails = "the form still has to be answered (the accept hook did not fire)" },
+    { id = "d-decline", kind = "duo", title = "Pressing Decline in the game records 'declined' (his free one)", seen = true,
+      steps = { "A new summons. Zennit presses the game's Decline.",
+          "The Index should record declined: no points either way, and his Week line says 0 free declines left." },
+      expect = "declined", fails = "the decline hook did not fire, or it recorded something else" },
+    { id = "d-cost", kind = "duo", title = "A second decline in the week costs him the points", seen = true,
+      steps = { "Another summons the same week. Zennit presses Decline again.",
+          "The Index should say the free decline is used and record a refusal (he loses the points)." },
+      expect = "refused, with the note", fails = "the free decline count is wrong" },
+    { id = "d-writ", kind = "duo", title = "A writ: armed by the key, on his form, and a decline costs", seen = true,
+      steps = { "The warlock arms a writ with the key, then casts. The briefing should say a writ is played.",
+          "Zennit's form should say so and what a decline costs. He presses Decline: a refusal, even with free declines left." },
+      expect = "refused, writ named", fails = "the writ is not sent (check both are on 0.20.0) or not read" },
+    { id = "d-dice", kind = "duo", title = "Dice: one click for him, one for the caster, an answer", 
+      steps = { "Zennit clicks Roll the dice (1-100) once. The waiting screen shows the rules.",
+          "The caster's prompt appears and one click rolls back. An answer line follows on both clients." },
+      expect = "the answer after one click each", fails = "the roll is not picked up (RandomRoll or the system message)" },
+    { id = "d-dice-ends", kind = "duo", title = "Accepting in the game during a roll ends the roll", seen = true,
+      steps = { "Zennit starts the dice, and before the caster rolls back, presses the game's Accept.",
+          "The answer should be accepted, and no die is spent (/sc week shows the dice unchanged)." },
+      expect = "accepted, dice left unchanged", fails = "the roll still decides it" },
+    { id = "d-expire", kind = "duo", title = "What happens when the game's prompt expires (informational)",
+      steps = { "A new summons. Zennit does not touch the prompt or the form for two minutes.",
+          "Then /sc check trace: did a CancelSummon line appear when the prompt closed, and what answer (if any) did the Index record?",
+          "Mark pass once you have recorded what you saw in the note. If it recorded a decline it should not have, say so." },
+      expect = "a note on what happened", fails = "an expiry that counts as a decline needs a fix" },
+    { id = "d-say", kind = "duo", title = "/sc week say sends one line to the group", 
+      steps = { "In a party or raid, either person runs /sc week say.", "The other sees 'Summon Core: Week: ...' in party chat." },
+      expect = "the line arrives", fails = "SendChatMessage is blocked; the addon says so" },
+    { id = "d-silver", kind = "duo", title = "Silver paid by trade or mail is noticed (existing /sc probe)",
+      steps = { "Zennit runs /sc probe, the friend trades him some silver, then he checks the Index's popup.", "See README, 'Seeing it arrive'." },
+      expect = "a confirmation popup", fails = "the client hides trade or mail money; payments are marked by hand" },
+}
+
+local byId = {}
+for i, c in ipairs(Check.LIST) do c.n = i; byId[c.id] = c end
+Check.byId = byId
+
+----------------------------------------------------------------------
+-- Results (kept in the saved variables)
+----------------------------------------------------------------------
+local function store()
+    ST.db.checks = ST.db.checks or {}
+    return ST.db.checks
+end
+
+-- status: "pass", "fail" or "skip". A note is optional.
+function Check.Record(id, status, note)
+    local c = byId[id]
+    if not c then return false, "no such check: " .. tostring(id) end
+    if status ~= "pass" and status ~= "fail" and status ~= "skip" then return false, "say pass, fail or skip" end
+    store()[id] = { status = status, at = time(), version = ST.version, note = note ~= "" and note or nil }
+    return true
+end
+
+function Check.Status(id)
+    local r = store()[id]
+    return r and r.status or "todo", r
+end
+
+-- The addon watched this happen: marks it pass unless it already passed (and keeps the first note).
+function Check.Seen(id, note)
+    if not byId[id] or not ST.db then return end
+    if Check.Status(id) == "pass" then return end
+    Check.Record(id, "pass", "seen live: " .. tostring(note))
+    ST.print(string.format("|cff33ff66Check passed by itself:|r %s (%s)", id, byId[id].title))
+end
+
+function Check.Counts()
+    local n = { pass = 0, fail = 0, skip = 0, todo = 0 }
+    for _, c in ipairs(Check.LIST) do
+        local s = Check.Status(c.id)
+        n[s] = n[s] + 1
+    end
+    return n
+end
+
+function Check.RunAuto()
+    local out = {}
+    for _, c in ipairs(Check.LIST) do
+        if c.kind == "auto" then
+            local ok, good, detail = pcall(c.run)
+            if not ok then good, detail = false, "ERROR " .. tostring(good) end
+            Check.Record(c.id, good and "pass" or "fail", detail)
+            out[#out + 1] = { id = c.id, ok = good and true or false, detail = detail, title = c.title, fails = c.fails }
+        end
+    end
+    return out
+end
+
+----------------------------------------------------------------------
+-- Words
+----------------------------------------------------------------------
+local ICON = { pass = "|cff33ff66PASS|r", fail = "|cffff4444FAIL|r", skip = "|cff888888skip|r", todo = "|cffffd100todo|r" }
+
+function Check.Overview()
+    local out, n = {}, Check.Counts()
+    out[1] = string.format("Live checks for v%s: %d pass, %d fail, %d skipped, %d to do. /sc check <id> shows the steps; /sc check pass <id> [note] records one; /sc check auto runs the automatic ones.",
+        tostring(ST.version), n.pass, n.fail, n.skip, n.todo)
+    local group
+    for _, c in ipairs(Check.LIST) do
+        if c.kind ~= group then
+            group = c.kind
+            out[#out + 1] = ({ auto = "By themselves:", solo = "By yourself:", duo = "With a friend:" })[group]
+        end
+        out[#out + 1] = string.format("  %s %s  %s", ICON[Check.Status(c.id)], c.id, c.title)
+    end
+    return out
+end
+
+function Check.Detail(id)
+    local c = byId[id]
+    if not c then return { "No such check: " .. tostring(id) } end
+    local status, r = Check.Status(id)
+    local out = { string.format("%s  %s  [%s] %s", id, c.title, status, r and r.note and ("(" .. r.note .. ")") or "") }
+    if c.kind == "auto" then
+        out[#out + 1] = "Runs by itself: /sc check auto."
+    else
+        for i, s in ipairs(c.steps or {}) do out[#out + 1] = string.format("  %d. %s", i, s) end
+        out[#out + 1] = "  Expect: " .. (c.expect or "it works") .. "."
+        if c.seen then out[#out + 1] = "  The addon marks this itself when it sees it happen." end
+        out[#out + 1] = string.format("  Then: /sc check pass %s [note]  or  /sc check fail %s [what happened]", id, id)
+    end
+    if c.fails then out[#out + 1] = "  If it fails: " .. c.fails .. "." end
+    return out
+end
+
+-- The text to paste back: the counts, every failure or open item with its note, and the recent trace.
+function Check.ReportText()
+    local n = Check.Counts()
+    local out = { string.format("Summon Core v%s live checks: %d pass, %d fail, %d skipped, %d to do.", tostring(ST.version), n.pass, n.fail, n.skip, n.todo) }
+    for _, c in ipairs(Check.LIST) do
+        local s, r = Check.Status(c.id)
+        if s ~= "pass" or (r and r.note) then
+            out[#out + 1] = string.format("%s %s: %s%s", s:upper(), c.id, c.title, r and r.note and (" -- " .. r.note) or "")
+        end
+    end
+    out[#out + 1] = string.format("Errors caught this session: %d.", #ST.errors)
+    for i = math.max(1, #ST.errors - 4), #ST.errors do
+        local e = ST.errors[i]
+        out[#out + 1] = string.format("  error in %s: %s", e.name, e.msg)
+    end
+    out[#out + 1] = "Trace (newest last):"
+    for i = math.max(1, #ST.trace - 14), #ST.trace do
+        local t = ST.trace[i]
+        out[#out + 1] = string.format("  %s %s", date("%H:%M:%S", t.time), t.text)
+    end
+    return out
+end
+
+----------------------------------------------------------------------
+-- The command and the copy window
+----------------------------------------------------------------------
+local window
+local function showCopy(text)
+    if not window then
+        window = CreateFrame("Frame", "SummonCoreCheckReport", UIParent, "BasicFrameTemplateWithInset")
+        window:SetSize(640, 420)
+        window:SetPoint("CENTER")
+        window:SetFrameStrata("DIALOG")
+        window.TitleText:SetText("Summon Core live checks (Ctrl+A, Ctrl+C)")
+        local sf = CreateFrame("ScrollFrame", nil, window, "UIPanelScrollFrameTemplate")
+        sf:SetPoint("TOPLEFT", 12, -30)
+        sf:SetPoint("BOTTOMRIGHT", -32, 12)
+        local eb = CreateFrame("EditBox", nil, sf)
+        eb:SetMultiLine(true)
+        eb:SetAutoFocus(false)
+        eb:SetFontObject(ChatFontNormal)
+        eb:SetWidth(580)
+        eb:SetScript("OnEscapePressed", function() window:Hide() end)
+        sf:SetScrollChild(eb)
+        window.edit = eb
+    end
+    window.edit:SetText(text)
+    window:Show()
+    window.edit:SetFocus()
+    window.edit:HighlightText()
+end
+
+-- /sc check [auto | trace | report | reset | <id> | pass|fail|skip <id> [note]]
+function Check.Command(rest)
+    rest = rest or ""
+    local word, tail = rest:match("^(%S*)%s*(.-)$")
+    local function say(lines) for _, l in ipairs(lines) do ST.print(l) end end
+    if word == "" then
+        say(Check.Overview())
+        for _, c in ipairs(Check.LIST) do
+            if c.kind == "auto" and Check.Status(c.id) == "todo" then
+                return ST.print("Start with /sc check auto: it runs the automatic checks by itself, then come back here for the rest.")
+            end
+        end
+        for _, c in ipairs(Check.LIST) do
+            if Check.Status(c.id) == "todo" and c.kind ~= "auto" then
+                ST.print("Next: " .. c.id)
+                return say(Check.Detail(c.id))
+            end
+        end
+        return
+    elseif word == "auto" then
+        local results = Check.RunAuto()
+        for _, r in ipairs(results) do
+            ST.print(string.format("%s %s: %s (%s)%s", r.ok and ICON.pass or ICON.fail, r.id, r.title, tostring(r.detail),
+                r.ok and "" or ("  If it fails: " .. tostring(r.fails))))
+        end
+        local n = Check.Counts()
+        return ST.print(string.format("%d pass, %d fail so far. /sc check for the rest.", n.pass, n.fail))
+    elseif word == "trace" then
+        if #ST.trace == 0 then return ST.print("Nothing traced yet: it records the summon prompt and the answers as they happen.") end
+        for _, t in ipairs(ST.trace) do ST.print(string.format("%s %s", date("%H:%M:%S", t.time), t.text)) end
+        return
+    elseif word == "report" then
+        local text = table.concat(Check.ReportText(), "\n")
+        if CreateFrame then showCopy(text) end
+        return say(Check.ReportText())
+    elseif word == "reset" then
+        ST.db.checks = {}
+        return ST.print("Live check results cleared.")
+    elseif word == "pass" or word == "fail" or word == "skip" then
+        local id, note = tail:match("^(%S+)%s*(.-)$")
+        if not id then return ST.print("usage: /sc check " .. word .. " <id> [note]") end
+        local ok, err = Check.Record(id, word, note)
+        return ST.print(ok and string.format("%s: %s", id, word) or err)
+    elseif byId[word] then
+        return say(Check.Detail(word))
+    end
+    ST.print("usage: /sc check [auto | trace | report | reset | <id> | pass|fail|skip <id> [note]]")
+end

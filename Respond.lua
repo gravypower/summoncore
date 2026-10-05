@@ -466,6 +466,7 @@ function Respond.GotRoll(kind, id, value)
     local ev = ST.Store.Get(id)
     if not ev then return end
     if kind == "zennit" then
+        if ev.response then return end -- answered in the game while the roll was on its way: no dice
         Respond.StartDice(id, value)
     elseif kind == "summoner" then
         ST.Sync.SendDiceReply(id, value, ev.target)
@@ -596,7 +597,7 @@ local function diceLeft(id, ev)
     return math.max(0, left)
 end
 
--- Draws one stage on a surface: "choose", "roll", "waiting" (extra = Zennit's roll), "noanswer" or "done".
+-- Draws one stage on a surface: "choose", "waiting" (extra = Zennit's roll), "noanswer" or "done".
 local function render(s, stage, extra)
     if not s.current then return end
     local id, ev = s.current.id, s.current.ev
@@ -620,22 +621,18 @@ local function render(s, stage, extra)
             { ST.Cards.Left(ev.caster) > 0 and string.format("Stamp the card (%d left)", ST.Cards.Left(ev.caster))
                 or "Name a price, in silver (no receipt)", function() Respond.AskSilver(id, ev) end },
             dice == 0 and { "No dice left this week", function() end, true }
-                or { "Suggest dice (1-100)", function() render(s, "roll") end },
-        })
-    elseif stage == "roll" then
-        local bonus = ST.Week.HelperBonus(ev)
-        s.text:SetText(string.format("Dice. You roll 1-100, then %s rolls back. You add %d to your roll%s; higher wins and a tie goes to you.\n\nIf you win, the summon does not count.",
-            ev.caster, edgeFor(ev), bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or ""))
-        setButtons(s, {
-            { "Roll 1-100", function()
-                if diceLeft(id, ev) == 0 then return render(s, "choose") end -- the last die went on another summon
-                Respond.RequestRoll("zennit", id)
-                render(s, "waiting")
-            end },
-            { "Back", function() render(s, "choose") end },
+                or { "Roll the dice (1-100)", function()
+                    if diceLeft(id, ev) == 0 then return render(s, "choose") end -- the last die went on another summon
+                    Respond.RequestRoll("zennit", id)
+                    render(s, "waiting")
+                end },
         })
     elseif stage == "waiting" then
-        s.text:SetText(extra and string.format("You rolled %d. Waiting for %s to roll back...", extra, ev.caster) or "Rolling...")
+        -- the rules are said here, once the die is cast, so that rolling is one click (design/lenses.md, Flow)
+        local bonus = ST.Week.HelperBonus(ev)
+        local rules = string.format("\n\nYou add %d to your roll%s; higher wins and a tie goes to you. If you win, the summon does not count.",
+            edgeFor(ev), bonus > 0 and string.format(", and %s's helpers add %d to theirs", ev.caster, bonus) or "")
+        s.text:SetText((extra and string.format("You rolled %d. Waiting for %s to roll back...", extra, ev.caster) or "Rolling...") .. rules)
         setButtons(s, { { "Choose something else", function() state[id] = nil render(s, "choose") end } })
     elseif stage == "noanswer" then
         s.text:SetText(string.format("%s did not roll back.\n\nChoose again.", ev.caster))
@@ -713,6 +710,7 @@ end
 
 -- A live summon of Zennit has arrived on his client (Sync calls this).
 function Respond.Incoming(id, ev)
+    ST.Trace(string.format("the Index's form opened for %s (from %s)", id, tostring(ev.caster)))
     if not dlg then buildDialog() end
     Respond.Select(dlgSurface, id, ev)
     dlg:Show()
@@ -750,41 +748,70 @@ local SUMMON_WINDOW = 150   -- the game's prompt lasts about two minutes; a late
 local lastSummoner          -- who the game's prompt named, when the client says (a plain first name, or nil)
 
 -- kind: "accept" or "decline". summoner: the plain name the prompt named, if known. Returns the answer recorded, or nil when this
--- was not about a summons we are waiting on (a warlock without the addon, a summons already answered, or a dice roll in progress).
+-- was not about a summons we are waiting on (a warlock without the addon, or a summons already answered). A dice roll in flight is
+-- ended by it: one answer per summons.
 function Respond.Real(kind, summoner)
     if not ST.Gag.IsZennit() then return nil end
     local now, pick = time(), nil
     for _, r in ipairs(Respond.Pending()) do -- newest first
         local ev = r.ev
-        if not ev.response and not ev.fake and not state[r.id] and now - ev.time <= SUMMON_WINDOW
+        if not ev.response and not ev.fake and now - ev.time <= SUMMON_WINDOW
             and (not summoner or ST.baseName(ev.caster) == summoner) then
             pick = r
             break
         end
     end
-    if not pick then return nil end
-    if kind == "accept" then return Respond.Decide(pick.id, "accepted") end
-    if ST.Week.WritCounts(pick.ev) then return Respond.Decide(pick.id, "refused") end
-    if ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then return Respond.Decide(pick.id, "declined") end
-    ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
-        pick.ev.points or 0, plural(pick.ev.points or 0)))
-    return Respond.Decide(pick.id, "refused")
+    if not pick then
+        ST.Trace(kind .. ": no summons of him is waiting, so nothing is recorded")
+        return nil
+    end
+    local rolling = state[pick.id] ~= nil
+    state[pick.id] = nil -- a roll in flight is over: the game's prompt is his answer, and no die is spent
+    if pendingRoll and pendingRoll.id == pick.id then pendingRoll = nil end
+    local resp, why
+    if kind == "accept" then
+        resp, why = Respond.Decide(pick.id, "accepted"), "d-accept"
+    elseif ST.Week.WritCounts(pick.ev) then
+        resp, why = Respond.Decide(pick.id, "refused"), "d-writ"
+    elseif ST.Week.DeclinesLeft(ST.Week.Start(pick.ev.time)) > 0 then
+        resp, why = Respond.Decide(pick.id, "declined"), "d-decline"
+    else
+        ST.print(string.format("The Index notes that your free decline this week is used, so this one costs you %d point%s.",
+            pick.ev.points or 0, plural(pick.ev.points or 0)))
+        resp, why = Respond.Decide(pick.id, "refused"), "d-cost"
+    end
+    ST.Trace(string.format("%s -> %s (%s%s)", kind, resp and resp.result or "nothing recorded", pick.id, rolling and ", ended a roll in flight" or ""))
+    if resp and ST.Check then
+        ST.Check.Seen(why, string.format("%s recorded %s", kind, resp.result))
+        if rolling then ST.Check.Seen("d-dice-ends", string.format("%s ended a roll; %s", kind, resp.result)) end
+    end
+    return resp
 end
 
 local promptFrame = CreateFrame("Frame")
-pcall(promptFrame.RegisterEvent, promptFrame, "CONFIRM_SUMMON")
-promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function()
+Respond.hooks = {} -- what was installed, for /sc check
+Respond.hooks.event = pcall(promptFrame.RegisterEvent, promptFrame, "CONFIRM_SUMMON") and true or false
+pcall(promptFrame.RegisterEvent, promptFrame, "CANCEL_SUMMON") -- only traced: it tells us whether an expiry closes the prompt
+promptFrame:SetScript("OnEvent", ST.Safe("the summon prompt", function(_, event)
+    if event == "CANCEL_SUMMON" then return ST.Trace("CANCEL_SUMMON: the game closed the prompt") end
     lastSummoner = nil
     local get = C_SummonInfo and C_SummonInfo.GetSummonConfirmSummoner
     if get then
         local ok, name = pcall(get)
         lastSummoner = ok and ST.baseName(name) or nil
     end
+    ST.Trace("CONFIRM_SUMMON: summoner=" .. (lastSummoner or "hidden"))
+    if ST.Check then ST.Check.Seen("d-name", lastSummoner and ("the game named " .. lastSummoner) or "the game hid the name") end
 end))
 
 -- What he presses is what he did: the prompt's buttons call these, and a hook sees the call without changing it. Where this client
 -- has no such functions the hooks are skipped and nothing here runs.
-if C_SummonInfo and hooksecurefunc then
-    pcall(hooksecurefunc, C_SummonInfo, "ConfirmSummon", ST.Safe("accepting a summons", function() Respond.Real("accept", lastSummoner) end))
-    pcall(hooksecurefunc, C_SummonInfo, "CancelSummon", ST.Safe("declining a summons", function() Respond.Real("decline", lastSummoner) end))
+local function hook(name, kind, flag)
+    if not (C_SummonInfo and hooksecurefunc and C_SummonInfo[name]) then Respond.hooks[flag] = false return end
+    Respond.hooks[flag] = pcall(hooksecurefunc, C_SummonInfo, name, ST.Safe("the summon prompt", function()
+        ST.Trace("hook " .. name .. " called")
+        Respond.Real(kind, lastSummoner)
+    end)) and true or false
 end
+hook("ConfirmSummon", "accept", "confirm")
+hook("CancelSummon", "decline", "cancel")

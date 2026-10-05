@@ -115,6 +115,7 @@ local function startPending(target)
         snapshotHelpers()
         if ticks * TICK > PENDING_TTL then clearPending() end
     end)
+    ST.Trace(string.format("ritual sent on %s%s", tostring(pending.target), Detector.writ and " (a writ is armed)" or ""))
     ST.Clips.Play("ritual") -- a recorded line as the ritual begins
     -- a ritual on Zennit: tell the caster whether it will count, where the week stands, and what helpers add
     local brief = pending.target and ST.Week.Briefing(pending.target, mapID, pending.subzone, Detector.writ)
@@ -124,6 +125,7 @@ local function startPending(target)
 end
 
 local function report(ev, badges)
+    ST.Trace(string.format("summons logged: %s in %s%s", tostring(ev.target), ev.subzone ~= "" and ev.subzone or "?", ev.writ and ", with a writ" or ""))
     if ST.Hub then ST.Hub.Refresh() end
     local zenit = ST.Gag.IsZennit()
     ST.print(ST.Voice.Say("logged", { "Summon logged: %s in %s%s%s", "The Index has noted a summons of %s to %s%s%s.",

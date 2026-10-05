@@ -1895,6 +1895,8 @@ add("what he presses at the game's own prompt is his answer: accept, a free decl
             out.w3Lands, out.w3Goal = S.Lands(a.db.events.w3), S.Goal(a.db.events.w3)
             out.decLands, out.decGoal = S.Lands(a.db.events.dec), S.Goal(a.db.events.dec)
             out.status = W.StatusLine(this, true)
+            out.seen = table.concat({ ST.Check.Status("d-accept"), ST.Check.Status("d-decline"), ST.Check.Status("d-cost"),
+                (ST.Check.Status("d-writ")) }, " ")
             G.IsZennit = function() return false end
             out.notHim = R.Real("accept", "Hal")
         end)
@@ -1906,8 +1908,80 @@ add("what he presses at the game's own prompt is his answer: accept, a free decl
             and out.newest and out.newest.result == "accepted" and out.again == nil
             and out.results == "accepted declined refused refused nil nil accepted"
             and not out.w3Lands and out.w3Goal == 0 and not out.decLands and out.decGoal == -3
-            and out.status:find("0 free declines left", 1, true) and out.notHim == nil
+            and out.status:find("0 free declines left", 1, true) and out.notHim == nil and out.seen == "pass pass pass pass"
         return good, tostring(out.results)
+    end)
+end)
+
+add("the live checklist: well-formed, records results, marks what it sees, and says what to send back", function()
+    local C = ST.Check
+    local ids, bad, kinds = {}, {}, { auto = true, solo = true, duo = true }
+    for _, c in ipairs(C.LIST) do
+        if ids[c.id] then bad[#bad + 1] = "duplicate " .. c.id end
+        ids[c.id] = true
+        if not (c.title and kinds[c.kind]) then bad[#bad + 1] = "malformed " .. c.id end
+        if c.kind == "auto" and type(c.run) ~= "function" then bad[#bad + 1] = "no run " .. c.id end
+        if c.kind ~= "auto" and not (c.steps and #c.steps > 0 and c.expect) then bad[#bad + 1] = "no steps " .. c.id end
+    end
+    for _, id in ipairs({ "d-accept", "d-decline", "d-cost", "d-writ", "d-dice-ends", "d-name" }) do -- the ids the addon marks itself
+        if not ids[id] then bad[#bad + 1] = "missing " .. id end
+    end
+    local env = { C_Map = { GetMapInfo = function() end }, hooksecurefunc = function() end, C_SummonInfo = { ConfirmSummon = function() end } }
+    local missing = C.Missing({ "C_SummonInfo.ConfirmSummon", "C_SummonInfo.CancelSummon", "hooksecurefunc", "C_Map.GetMapInfo", "Nope.Nothing" }, env)
+    local a, out = newClient("Alpha"), {}
+    with(a, function()
+        out.todo = C.Status("a-api")
+        out.good, out.err = C.Record("a-api", "pass", "fine"), select(2, C.Record("nope", "pass"))
+        out.badStatus = select(2, C.Record("a-api", "maybe"))
+        out.pass = C.Status("a-api")
+        C.Seen("d-accept", "first")
+        C.Seen("d-accept", "second")
+        out.note = a.db.checks["d-accept"].note
+        C.Record("d-cost", "fail", "free decline wrong")
+        local n = C.Counts()
+        out.counts = string.format("%d %d", n.pass, n.fail)
+        for i = 1, 50 do ST.Trace("t" .. i) end
+        out.trace = #ST.trace
+        out.report = table.concat(C.ReportText(), "\n")
+    end)
+    local ok = #bad == 0 and #missing == 2 and missing[1] == "C_SummonInfo.CancelSummon" and missing[2] == "Nope.Nothing"
+        and out.todo == "todo" and out.good and out.err:find("no such check", 1, true) and out.badStatus:find("pass, fail or skip", 1, true)
+        and out.pass == "pass" and out.note == "seen live: first" and out.counts == "2 1" and out.trace == 40
+        and out.report:find("FAIL d-cost: ", 1, true) and out.report:find("free decline wrong", 1, true) and out.report:find("Trace (newest last)", 1, true)
+        and out.report:find("PASS a-api: ", 1, true) and out.report:find("-- fine", 1, true)
+    return ok, table.concat(bad, "; ") .. " " .. tostring(out.counts)
+end)
+
+add("the game's prompt ends a dice roll in flight: one answer per summons, and no die is spent", function()
+    return newRules(function()
+        local a, R, S, G, W, out = newClient("Zennit"), ST.Respond, ST.Store, ST.Gag, ST.Week, {}
+        local realMe, realIs = S.me, G.IsZennit
+        S.me = function() return "Zennit" end
+        G.IsZennit = function() return true end
+        local ok, err = pcall(with, a, function()
+            local now = time()
+            local this = W.Start(now)
+            local function put(key, age, caster)
+                a.db.events[key] = { caster = caster, target = "Zennit", assistants = {}, time = now - age, points = 3, kind = "zone" }
+            end
+            local function result(key) return a.db.events[key].response and a.db.events[key].response.result end
+            put("d1", 20, "Jo")
+            R.StartDice("d1", 40)                                   -- a roll is in flight
+            out.accepted = R.Real("accept", "Jo")                   -- he accepts in the game meanwhile
+            R.OnDiceReply("d1", a.db.events.d1, 5)                  -- the summoner's roll comes back: too late
+            put("d2", 10, "Kay")
+            R.StartDice("d2", 90)
+            out.declined = R.Real("decline", "Kay")                 -- he declines in the game: his free decline
+            R.OnDiceReply("d2", a.db.events.d2, 5)
+            out.results = result("d1") .. " " .. result("d2")
+            out.diceLeft = W.DiceLeft(this)                         -- no die was spent
+            out.seen = ST.Check.Status("d-dice-ends")
+        end)
+        S.me, G.IsZennit = realMe, realIs
+        if not ok then return false, "ERROR " .. tostring(err) end
+        local good = out.accepted and out.accepted.result == "accepted" and out.declined and out.declined.result == "declined"
+            and out.results == "accepted declined" and out.diceLeft == W.RULES.dice and out.seen == "pass"
+        return good, string.format("%s, dice left %s", tostring(out.results), tostring(out.diceLeft))
     end)
 end)
 
@@ -1954,7 +2028,7 @@ add("helpers are named when their bonus wins the roll, and only then", function(
     end)
 end)
 
-function T.Run()
+function T.Run(quiet)
     realEventClosed = ST.Week.EventClosed
     ST.Week.EventClosed = function() return false end -- the other tests use old summons
     local rulesFrom = ST.Week.RULES.from
@@ -1974,11 +2048,14 @@ function T.Run()
         if good then pass = pass + 1 end
     end
     for _, r in ipairs(results) do
-        ST.print(string.format("%s %s%s", r.ok and "|cff33ff66PASS|r" or "|cffff4444FAIL|r", r.name,
-            r.detail ~= "" and ("  (" .. r.detail .. ")") or ""))
+        if not (quiet and r.ok) then -- quiet: only the failures
+            ST.print(string.format("%s %s%s", r.ok and "|cff33ff66PASS|r" or "|cffff4444FAIL|r", r.name,
+                r.detail ~= "" and ("  (" .. r.detail .. ")") or ""))
+        end
     end
     ST.Week.EventClosed = realEventClosed
     ST.Week.RULES.from = rulesFrom
     ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue, ST.Week.RULES.lastCall = whims, fixed, overdue, lastCall
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))
+    return pass, #tests
 end
