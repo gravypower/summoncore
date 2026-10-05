@@ -337,6 +337,10 @@ capitals count on the client's Alliance side (the Exodar, if the client has it),
 whether his answer matters (a refused summons is not a stop on the tour). **Partly done:** postcards (design/lenses.md, Secrets) are the same idea aimed at the ten far-flung places, which pull with
 the race (10 points) where the capitals (1 point) pull against it; the capitals tour stays parked.
 
+**The Index's request of the week** (design/lenses.md, Indirect Control, C): one far-flung place drawn each week, as the whim is,
+named on Monday ("The Index would like a postcard from Felwood this week"); a postcard from it that week adds "as requested". No
+points. Parked because it would be a second weekly draw on top of the whim.
+
 Challenge import strings, emote bonus challenges and Zennit's objective. (Catching summons by warlocks who do not run the addon is
 built: Accessibility, G.)
 
@@ -379,8 +383,9 @@ numbers behind it, is in `design/lenses.md`):
 - **Postcards.** The first summons of him to each far-flung place (`Scoring.remoteNames`, 10 points) in a season that lands (he went:
   accepted, silver, or lost the dice) earns the Index a postcard from him, said on every client ("The Index has filed a postcard from
   Zennit, in Silithus: 'Sand. Also insects. Mostly sand.' Stamped: 1 of 10 far-flung places this season."). No points: the 10 are the
-  reason to go, the postcard is the joke. `/sc week` ends with the season's postcards, the rules card counts them, and the season's
-  keepsake lists them. A second trip to the same place that season sends none, and a decline is not a trip. **Zennit can write his own**
+  reason to go, the postcard is the joke. `/sc week` ends with the season's postcards and the places still missing one ("Still no
+  postcard from: Azshara, Felwood... The Index has stamps."), the Monday login names three of them, the rules card counts them, and
+  the season's keepsake lists them. A second trip to the same place that season sends none, and a decline is not a trip. **Zennit can write his own**
   (`/sc zennit postcard Silithus: ...`), and his words replace the Index's on every client.
 - **A last call.** In the last 24 hours of a week (`Week.RULES.lastCall`), the "Week:" line adds "the week closes in 9 hours", the
   briefing as a ritual on him begins ends "Last call: the week closes in 9 hours (Monday 11:00).", and a login in that stretch says it

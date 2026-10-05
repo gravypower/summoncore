@@ -588,6 +588,9 @@ function Week.AnnounceClock()
         s.clockSeen = start
         local closes, answers = Week.ClosesText(start)
         ST.print(string.format("The Index closes this week on %s, your time, and takes late answers until %s.", closes, answers))
+        -- where to go this week, said before anyone travels (design/lenses.md, Indirect Control)
+        local missing = ST.Ledger.MissingLine(ST.Ledger.Facts(), true)
+        if missing then ST.print(missing) end
     end
     local left = Week.LastCall()
     if left and s.lastCallSeen ~= start then

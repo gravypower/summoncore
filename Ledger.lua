@@ -373,6 +373,22 @@ function Ledger.PostcardsLine(d)
     return string.format("Postcards from Zennit: %s (%d of %d).", joined(names), #names, Ledger.PostcardPlaces())
 end
 
+-- The far-flung places with no postcard yet this season, as a line for where to go next (design/lenses.md, Indirect Control).
+-- short: name three and count the rest, for the Monday login. Nil when every one has been stamped.
+function Ledger.MissingLine(d, short)
+    local have, missing = {}, {}
+    for _, p in ipairs(d.postcards) do have[p.mapID] = true end
+    for id, name in pairs(ST.Scoring.remoteNames) do if not have[id] then missing[#missing + 1] = name end end
+    if #missing == 0 then return nil end
+    table.sort(missing)
+    if short and #missing > 4 then
+        local n = #missing - 3
+        while #missing > 3 do missing[#missing] = nil end
+        return string.format("Still no postcard from: %s and %d more. The Index has stamps.", table.concat(missing, ", "), n)
+    end
+    return string.format("Still no postcard from: %s. The Index has stamps.", joined(missing))
+end
+
 -- The line for a summons of him that has just landed, if it is this season's first to its far-flung place; else nil.
 -- before: the answer it had until now, so a summons that already landed (silver later paid) does not send a second postcard.
 function Ledger.PostcardFor(ev, before)

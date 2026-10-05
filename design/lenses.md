@@ -50,6 +50,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Secrets | His list is the game's one secret; is each piece of information on the right side of hidden and open? | Answered; A, B and postcards built |
 | Character | Zennit is a real friend playing a version of himself; who writes him, and does he get a say? | Answered; A and B built; C (recordings) waits |
 | Inner Contradiction | Do the rules, the story and the players' goals pull the same way? His prize for winning is a week in which summoning him does nothing | Answered; A and B built |
+| Indirect Control | What does the addon nudge the group to do, and does each nudge arrive when the decision is made? | Answered; A built, C parked, B after the playtest |
 
 ## Entries
 
@@ -2003,6 +2004,73 @@ new to do.
 - Does the group still summon him in his week off? Does the count make them try?
 - Does he enjoy the leave, or miss the game?
 
+### 2026-10-05 · Lens of Indirect Control: what the addon nudges the group to do
+
+**The questions (paraphrased):** what do we want the players to do? Which of the game's goals, rewards, interface and characters
+nudge them toward it without a rule forcing it? Does each nudge arrive when the decision is made? Do any nudge the wrong way?
+
+**What we want the group to do:** summon him often but not endlessly, to unreasonable places, together, at times that keep the week
+alive, and keep it friendly. And Zennit to answer, and enjoy it.
+
+**The nudges, and when each arrives** (the code as of 0.21.x)
+
+| Nudge | Toward | Arrives | When the decision is made | |
+|---|---|---|---|---|
+| Points by place (city 1, zone 3, dungeon 5, far-flung 10) | Unreasonable places | **At the cast** (the briefing) | **Before travelling** | Late |
+| Postcards (Secrets) | All ten far-flung places in a season | When one lands | Before travelling | Late, and nothing says which are missing |
+| His list (Secrets) | Guessing, varying places | Never (it is secret) | Before travelling | Right: it is meant to be unseen |
+| The cap of 10 and the close | Not spamming him | The briefing, the Week line | At the cast | On time |
+| The last call (Time) | Not letting the week drift | At login and the briefing, in the final day | That day | On time |
+| "Waiting for his answer" (Community) | Chasing him | The Week line and the briefing | Any time | On time |
+| The writ clause (Secrets) | Putting a writ where it bites | The first briefing of a week | At the cast | On time |
+| The Monday tip (Interface) | Finding commands | Monday login | Any time | On time |
+| **Helpers +5 each, two at most** | **Doing it together** | The first briefing | **Never: see below** | Steers nothing |
+
+**Findings**
+1. **The strongest nudges arrive after the decision they are meant to steer.** Where to summon him is decided before anyone travels:
+   somebody says "let's get him to Silithus" and the group flies there. The addon first speaks about the place at the cast, when they
+   are already standing in it. `/sc places` lists the values, but it is a reference, not a nudge, and nothing at all says which far-flung
+   places still lack a postcard this season. The postcards are a collection with no checklist.
+2. **The helper bonus does not steer anything.** A Ritual of Summoning needs two party members besides the caster to click the
+   portal, so nearly every summons has two helpers and +10 on the roll, which cancels his +10 edge. The group cannot choose more or
+   fewer helpers. What does vary is whether the log *credits* them: the assistants prompt asks the caster when the roster is unclear, and
+   an uncredited helper is +5 lost. So the bonus's real effect is to make a roll depend on bookkeeping, which this group dislikes (the
+   Player). The earlier simulations' "no helpers" rows (Elegance, Fairness) describe weeks that cannot happen. This should be confirmed
+   with the playtest report, which already counts "Helpers on a summons: none, one, two".
+3. **The working nudges are the timing ones.** The last call, the overdue count, the writ clause and the cap all arrive when the
+   decision is being made, and each points one way. Nothing to change.
+4. **The city line nudges against the most natural summons**, "The Index would not call that a plan" when a friend just wants him in
+   Ironforge with the group. For the race that is right (a city is worth less than his head start), and a city summons does not hurt
+   the group in a normal week (the cap is rarely reached). Leave it.
+
+**Proposed changes** (none built yet)
+
+| # | Change | Fixes | Cost |
+|---|---|---|---|
+| A | **Postcards still to collect**: `/sc week` and the Monday login (with the week's clock line) name the far-flung places with no postcard yet this season ("Still no postcard from: Azshara, Felwood and six more. The Index has stamps.") | 1 | A function from the season's postcards and a line in two places |
+| B | **Decide the helper bonus from data**: after the first weeks, read the report's helper counts. If almost every summons has two helpers, drop both the bonus and his edge together (the roll is then even, as it is now in practice) and the assistants prompt stops mattering to the score | 2 | Nothing now; a rule change later, with the Fairness numbers recomputed |
+| C | **The Index's request of the week**: one far-flung place drawn each week (as the whim is), named on Monday; a postcard from it that week adds "as requested". No points | 1 | A draw and two lines; more surprise than steer |
+| D | **Leave it** | | Nothing |
+
+**Recommendation:** A now, B after the playtest. A puts the postcards' checklist where the group plans the evening, which is the
+cheapest way to make the place nudge arrive on time. B is the bigger simplification, but it should wait for the log to show how many
+helpers a summons really has. C is fun but is a second weekly draw on top of the whim; keep it for later.
+
+**Our answer (built: A; C noted; B after the playtest).**
+
+**Built**
+- **A, postcards still to collect** (`Ledger.MissingLine`). `/sc week` ends with every far-flung place that has no postcard yet this
+  season ("Still no postcard from: Azshara, Blasted Lands... The Index has stamps."), and the Monday login, right after the week's
+  clock, names three and counts the rest. Nothing when all ten are stamped.
+- **C, noted** in the README's "Parked for later": the Index's request of the week, one far-flung place drawn weekly, no points.
+- **B** waits for the report's helper counts.
+- **Live checks:** `s-login` now expects the missing-postcards line, and `d-postcard` the list in `/sc week`; the postcards self-test
+  covers both forms of the line.
+
+**To watch in playtests**
+- Does the group plan trips from the missing postcards?
+- The report's "Helpers on a summons": is it nearly always two?
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -2042,3 +2110,4 @@ new to do.
 | 2026-10-05 | His list is set for the week (a new place counts from Monday); the briefing says a writ only bites at his list once his free decline is used; postcards from far-flung places, once each a season, no points | Secrets | The list could be changed with a summons on screen, which made every decline free; the group could not see when a writ mattered; the far-flung trips earned points but no part in the joke |
 | 2026-10-05 | Zennit writes his own postcards and an out-of-office for his week off; sent from his characters only, the newest kept, used on every client in place of ours | Character | Every word about him was ours; the two moments the joke is about him (where he was dragged, where he went on leave) are where his own line is funniest |
 | 2026-10-05 | A summons of him on his week off is "disturbing his leave": the lines say the race is off but postcards and titles still count, and the Index counts who disturbed it most; the week off itself stays | Inner Contradiction | About a third of weeks are his weeks off, and the only line the caster read said "do not bother", though most of the game still ran |
+| 2026-10-05 | The far-flung places still missing a postcard are named in `/sc week` and at the Monday login; the helper bonus waits for the report's helper counts; the Index's weekly request is parked | Indirect Control | The place nudges (points, postcards) arrived at the cast, after the group had already travelled; a ritual needs two helpers anyway, so the bonus steers only the bookkeeping |
