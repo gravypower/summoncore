@@ -59,11 +59,19 @@ end
 -- tells the same story, and used for the scene, the keepsake of a finished season, and `/sc seasons`.
 ----------------------------------------------------------------------
 
+local function joined(names)
+    if #names <= 1 then return names[1] or "" end
+    return table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
+end
+
 -- ctx: { isZennit(name), name(name), bonus(ev), edge(ev), resolve(zroll, sroll, bonus, edge), silver, helpersMax }
 -- Returns { summons, casters = { name = n }, present = { name = true }, silverPaid, silverOwed (in silver), tipped,
 -- streak (his longest run of dice wins), heaviest = { name, n } or nil }.
 function Ledger.Collect(events, from, to, ctx)
-    local d = { summons = 0, casters = {}, present = {}, silverPaid = 0, silverOwed = 0, streak = 0 }
+    local d = { summons = 0, casters = {}, present = {}, silverPaid = 0, silverOwed = 0, streak = 0, usualAsk = ctx.silver,
+        -- for the titles and the badges
+        assists = {}, helperTips = {}, tipPairs = {}, by = {}, delays = {} }
+    local weekOf = ctx.weekStart or function(t) return math.floor(t / (7 * 86400)) end
     local list = {}
     for id, ev in pairs(events) do
         if not ev.fake and ev.time >= from and ev.time < to and ctx.isZennit(ev.target) then list[#list + 1] = { id = id, ev = ev } end
@@ -79,12 +87,28 @@ function Ledger.Collect(events, from, to, ctx)
         d.summons = d.summons + 1
         d.casters[caster] = (d.casters[caster] or 0) + 1
         d.present[caster] = true
-        for _, helper in ipairs(ev.assistants or {}) do d.present[ctx.name(helper)] = true end
+        local me = d.by[caster]
+        if not me then
+            me = { summons = 0, weeks = {}, weekCount = 0, tipped = 0, paid = 0, owed = 0 }
+            d.by[caster] = me
+        end
+        me.summons = me.summons + 1
+        local week = weekOf(ev.time)
+        if not me.weeks[week] then me.weeks[week], me.weekCount = true, me.weekCount + 1 end
+        for _, helper in ipairs(ev.assistants or {}) do
+            local h = ctx.name(helper)
+            d.present[h] = true
+            d.assists[h] = (d.assists[h] or 0) + 1
+        end
         local r = ev.response
         local result = r and r.result
         local amount = (r and r.amount) or ctx.silver
-        if result == "paid" then d.silverPaid = d.silverPaid + amount end
-        if result == "owed" then d.silverOwed = d.silverOwed + amount end
+        if result == "paid" then d.silverPaid, me.paid = d.silverPaid + amount, me.paid + amount end
+        if result == "owed" then d.silverOwed, me.owed = d.silverOwed + amount, me.owed + amount end
+        if r and (result == "owed" or result == "paid") and not r.card and (not d.maxAsk or amount > d.maxAsk.amount) then
+            d.maxAsk = { amount = amount, caster = caster }
+        end
+        if r and r.time and r.time >= ev.time then d.delays[#d.delays + 1] = r.time - ev.time end
         if result == "won" or result == "lost" then
             run = result == "won" and run + 1 or 0
             d.streak = math.max(d.streak, run)
@@ -92,8 +116,16 @@ function Ledger.Collect(events, from, to, ctx)
             -- his roll would have won without the helpers: they tipped it
             if result == "lost" and bonus > 0 and ctx.resolve(r.zroll, r.sroll, 0, ctx.edge(ev)) == "won" then
                 d.tippedCount = (d.tippedCount or 0) + 1
+                me.tipped = me.tipped + 1
                 local names = {}
                 for i = 1, math.min(#(ev.assistants or {}), ctx.helpersMax) do names[i] = ctx.name(ev.assistants[i]) end
+                local sorted = { unpack(names) }
+                table.sort(sorted)
+                for _, h in ipairs(sorted) do d.helperTips[h] = (d.helperTips[h] or 0) + 1 end
+                if #sorted > 0 then
+                    local key = joined(sorted)
+                    d.tipPairs[key] = (d.tipPairs[key] or 0) + 1
+                end
                 d.tipped = { caster = caster, helpers = names, bonus = bonus, sroll = r.sroll, zroll = r.zroll, edge = ctx.edge(ev) }
             end
         end
@@ -105,11 +137,6 @@ function Ledger.Collect(events, from, to, ctx)
     end
     if top and not tie then d.heaviest = top end
     return d
-end
-
-local function joined(names)
-    if #names <= 1 then return names[1] or "" end
-    return table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
 end
 
 -- The silver line, or nil: what the group has paid Zennit, in cash, with no receipt.
@@ -144,6 +171,94 @@ function Ledger.Moments(d)
     return found
 end
 
+-- The leader or leaders of a count map with at least `min`, and who is next: { names, n, next = { names, n } } or nil.
+local function leaders(map, min)
+    local best, second = 0, 0
+    for _, n in pairs(map) do
+        if n > best then second, best = best, n elseif n < best and n > second then second = n end
+    end
+    if best < min then return nil end
+    local names, nextNames = {}, {}
+    for name, n in pairs(map) do
+        if n == best then names[#names + 1] = name elseif second > 0 and n == second then nextNames[#nextNames + 1] = name end
+    end
+    table.sort(names)
+    table.sort(nextNames)
+    return { names = names, n = best, next = #nextNames > 0 and { names = nextNames, n = second } or nil }
+end
+
+local function median(list)
+    if #list == 0 then return nil end
+    table.sort(list)
+    return list[math.ceil(#list / 2)]
+end
+
+local function duration(sec)
+    if sec < 120 then return sec .. " seconds" end
+    if sec < 7200 then return math.floor(sec / 60) .. " minutes" end
+    return math.floor(sec / 3600) .. " hours"
+end
+
+-- Titles: praise in words, no points, for what the log shows (design/lenses.md, Reward). The same people can hold several, and
+-- Zennit has some too. Each is { id, title, text, next } where `next` says who is close behind (for the mid-season standings).
+-- `d` is a Ledger.Collect result.
+function Ledger.Titles(d)
+    local out = {}
+    local function add(id, title, who, sentence, nextText)
+        out[#out + 1] = { id = id, title = title, text = title .. ": " .. who .. sentence, next = nextText }
+    end
+    local function nextOf(l, unit)
+        if not l.next then return nil end
+        return string.format("%s %s next with %d%s", joined(l.next.names), #l.next.names > 1 and "are" or "is", l.next.n, unit or "")
+    end
+    local function who(l) return joined(l.names) .. (#l.names > 1 and ", " .. l.n .. " each" or "") end
+
+    local heavy = leaders(d.casters, 3)
+    if heavy then
+        add("heaviest", "The Heaviest Hand", who(heavy), string.format(", with %d summons of him.", heavy.n), nextOf(heavy))
+    end
+    local support = leaders(d.assists, 3)
+    if support then
+        add("support", "The Best Supporting Role", who(support), string.format(", who helped %d times.", support.n), nextOf(support))
+    end
+    local lucky = leaders(d.tipPairs, 1)
+    if lucky then
+        add("lucky", "The Lucky Pair", joined(lucky.names), string.format(", whose bonus tipped %d roll%s.", lucky.n, lucky.n == 1 and "" or "s"),
+            nextOf(lucky))
+    end
+    local paid = {}
+    for name, e in pairs(d.by) do
+        if e.paid > 0 then paid[name] = e.paid end
+    end
+    local payer = leaders(paid, 50)
+    if payer then
+        add("payer", "The Prompt Payer", who(payer), string.format(", who paid %d silver.", payer.n), nextOf(payer, " silver"))
+    end
+    -- Zennit's: kind ones
+    if d.streak >= 3 then
+        add("goblin", "The Dice Goblin", "Zennit", string.format(", who won the dice %d times in a row.", d.streak))
+    end
+    if d.maxAsk and d.maxAsk.amount >= 2 * (d.usualAsk or 50) then
+        add("bargain", "The Hard Bargain", "Zennit", string.format(", who asked %s for %d silver.", d.maxAsk.caster, d.maxAsk.amount))
+    end
+    local mid = #d.delays >= 5 and median(d.delays)
+    if mid and mid <= 3600 then
+        add("quick", "The Quick Reply", "Zennit", string.format(", whose usual answer came within %s.", duration(math.max(mid, 1))))
+    end
+    return out
+end
+
+-- The titles as they stand in the season in progress, for chat: one line each, with who is close behind.
+function Ledger.Standings()
+    local titles = Ledger.Titles(Ledger.Facts())
+    local lines = {}
+    for _, t in ipairs(titles) do
+        lines[#lines + 1] = t.text .. (t.next and (" (" .. t.next .. ".)") or "")
+    end
+    if #lines == 0 then lines[1] = "Nothing has been earned yet this season. The Index is watching." end
+    return lines
+end
+
 -- The Index's keepsake of a finished season: how it ended, how long it took, who was there, the silver and the moments.
 -- finale = { start, side, from } from Week.Season; `number` is which season it was. Returns a list of sentences.
 function Ledger.Keepsake(number, finale, d)
@@ -162,7 +277,14 @@ function Ledger.Keepsake(number, finale, d)
     local silver = Ledger.SilverLine(d)
     if silver then out[#out + 1] = silver end
     for _, m in ipairs(Ledger.Moments(d)) do out[#out + 1] = m.text end
+    for _, t in ipairs(Ledger.Titles(d)) do out[#out + 1] = t.text end
     return out
+end
+
+-- What this character has done, for the badges: { weekCount, tipped, paid, owed }, from every summons of Zennit they cast.
+function Ledger.CasterStats(name)
+    local d = Ledger.Collect(ST.db.events, 0, math.huge, Ledger.Context())
+    return d.by[ST.baseName(name) or name] or { weekCount = 0, tipped = 0, paid = 0, owed = 0 }
 end
 
 function Ledger.Context()
@@ -174,7 +296,7 @@ function Ledger.Context()
             if not edges[start] then edges[start] = (W.Edge(start)) end
             return edges[start]
         end,
-        resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax }
+        resolve = R.Resolve, silver = R.SILVER, helpersMax = W.RULES.helpersMax, weekStart = W.Start }
 end
 
 -- The facts for the season in progress.

@@ -32,7 +32,7 @@ Lenses will disagree with each other. Choosing between them is the design work, 
 | Playtesting | Every lens ended with questions for a playtest; the first new-rules week starts today | Answered; the report and the script built |
 | Community | The race only works if the target turns up; what happens when he does not? | Answered; A and B built; C, D, E waiting for a playtest |
 | Economy | The silver and the cards put real in-game money into the game; what flows, and what keeps it fair? | Answered; B built; the ask stays unbounded |
-| Reward | What does each member get, and when? | Answered; the change waits for a decision (below) |
+| Reward | What does each member get, and when? | Answered; A, B, C and D built |
 
 ## Entries
 
@@ -942,9 +942,23 @@ happens to someone who fails: is there a punishment, and is it one the friends w
 | C | **Titles for Zennit**, in the same spirit and kind to him (the dice goblin, for his longest run; the hard bargain, for the biggest ask; the quick reply, for his fastest median answer) | 4 | Reuses A |
 | D | **More individual badges** spread across the season (for example Ten Assists, a clean tab, a card used up) | 2 | New badge rules; helper badges were turned down |
 
+**Our answer:** build **all four** (A, B, C, D).
+
+**Built** (`Ledger.lua`; every figure is counted from the log, so every client names the same people)
+- **A, season titles.** At a finale the keepsake (and `/sc seasons`) names up to seven titles, each to one person (or both, on a tie):
+  *The Heaviest Hand* (most summons of him, at least 3), *The Best Supporting Role* (most assists, at least 3), *The Lucky Pair* (the
+  helpers whose bonus tipped the most rolls), *The Prompt Payer* (most silver paid, at least 50). Praise in words, no points.
+- **B, standings.** `/sc titles` (and the Tools tab's **The titles**) shows the same for the season in progress, with who is close
+  behind ("The Heaviest Hand: Al, with 5 summons of him (Bo is next with 4)"), or says nothing has been earned yet.
+- **C, Zennit's titles**, kind ones: *The Dice Goblin* (a run of three or more dice wins), *The Hard Bargain* (his biggest ask, at
+  least twice the usual price, and of whom), *The Quick Reply* (his median time to answer, if it is within an hour: a slow one is
+  not named, so there is no title for being late).
+- **D, four badges that come later,** for the people who cast: *Regular* (summoned him in four different weeks), *Well Supported*
+  (helpers tipped a roll of yours), *Clean Slate* (paid in full and owe nothing), *Card Sharp* (used up a card). They are checked when
+  a summons is logged and when an answer arrives. Helper badges stay turned down (the Player entry), so helpers get titles instead.
+
 **To decide before building**
-- Are titles (praise in words, once a season) the right size of reward for helpers?
-- Should any title be a little rude (the slowest reply)? The group's friendship says no.
+- Are titles (praise in words, once a season) the right size of reward for helpers? (Asked at the playtest.)
 
 **To watch in playtests**
 - Which titles does the group argue about, and which does nobody care for?
@@ -971,3 +985,4 @@ happens to someone who fails: is there a punishment, and is it one the friends w
 | 2026-10-05 | The group sees how many summons are waiting for his answer; Monday's result is provisional while he can still answer; unanswered still counts as accepted for now | Community | The balance is hostage to his attendance (a quarter skipped doubles a normal week's chance), nothing reminded him, and a late answer could reverse an announced win |
 | 2026-10-05 | A demand for silver no longer holds the summons back: it counts at once and the silver goes on a tab; Zennit names the price, and a card's punch pays it | Meaningful Choices | Under the new rules a silver demand cost him nothing and blocked the group's points until paid, so it beat refusing, had no weekly limit, and put the blame for paying late on the group |
 | 2026-10-05 | A `/sc tab` statement of who owes what; the ask is not bounded (trust the group); cards are not forced to be a discount and points stay a score | Economy | The tab was only visible as a total and a login line; the silver cannot hurt the race, so a bound would only police the mood of friends |
+| 2026-10-05 | Season titles, mid-season standings (`/sc titles`), kind titles for Zennit, and four later badges for the people who cast; helpers get titles, not badges | Reward | Individual rewards were front-loaded and for warlocks only; a helper's only reward was a named line about every other season |

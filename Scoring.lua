@@ -64,11 +64,25 @@ Scoring.badges = {
     { id = "dungeon-1", name = "Dungeon Doorman", test = function(s) return (s.kinds.dungeon or 0) >= 1 end },
     { id = "far-flung-1", name = "Far Flung", test = function(s) return (s.kinds.remote or 0) >= 1 end },
     { id = "variety-5", name = "Well Travelled", test = function(s) return s.distinctMaps >= 5 end },
+    -- spread across the season rather than front-loaded (design/lenses.md, Reward); for the people who cast
+    { id = "regular", name = "Regular", test = function(s) return (s.extra.weekCount or 0) >= 4 end },
+    { id = "well-supported", name = "Well Supported", test = function(s) return (s.extra.tipped or 0) >= 1 end },
+    { id = "clean-slate", name = "Clean Slate", test = function(s) return (s.extra.paid or 0) > 0 and (s.extra.owed or 0) == 0 end },
+    { id = "card-sharp", name = "Card Sharp", test = function(s) return (s.cardsUsedUp or 0) >= 1 end },
 }
+
+-- After an answer or a payment changes what the log says about me: award and say any badge that has just been earned.
+function Scoring.Announce()
+    if ST.Gag and ST.Gag.IsZennit() then return end -- his tally and badges are hidden
+    for _, name in ipairs(Scoring.EvaluateBadges()) do ST.print("|cffffd100Badge earned:|r " .. name) end
+end
 
 -- Awards any newly met badges. Returns a list of the badge names earned just now.
 function Scoring.EvaluateBadges()
-    local stats = ST.Store.Stats(ST.Store.me())
+    local me = ST.Store.me()
+    local stats = ST.Store.Stats(me)
+    stats.extra = ST.Ledger and ST.Ledger.CasterStats(me) or {}
+    stats.cardsUsedUp = ST.Cards and ST.Cards.Exhausted(me) or 0
     local earned = {}
     for _, b in ipairs(Scoring.badges) do
         if not ST.db.badges[b.id] and b.test(stats) then
