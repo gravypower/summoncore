@@ -23,5 +23,6 @@ read_globals = {
     "PlaySound", "PlaySoundFile", "RANDOM_ROLL_RESULT", "RandomRoll", "StopSound", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo", "UnitClass",
     "UnitExists", "UnitFullName", "UnitGUID", "UnitHealth", "UnitInRange", "UnitIsConnected", "UnitName",
     "BNGetInfo", "CreateFont", "GameTooltip", "GetNumGroupMembers", "UnitIsUnit", "StaticPopup_Show", "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert", "hooksecurefunc", "SendChatMessage", "C_SummonInfo",
-    "UnitIsAFK", "UnitIsGroupLeader",
+    "UnitIsAFK", "UnitIsGroupLeader", "StaticPopup_Hide", "StaticPopup_Visible",
+    "SummonCoreIntro", -- the story viewer's frame (Intro.lua names it, for Escape to close it); the tour hides it
 }
