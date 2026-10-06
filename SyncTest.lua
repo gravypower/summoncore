@@ -461,6 +461,25 @@ add("hub window: builds and every tab refreshes without errors", function()
     return ok, ok and "every tab refreshed" or tostring(err)
 end)
 
+add("tour: every step has a line and a recording, every outline finds its part of the window, each side gets its own", function()
+    local bad = {}
+    local party, zennit = ST.Tour.Steps(false), ST.Tour.Steps(true)
+    for _, list in ipairs({ party, zennit }) do
+        for i, s in ipairs(list) do
+            if not ST.Tour.LINES[s.line] then bad[#bad + 1] = i .. ": no line " .. tostring(s.line) end
+            if not (ST.tourClips and ST.tourClips[s.line]) then bad[#bad + 1] = i .. ": no recording of " .. s.line end
+            if s.spot and not ST.Hub.Spot(s.spot) then bad[#bad + 1] = i .. ": nothing at " .. s.spot end
+        end
+    end
+    local function has(list, id)
+        for _, s in ipairs(list) do if s.line == id then return true end end
+    end
+    if not (has(party, "writ") and not has(zennit, "writ") and has(zennit, "z_zennit") and not has(party, "z_zennit")) then
+        bad[#bad + 1] = "the two sides do not get their own lines"
+    end
+    return #bad == 0, #bad == 0 and string.format("%d steps for the party, %d for Zennit", #party, #zennit) or table.concat(bad, "; ")
+end)
+
 add("intro highlights: a box is up while its subject is mentioned, and the generated boxes fit the picture", function()
     local I = ST.Intro
     local list = { { t = 1, x = 0, y = 0, w = 10, h = 10 }, { t = 6, x = 5, y = 5, w = 10, h = 10 } }

@@ -37,7 +37,8 @@ pauses, and falling intonation at the end of each sentence.
 
 ## Steps
 
-The words live in one place: the caption in `Intro.lua` (a scene) or the `LINES` of `Ledger.lua` ("The Index today").
+The words live in one place: the caption in `Intro.lua` (a scene), the `LINES` of `Ledger.lua` ("The Index today") or
+the `LINES` of `Tour.lua` (the tour).
 `scripts/narration_source.py` turns a caption into what the voice is given ("Zenit", "the letter Zed"). Every clip
 is tagged `SRC_HASH`, a hash of its words and the recipe, so the question "what needs re-recording?" has an answer
 without git. Set `PYTHONIOENCODING=utf-8` on Windows.
@@ -48,7 +49,8 @@ without git. Set `PYTHONIOENCODING=utf-8` on Windows.
    (exit status 1 if any need rendering).
 3. **Render only those:** `python scripts/render_takes.py --stale --install` (scene takes, installed as
    `tools/intro/narration/voice_NN.ogg`) and `python tools/intro/build_ledger_audio.py --stale` (ledger lines, which
-   also rewrites `LedgerClips.lua`). `--only 10` renders a named take whatever its state. A take whose text is not in
+   also rewrites `LedgerClips.lua`). The tour's lines (`LINES` in `Tour.lua`, `/sc tour`) are the same: `python tools/intro/build_tour_audio.py --stale`
+   (`Media/tour/<id>.ogg`, and it rewrites `TourClips.lua`); `/sc` is said "slash S C". `--only 10` renders a named take whatever its state. A take whose text is not in
    `Intro.lua` yet can come from `--extra file.txt` (lines `N|text`). Rendering is not bit-for-bit repeatable, so do
    not re-render clips that are current: that is what the tag avoids.
    **Spliced lines.** The lines of "The Index today" that carry only numbers ("The group leads the season, 3 to 2") are

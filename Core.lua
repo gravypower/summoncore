@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.23.2"
+ST.version = "0.24.0"
 
 local DB_VERSION = 1
 
@@ -415,6 +415,9 @@ function commands.intro(rest)
     ST.Intro.Toggle(rest)
 end
 
+-- The guided tour of the window, narrated by the Index (Tour.lua).
+function commands.tour(rest) ST.Tour.Start(rest) end
+
 function commands.clip(rest)
     if rest == "" then
         local cats = ST.Clips.Categories()
@@ -612,7 +615,7 @@ end
 
 -- What a player needs: five lines. /sc help all has the rest (design/lenses.md, Interface).
 local HELP_SHORT = {
-    "/sc - the Summon Core window: the party's tally and badges, Zennit's answers, the log, the story and the tools",
+    "/sc - the Summon Core window: the party's tally and badges, Zennit's answers, the log, the story and the tools    /sc tour - the Index shows you round it",
     "/sc rules - the rules of the race, with this week's live numbers    /sc week - how this week and the season stand (/sc week say tells the group, /sc week copy lets you paste it)",
     "/sc tab - what is owed in silver    /sc cards - who holds a summon card    /sc titles - who leads the season's titles",
     "/sc report - how the race is going (/sc report copy opens it to paste into the group chat)    /sc seasons - the record of every finished season",
@@ -621,6 +624,7 @@ local HELP_SHORT = {
 
 local HELP = {
     "/sc - open the Summon Core window (everything below is also in it)    /sc help - the short list    /sc help all - this list",
+    "/sc tour [step] - a narrated tour of the window: the Index outlines each part as it talks about it (again: stops it)",
     "/sc test - diagnostics panel (/sc test ping <name>)",
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
     "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",

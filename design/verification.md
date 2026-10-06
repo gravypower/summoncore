@@ -40,7 +40,7 @@ one friend; and `/sc errors` empty after an evening. Then share it, and make no 
    every tab), `s-lines` (read the chat lines on a test summons), `s-login` (`/sc week login`: the week's close in your time, a tip),
    `s-band` (the window's band against `/sc week`), and `s-sound` after a full restart. `s-lastcall` waits for a week's final
    day (Sunday UTC) and marks itself when the line is said; `s-decline` (the form's Decline and its cost against `/sc rules`); `s-list` (a new place on his list marked 'from Monday'); `s-previously` (`/sc intro previously` plays the season's chapters back to back); `s-welcome` marks itself on a character's first login (`/sc welcome` to read
-   it again).
+   it again); `s-tour` (`/sc tour` after a full restart: every line heard, every outline on what is being talked about).
 
 ## Phase 2: with one friend, an hour, both on the same version
 
