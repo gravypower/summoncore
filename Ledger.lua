@@ -47,8 +47,85 @@ local LINES = {
 }
 Ledger.LINES = LINES
 
-local function weeks(n)
-    return n == 1 and "1 week" or (n .. " weeks")
+-- Spliced lines, like a station announcement: the lines that carry only numbers are said by playing short recordings
+-- one after another (Media/ledger/<id>.ogg, lengths in LedgerClips.lua). A phrase's ending sets how it is said: a comma
+-- means more follows, a full stop ends the sentence. tools/intro/build_ledger_audio.py renders these too, so keep every
+-- entry a single string on one line. The numbers 0 to 99 are fragments of their own (see numberClips); a number outside
+-- that, or a name, has no recording and the line is only typed.
+local FRAGMENTS = {
+    level_at = "The season stands level at",
+    week_each = "week each.",
+    weeks_each = "weeks each.",
+    not_taking_sides = "The Index would like it noted that it is not taking sides.",
+    group_leads_season = "The group leads the season,",
+    zennit_leads_season = "Zennit leads the season,",
+    to = "to",
+    nobody_expected = "which nobody expected, least of all Zennit.",
+    edge_group_behind = "The Index, which takes no sides, has noticed that the group is behind, and has taken",
+    off_dice = "off Zennit's dice this week.",
+    edge_zennit_behind = "The Index, which takes no sides, has noticed that Zennit is behind, and has put",
+    on_dice = "on his dice this week.",
+    this_week = "This week,",
+    of = "of",
+    summons_filed_and = "summons are filed, and",
+    group_leads_by = "the group leads by",
+    zennit_leads_by = "Zennit leads by",
+    level_tie = "it is level, and a tie is Zennit's.",
+    week_group_has = "This week, the group has",
+    points_to = "points to Zennit's",
+}
+Ledger.FRAGMENTS = FRAGMENTS
+
+Ledger.GAP = 0.04   -- seconds between one fragment and the next (their own silence is trimmed)
+Ledger.PAUSE = 0.7  -- the "|" part of a splice: a breath between two sentences
+
+-- The recordings that say the whole number n, in order: n<k>c / n<k>f for 0-19, t<k>c / t<k>f for the tens, and a tens word
+-- t<k>m followed by its units for the rest. c: more of the sentence follows; f: this ends it. nil beyond 99 (or not a whole number).
+local function numberClips(n, final)
+    if type(n) ~= "number" or n < 0 or n > 99 or n ~= math.floor(n) then return nil end
+    local ending = final and "f" or "c"
+    if n < 20 then return { "n" .. n .. ending } end
+    local tens, units = math.floor(n / 10) * 10, n % 10
+    if units == 0 then return { "t" .. tens .. ending } end
+    return { "t" .. tens .. "m", "n" .. units .. ending }
+end
+Ledger.NumberClips = numberClips
+
+-- Assembles a spoken line from parts and returns its text and the recordings that say it (nil when some part has none).
+-- A part is a FRAGMENTS id, a number, "," or "." (appended to the text before it, no recording: the number or phrase
+-- before it already carries that ending) or "|" (a breath: silence). A number ends the sentence, and so falls, when it
+-- is last or followed by ".". The text is built from the same parts, so what is said and what is shown cannot differ.
+function Ledger.Splice(parts)
+    local text, clips = "", {}
+    for i, part in ipairs(parts) do
+        local piece
+        if type(part) == "number" then
+            piece = string.format("%d", part)
+            local say = clips and numberClips(part, parts[i + 1] == nil or parts[i + 1] == ".")
+            if say then
+                for _, id in ipairs(say) do clips[#clips + 1] = id end
+            else
+                clips = nil
+            end
+        elseif part == "," or part == "." then
+            text = text .. part
+        elseif part == "|" then
+            if clips then clips[#clips + 1] = "_" end
+        else
+            piece = FRAGMENTS[part]
+            if not piece then error("no spliced phrase called " .. tostring(part)) end
+            if clips then clips[#clips + 1] = part end
+        end
+        if piece then text = (text == "" and piece) or (text .. " " .. piece) end
+    end
+    return text, clips
+end
+
+-- How long one clip of a splice takes before the next may start, or nil when its length is not known. "_" is the breath.
+function Ledger.ClipDelay(id)
+    if id == "_" then return Ledger.PAUSE end
+    local len = ST.ledgerClips and ST.ledgerClips[id]
+    return len and (len + Ledger.GAP) or nil
 end
 
 -- The week's standing in a few words, from a Week.Score result.
@@ -61,18 +138,24 @@ local function weekLine(s)
     elseif w.summons == 0 then
         return LINES.week_none, "NO SUMMONS YET", "week_none"
     end
-    local lead
+    -- the lead, as the cue words it and as the spliced line says it ("level_tie" carries its own full stop)
+    local lead, leadParts
     if w.group > w.zennit then
-        lead = string.format("the group leads by %d", w.group - w.zennit)
+        lead, leadParts = string.format("the group leads by %d", w.group - w.zennit), { "group_leads_by", w.group - w.zennit, "." }
     elseif w.group == w.zennit then
-        lead = "it is level, and a tie is Zennit's"
+        lead, leadParts = "it is level, and a tie is Zennit's", { "level_tie" }
     else
-        lead = string.format("Zennit leads by %d", w.zennit - w.group)
+        lead, leadParts = string.format("Zennit leads by %d", w.zennit - w.group), { "zennit_leads_by", w.zennit - w.group, "." }
     end
+    local parts
     if w.new then
-        return string.format("This week, %d of %d summons are filed, and %s.", w.counted, s.cap, lead), "THIS WEEK: " .. lead:upper()
+        parts = { "this_week", w.counted, "of", s.cap, "summons_filed_and" }
+        for _, p in ipairs(leadParts) do parts[#parts + 1] = p end
+    else
+        parts = { "week_group_has", w.group, "points_to", w.zennit, "." }
     end
-    return string.format("This week, the group has %d points to Zennit's %d.", w.group, w.zennit), "THIS WEEK: " .. lead:upper()
+    local text, clips = Ledger.Splice(parts)
+    return text, "THIS WEEK: " .. lead:upper(), clips
 end
 
 ----------------------------------------------------------------------
@@ -478,7 +561,16 @@ end
 function Ledger.Build(s)
     local out = {}
     -- clip: the id of a fixed line's recording (see LINES); nil for the lines built from names and numbers
-    local function say(text, cue, clip) out[#out + 1] = { text = text, cue = cue, clip = clip } end
+    -- A line's recording is clip (the id of a fixed line) or a list of clips to play one after another (a spliced line).
+    local function say(text, cue, clip)
+        local item = { text = text, cue = cue }
+        if type(clip) == "table" then item.clips = clip else item.clip = clip end
+        out[#out + 1] = item
+    end
+    local function splice(parts, cue)
+        local text, clips = Ledger.Splice(parts)
+        say(text, cue, clips)
+    end
     local z, g, wins = s.season.zennit, s.season.group, s.wins
     local finales = s.season.finales
     local number = #finales + 1
@@ -495,13 +587,11 @@ function Ledger.Build(s)
         say(LINES[clip], "NOBODY HAS WON A WEEK", clip)
         say(LINES.wait, nil, "wait")
     elseif z == g then
-        say(string.format("The season stands level at %s each. The Index would like it noted that it is not taking sides.",
-            weeks(z)), "LEVEL AT " .. z)
+        splice({ "level_at", z, z == 1 and "week_each" or "weeks_each", "|", "not_taking_sides" }, "LEVEL AT " .. z)
     elseif g > z then
-        say(string.format("The group leads the season, %d to %d.", g, z), "THE GROUP LEADS, " .. g .. " TO " .. z)
+        splice({ "group_leads_season", g, "to", z, "." }, "THE GROUP LEADS, " .. g .. " TO " .. z)
     else
-        say(string.format("Zennit leads the season, %d to %d, which nobody expected, least of all Zennit.", z, g),
-            "ZENNIT LEADS, " .. z .. " TO " .. g)
+        splice({ "zennit_leads_season", z, "to", g, ",", "nobody_expected" }, "ZENNIT LEADS, " .. z .. " TO " .. g)
     end
 
     -- how far down each trunk
@@ -529,8 +619,7 @@ function Ledger.Build(s)
 
     -- the Index's thumb on the scale, when the season is lopsided (Week.Edge)
     if s.edgeMoved and s.edgeMoved ~= 0 then
-        say(s.edgeMoved < 0 and string.format("The Index, which takes no sides, has noticed that the group is behind, and has taken %d off Zennit's dice this week.", -s.edgeMoved)
-            or string.format("The Index, which takes no sides, has noticed that Zennit is behind, and has put %d on his dice this week.", s.edgeMoved),
+        splice(s.edgeMoved < 0 and { "edge_group_behind", -s.edgeMoved, "off_dice" } or { "edge_zennit_behind", s.edgeMoved, "on_dice" },
             "THE INDEX TAKES NO SIDES")
     end
 
@@ -562,9 +651,21 @@ local LEAD, PER_CHAR = 1.2, 1 / 16
 function Ledger.Timed(list)
     local sentences, cues, t = {}, {}, 0
     for _, item in ipairs(list) do
-        local len = item.clip and ST.ledgerClips and ST.ledgerClips[item.clip]
-        sentences[#sentences + 1] = { t = t, text = item.text, clip = len and item.clip or nil }
-        if item.cue then cues[#cues + 1] = { t = t + (len and 0.45 or 0.3), text = item.cue } end
+        local len, clips, lead = nil, nil, 0.45
+        if item.clips then
+            -- a spliced line lasts as long as its fragments one after another; they carry no silence of their own
+            len = 0
+            for _, id in ipairs(item.clips) do
+                local delay = Ledger.ClipDelay(id)
+                if not delay then len = nil break end
+                len = len + delay
+            end
+            clips, lead = len and item.clips or nil, 0.15
+        else
+            len = item.clip and ST.ledgerClips and ST.ledgerClips[item.clip]
+        end
+        sentences[#sentences + 1] = { t = t, text = item.text, clip = len and not clips and item.clip or nil, clips = clips }
+        if item.cue then cues[#cues + 1] = { t = t + (len and lead or 0.3), text = item.cue } end
         t = t + (len or (LEAD + #item.text * PER_CHAR))
     end
     return sentences, cues, t

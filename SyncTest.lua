@@ -533,6 +533,78 @@ add("the Index today: each whim has a recording that says what the whim now says
     return good, "a whim whose number moved must be typed and silent, not read out wrongly"
 end)
 
+add("the Index today: spliced lines show what they say, from recordings that all exist, and last as long as they play", function()
+    local L = ST.Ledger
+    local function has(id) return ST.ledgerClips and ST.ledgerClips[id] end
+    -- every phrase and every number from 0 to 99, in both endings, has a recording
+    local missing = {}
+    for id in pairs(L.FRAGMENTS) do if not has(id) then missing[#missing + 1] = id end end
+    for n = 0, 99 do
+        for _, final in ipairs({ true, false }) do
+            for _, id in ipairs(L.NumberClips(n, final)) do if not has(id) then missing[#missing + 1] = id end end
+        end
+    end
+    if #missing > 0 then
+        table.sort(missing)
+        return false, "no recording for " .. table.concat(missing, ", ", 1, math.min(#missing, 8)) .. " (run tools/intro/build_ledger_audio.py)"
+    end
+    -- the text is built from the same parts as the clips, and reads as the lines always did
+    local function splice(parts) local text, clips = L.Splice(parts) return text, clips and table.concat(clips, ",") or nil end
+    local cases = {
+        { { "group_leads_season", 3, "to", 2, "." }, "The group leads the season, 3 to 2.", "group_leads_season,n3c,to,n2f" },
+        { { "zennit_leads_season", 3, "to", 1, ",", "nobody_expected" }, "Zennit leads the season, 3 to 1, which nobody expected, least of all Zennit.",
+            "zennit_leads_season,n3c,to,n1c,nobody_expected" },
+        { { "level_at", 2, "weeks_each", "|", "not_taking_sides" }, "The season stands level at 2 weeks each. The Index would like it noted that it is not taking sides.",
+            "level_at,n2c,weeks_each,_,not_taking_sides" },
+        { { "level_at", 1, "week_each", "|", "not_taking_sides" }, "The season stands level at 1 week each. The Index would like it noted that it is not taking sides.",
+            "level_at,n1c,week_each,_,not_taking_sides" },
+        { { "this_week", 6, "of", 10, "summons_filed_and", "group_leads_by", 3, "." }, "This week, 6 of 10 summons are filed, and the group leads by 3.",
+            "this_week,n6c,of,n10c,summons_filed_and,group_leads_by,n3f" },
+        { { "this_week", 6, "of", 10, "summons_filed_and", "level_tie" }, "This week, 6 of 10 summons are filed, and it is level, and a tie is Zennit's.",
+            "this_week,n6c,of,n10c,summons_filed_and,level_tie" },
+        { { "week_group_has", 14, "points_to", 21, "." }, "This week, the group has 14 points to Zennit's 21.", "week_group_has,n14c,points_to,t20m,n1f" },
+        { { "edge_group_behind", 5, "off_dice" }, "The Index, which takes no sides, has noticed that the group is behind, and has taken 5 off Zennit's dice this week.",
+            "edge_group_behind,n5c,off_dice" },
+        { { "edge_zennit_behind", 30, "on_dice" }, "The Index, which takes no sides, has noticed that Zennit is behind, and has put 30 on his dice this week.",
+            "edge_zennit_behind,t30c,on_dice" },
+        { { "week_group_has", 40, "points_to", 99, "." }, "This week, the group has 40 points to Zennit's 99.", "week_group_has,t40c,points_to,t90m,n9f" },
+        { { "week_group_has", 100, "points_to", 7, "." }, "This week, the group has 100 points to Zennit's 7.", nil }, -- beyond 99: shown, not said
+    }
+    for _, c in ipairs(cases) do
+        local text, clips = splice(c[1])
+        if text ~= c[2] or clips ~= c[3] then return false, string.format("%q gave %q [%s]", c[2], text, tostring(clips)) end
+    end
+    -- the scene builds them: the level standing, and the week in both forms
+    local function item(state, cue)
+        for _, it in ipairs(L.Build(state)) do if it.cue == cue then return it end end
+    end
+    local function state(z, g, score)
+        return { wins = 5, cap = 10, immune = false, season = { zennit = z, group = g, finales = {}, chapters = {} }, score = score }
+    end
+    local zero = { summons = 0, group = 0, zennit = 0, counted = 0, new = true }
+    local level = item(state(2, 2, zero), "LEVEL AT 2")
+    if not (level and table.concat(level.clips or {}, ",") == "level_at,n2c,weeks_each,_,not_taking_sides" and not level.clip) then
+        return false, "the level standing should be spliced from clips"
+    end
+    local week = item(state(1, 0, { summons = 6, group = 9, zennit = 6, counted = 6, new = true }), "THIS WEEK: THE GROUP LEADS BY 3")
+    if not (week and week.text == "This week, 6 of 10 summons are filed, and the group leads by 3."
+        and table.concat(week.clips or {}, ",") == "this_week,n6c,of,n10c,summons_filed_and,group_leads_by,n3f") then
+        return false, "the week line should be spliced: " .. tostring(week and week.text)
+    end
+    local points = item(state(1, 0, { summons = 6, group = 9, zennit = 12, counted = 6, new = false }), "THIS WEEK: ZENNIT LEADS BY 3")
+    if not (points and points.text == "This week, the group has 9 points to Zennit's 12." and points.clips) then
+        return false, "the points line should be spliced: " .. tostring(points and points.text)
+    end
+    -- a spliced line lasts as long as its recordings one after another; one without a known length is only typed
+    local expect = 0
+    for _, id in ipairs(level.clips) do expect = expect + L.ClipDelay(id) end
+    local sentences = L.Timed({ level, { text = "Poogs has summoned Zennit 4 times." } })
+    if math.abs(sentences[2].t - expect) > 0.001 or not sentences[1].clips then return false, "a spliced line should last the sum of its clips" end
+    local unknown = L.Timed({ { text = "x", clips = { "n3c", "no_such_clip" } } })
+    if unknown[1].clips ~= nil then return false, "a line with a missing recording must not be played half-said" end
+    return true, "spliced lines match their text, every number 0-99 and phrase is recorded, and the lengths add up"
+end)
+
 add("the Index today: every fixed line has a recorded clip, and a clip sets how long its line lasts", function()
     local L = ST.Ledger
     local missing = {}

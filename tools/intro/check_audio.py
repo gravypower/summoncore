@@ -27,7 +27,7 @@ def check():
     rows = ns.status()
     bad = [r for r in rows if r[3] != "ok"]
     for kind, i, path, state in bad:
-        name = ("scene %02d" % i) if kind == "scene" else ("ledger %s" % i)
+        name = ("scene %02d" % i) if kind == "scene" else ("%s %s" % (kind, i))
         print("%-9s %-24s %s" % (state, name, os.path.relpath(path, ROOT)))
     print("%d clips, %d up to date, %d need attention" % (len(rows), len(rows) - len(bad), len(bad)))
     if any(r[3] in ("stale", "missing") for r in bad):
@@ -38,11 +38,11 @@ def check():
 
 def stamp():
     n = 0
-    spoken = {"scene": ns.scene_speech(), "ledger": ns.ledger_speech()}
+    spoken = {"scene": ns.scene_speech(), "ledger": ns.ledger_speech(), "fragment": ns.fragment_speech()}
     for kind, i, path, state in ns.status():
         if state == "untagged":
             before = ns.decoded_md5(path)
-            ns.write_tag(path, ns.src_hash(spoken[kind][i]))
+            ns.write_tag(path, ns.src_hash(spoken[kind][i], fragment=(kind == "fragment")))
             assert ns.decoded_md5(path) == before, "stamping changed the sound of " + path
             n += 1
     print("stamped %d untagged clips" % n)

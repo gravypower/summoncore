@@ -234,7 +234,7 @@ end
 
 -- Narration: one clip per scene (PlaySoundFile cannot start mid-file), so pausing replays the scene.
 local clipHandle, clipScene, clipToken, audioMissing
-local lineHandle, lastLine -- the Ledger scene's recorded line now playing, and the last line started
+local lineHandles, lineToken, lastLine = {}, 0, nil -- the Ledger scene's recordings now playing, which line's, and the last line started
 
 -- Key clicks run for as long as the text is typing. PlaySoundFile cannot loop or be cut short, so a long clip is
 -- started with the sentence and stopped when the typing is done (or the scene is stopped).
@@ -246,14 +246,18 @@ local function stopKeys()
     end
 end
 
+-- Stops the Ledger scene's line, and the rest of a spliced one that is still to be started.
+local function stopLine()
+    lineToken = lineToken + 1
+    for _, handle in ipairs(lineHandles) do pcall(StopSound, handle) end
+    lineHandles = {}
+end
+
 local function stopClip()
     stopKeys()
     clipToken = (clipToken or 0) + 1
     clipScene = nil
-    if lineHandle then
-        pcall(StopSound, lineHandle)
-        lineHandle = nil
-    end
+    stopLine()
     if clipHandle then
         pcall(StopSound, clipHandle)
         clipHandle = nil
@@ -276,12 +280,24 @@ local function playClip(si, natural)
 end
 
 -- The Ledger scene has no clip of its own: its fixed sentences each have a recording (Media\ledger), played as the
--- line starts. The lines built from names and numbers have none and are only typed.
-local function playLine(clip)
-    if lineHandle then pcall(StopSound, lineHandle) end
-    local ok, willPlay, handle = pcall(PlaySoundFile, MEDIA .. "ledger\\" .. clip .. ".ogg", "Dialog")
-    audioMissing = audioMissing or not (ok and willPlay)
-    lineHandle = ok and willPlay and handle or nil
+-- line starts, and a line built from numbers is spliced from short ones (Ledger.Splice), each started when the one before
+-- it ends. The lines built from names have none and are only typed. `clips` is one id or a list; "_" is a breath.
+local function playLine(clips)
+    stopLine()
+    if type(clips) == "string" then clips = { clips } end
+    local token = lineToken
+    local function step(i)
+        if token ~= lineToken then return end -- the line was stopped, or another began
+        local id = clips[i]
+        if id ~= "_" then
+            local ok, willPlay, handle = pcall(PlaySoundFile, MEDIA .. "ledger\\" .. id .. ".ogg", "Dialog")
+            audioMissing = audioMissing or not (ok and willPlay)
+            if ok and willPlay and handle then lineHandles[#lineHandles + 1] = handle end
+        end
+        local delay = ST.Ledger.ClipDelay(id)
+        if clips[i + 1] and delay then C_Timer.After(delay, function() step(i + 1) end) end
+    end
+    step(1)
 end
 
 -- A chirp as a key phrase appears, followed a moment later by a burst of key clicks as it types out.
@@ -322,7 +338,8 @@ local function show(sec)
         local _, line = Intro.SentenceAt(scenes[si].sentences, rel, scenes[si].length)
         if line and line ~= lastLine then
             lastLine = line
-            local clip = scenes[si].sentences[line].clip
+            local sentence = scenes[si].sentences[line]
+            local clip = sentence.clips or sentence.clip
             if clip then playLine(clip) end
         end
     end

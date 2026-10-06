@@ -65,6 +65,25 @@ def render(tts, text):
     return np.concatenate([pad] + parts[:-1] + [pad]), sr
 
 
+def trim(x, sr):
+    """Cuts the silence off both ends of a fragment, keeping a short margin, so spliced pieces butt up against each other."""
+    loud = np.where(np.abs(x) > ns.FRAGMENT_RECIPE["trim_peak"])[0]
+    if len(loud) == 0:
+        return x
+    m = int(sr * ns.FRAGMENT_RECIPE["margin"])
+    return x[max(0, loud[0] - m): loud[-1] + 1 + m]
+
+
+def render_fragment(tts, text):
+    """One short phrase or number, spoken as part of a longer line (Ledger.Splice): no pad, no pause, and a falling ending
+    only when the text ends in a full stop (a comma, or no mark, leaves the voice level, ready for what follows)."""
+    a = tts.generate(text, sid=SID, speed=SPEED)
+    y = np.array(a.samples, dtype=np.float32)
+    if text.rstrip().endswith("."):
+        y = fall(y, a.sample_rate, tail=min(R["fall_tail"], 0.4 * len(y) / a.sample_rate))
+    return trim(y, a.sample_rate), a.sample_rate
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=os.environ.get("KOKORO_DIR", r"C:\Users\aaron\tts-models\kokoro-en-v0_19"))
@@ -73,7 +92,9 @@ def main():
     ap.add_argument("--stale", action="store_true", help="render only the takes whose text or recipe changed (see tools/intro/check_audio.py)")
     ap.add_argument("--install", action="store_true", help="also copy each take to tools/intro/narration/voice_NN.ogg")
     ap.add_argument("--extra", help="file of extra takes, one per line as 'N|text'")
+    ap.add_argument("--fragments", default="", help="comma-separated take numbers to render as fragments (spliced pieces of a line)")
     args = ap.parse_args()
+    fragments = {int(n) for n in args.fragments.split(",") if n}
 
     takes = ns.scene_speech()
     if args.extra:
@@ -104,13 +125,24 @@ def main():
     tts = sherpa_onnx.OfflineTts(cfg)
 
     for n in wanted:
-        audio, sr = render(tts, takes[n])
         wav = os.path.join(args.out, f"narrator_backstory_{n:02d}.wav")
         ogg = os.path.join(args.out, f"narrator_backstory_{n:02d}_rp.ogg")
-        sf.write(wav, audio, sr)
-        subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", wav, "-af", AF, "-c:a", "libvorbis", "-q:a", str(R["vorbis_q"]),
-                        "-metadata", f"{ns.TAG}={ns.src_hash(takes[n])}", ogg],
-                       check=True)
+        tag = f"{ns.TAG}={ns.src_hash(takes[n], fragment=n in fragments)}"
+        if n in fragments:
+            audio, sr = render_fragment(tts, takes[n])
+            sf.write(wav, audio, sr)
+            # the processing can add a little silence (the pitch shift has a latency), so trim again before encoding
+            done = os.path.join(args.out, f"narrator_backstory_{n:02d}_processed.wav")
+            subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", wav, "-af", AF, done], check=True)
+            data, rate = sf.read(done, dtype="float32")
+            sf.write(done, trim(data, rate), rate)
+            subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", done, "-c:a", "libvorbis",
+                            "-q:a", str(ns.FRAGMENT_RECIPE["vorbis_q"]), "-metadata", tag, ogg], check=True)
+        else:
+            audio, sr = render(tts, takes[n])
+            sf.write(wav, audio, sr)
+            subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", wav, "-af", AF, "-c:a", "libvorbis", "-q:a", str(R["vorbis_q"]),
+                            "-metadata", tag, ogg], check=True)
         print(f"take {n}: raw {len(audio) / sr:.1f} s -> {ogg}")
         if args.install:
             shutil.copyfile(ogg, ns.scene_path(n))
