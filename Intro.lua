@@ -164,6 +164,8 @@ end
 
 local frame, picture, status, playBtn, tape, tapeText, terminal, terminalText, glow, endText
 local onClose -- runs once when the viewer is next closed (Intro.Play's whenClosed)
+local onDone -- runs once if the chapter plays to its end (Intro.Play's whenDone); the viewer closes first
+local fromTop -- this play of the intro started at its first scene, so reaching its last counts as having seen it
 local queue = {} -- chapters still to play after this one ("previously on"); emptied when the viewer closes
 local pictureH, pictureW, buttonsWidth = 300, 533, 700
 local t, playing, shownScene, shownFrame, lastCue = 0, false, 0, -1, nil
@@ -323,6 +325,8 @@ local function show(sec)
         lastCue = nil
         lastLine = nil
         if playing then
+            -- the intro seen, once, when it is played from the top to its last scene: the tour's jokes lean on it
+            if fromTop and si == lastOf[1] and not ST.db.settings.introWatched then ST.db.settings.introWatched = true end
             playClip(si, true)
             if posOf(si) > 1 and not ST.db.settings.introMute then pcall(PlaySoundFile, SFX .. "sfx_pop.ogg", "SFX") end
         end
@@ -637,6 +641,15 @@ local function build()
             if #queue > 0 then -- "previously on": the next chapter, after a breath
                 local key = table.remove(queue, 1)
                 C_Timer.After(1.5, function() if frame:IsShown() then Intro.StartChapter(key) end end)
+            elseif onDone then -- played to the end: close, and what was waiting for it goes next
+                local after = onDone
+                onDone, onClose = nil, nil
+                C_Timer.After(1.5, function()
+                    frame:Hide()
+                    after()
+                end)
+            elseif fromTop and ST.Tour then
+                ST.Tour.Offer() -- the first time the intro is seen through, the Index offers the tour (once)
             end
         end
         show(t)
@@ -644,6 +657,7 @@ local function build()
     frame:SetScript("OnHide", function()
         setPlaying(false)
         queue = {}
+        onDone = nil
         local after = onClose
         onClose = nil
         -- One frame later: Esc hides every special frame in one pass, so a window reopened right here (the
@@ -700,15 +714,20 @@ function Intro.Toggle(arg)
         return ST.print("that chapter of the story has not been reached yet")
     end
     setChapter(scenes[si].chapter)
+    fromTop = si == firstOf[1]
     shownScene = 0
     seek(starts[si])
     setPlaying(true)
 end
 
+-- Has this player watched the intro from the top to its last scene? (/sc tour plays it first until they have.)
+function Intro.Watched() return ST.db.settings.introWatched == true end
+
 -- Plays a chapter in the open viewer, from its first scene.
 function Intro.StartChapter(key)
     local si = firstOf[CHAPTER_KEYS[key] or 0]
     if not si then return end
+    fromTop = false
     setChapter(scenes[si].chapter)
     shownScene = 0
     seek(starts[si])
@@ -741,13 +760,14 @@ function Intro.PreviouslyOn()
 end
 
 -- Starts a chapter (or scene) from the beginning even if the viewer is already open. whenClosed (optional)
--- runs once, when the viewer is closed.
-function Intro.Play(arg, whenClosed)
+-- runs once, when the viewer is closed. whenDone (optional) runs instead if it plays to its end: the viewer closes itself.
+function Intro.Play(arg, whenClosed, whenDone)
     onClose = nil -- closing the viewer to restart it is not the close whenClosed waits for
     if frame and frame:IsShown() then frame:Hide() end
     Intro.Toggle(arg)
     if frame and frame:IsShown() then
         onClose = whenClosed
+        onDone = whenDone
     elseif whenClosed then
         whenClosed() -- it did not open (a chapter not reached yet): straight back
     end
@@ -760,7 +780,7 @@ function Intro.WelcomeLines(zennit)
         zennit and "Welcome to Summon Core. You do not have to do anything new: answer summons in the game's own prompt, as you always have, and the Index takes that as your answer."
             or "Welcome to Summon Core. You do not have to do anything new: cast and click portals as usual, and your summons of Zennit count for the group.",
         "Whoever casts the ritual needs Summon Core for the summons to count, and Zennit needs it for his answers to be his. Helpers are credited either way.",
-        "|cffffd100/sc tour|r shows you round the window and its popups (about five minutes), |cffffd100/sc rules|r is the race in a minute, |cffffd100/sc intro|r is the story (about four minutes), and |cffffd100/sc intro previously|r catches up on this season.",
+        "|cffffd100/sc intro|r is the story (about four minutes), then |cffffd100/sc tour|r shows you round the window and its popups (about five minutes); |cffffd100/sc rules|r is the race in a minute, and |cffffd100/sc intro previously|r catches up on this season.",
     }
 end
 

@@ -296,6 +296,7 @@ local function go(i)
     end
     outline(Tour.Spot(s))
     counter:SetText(string.format("TOUR.EXE  %d/%d", at, #steps))
+    if at == #steps then ST.db.settings.tourSeen = true end
     stopVoice()
     if playing and not muted() then
         local ok, willPlay, h = pcall(PlaySoundFile, MEDIA .. s.line .. ".ogg", "Dialog")
@@ -395,9 +396,23 @@ local function build()
 end
 
 -- /sc tour: opens the window and starts the tour from the top (again: stops it). /sc tour <n> starts at step n.
+-- The tour's jokes lean on the story (the form, the deterrent, the Index's manner), so until the intro has been seen through
+-- it plays first and the tour follows by itself; /sc tour skip goes straight to the tour.
 function Tour.Start(arg)
     if not panel then build() end
     if panel:IsShown() and not tonumber(arg or "") then return panel:Hide() end
+    if arg == "skip" then
+        arg = nil
+    elseif not ST.Intro.Watched() then
+        ST.print("The tour follows the story, so the intro plays first (about four minutes) and the tour starts when it ends. "
+            .. "|cffffd100/sc tour skip|r goes straight to the tour.")
+        return ST.Intro.Play("1", function() -- closed before the end: the tour too, if the story's last scene was reached
+            if ST.Intro.Watched() then return Tour.Start("skip") end
+            ST.print("The tour is waiting for the story: |cffffd100/sc tour|r plays the intro and then the tour, "
+                .. "|cffffd100/sc tour skip|r goes straight to it.")
+        end, function() Tour.Start("skip") end)
+    end
+    if SummonCoreIntro and SummonCoreIntro:IsShown() then SummonCoreIntro:Hide() end -- the story viewer would sit over the tour
     steps = Tour.Steps(ST.Gag.IsZennit())
     ST.Hub.Open()
     local window = ST.Hub.Window()
@@ -411,3 +426,20 @@ function Tour.Start(arg)
 end
 
 function Tour.IsShown() return panel and panel:IsShown() or false end
+
+-- At the end of the first intro seen through, the Index offers the tour, once (not to anyone who has taken it already).
+StaticPopupDialogs["SUMMONCORE_TOUR"] = {
+    text = "The Index can show you round the Summon Core window now: the tabs, what to press, and the popups you will meet (about five minutes). Take the tour?",
+    button1 = "Take the tour", button2 = "Later",
+    OnAccept = function() Tour.Start("skip") end,
+    OnCancel = function() ST.print("|cffffd100/sc tour|r takes the tour whenever you like.") end,
+    timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+}
+
+function Tour.Offer()
+    local s = ST.db.settings
+    if s.tourSeen or s.tourOffered or Tour.IsShown() then return false end
+    s.tourOffered = true
+    StaticPopup_Show("SUMMONCORE_TOUR")
+    return true
+end
