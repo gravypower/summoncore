@@ -171,6 +171,7 @@ Check.LIST = {
     { id = "s-tour", kind = "solo", title = "The tour: /sc tour talks you through the window, outlining each part",
       steps = { "After a full restart (new sound files), type /sc tour. The window opens with a box under it and the Index starts talking.",
           "Let it run to the end. Each line is heard and typed, the amber outline lands on what is being talked about, and the tabs change by themselves. Near the end it shows copies of the popups over the window: their buttons do nothing and nothing is filed. Then the game's own dialogs (Watch now?, the reset request; Zennit: the price, the payment), each saying it is the tour's example: Reset, Ask and Yes must do nothing.",
+          "On a character that has not watched the intro, /sc tour plays the intro first, and the tour starts by itself when it ends (closing the intro early does not start it). The first intro seen through also offers the tour, once. /sc tour skip goes straight to it.",
           "Try BACK, PAUSE, NEXT and SOUND, then END TOUR. On Zennit's client (or /sc zenit) the Party and Zennit lines are his own." },
       expect = "every line heard, every outline on the right thing", fails = "the step number and what was wrong (no voice, outline elsewhere, a tab gag)" },
     { id = "s-lastcall", kind = "solo", title = "The last call in a week's final day (any time Sunday UTC)", seen = true,

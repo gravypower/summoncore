@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.24.1"
+ST.version = "0.24.2"
 
 local DB_VERSION = 1
 
@@ -626,7 +626,7 @@ local HELP_SHORT = {
 -- admin: the rest of the party would learn the gags and his secrets from them (spoilers).
 local HELP = {
     "/sc - open the Summon Core window (everything below is also in it)    /sc help - the short list    /sc help all - this list",
-    "/sc tour [step] - a narrated tour of the window: the Index outlines each part as it talks about it (again: stops it)",
+    "/sc tour [step|skip] - a narrated tour of the window: the Index outlines each part as it talks about it (again: stops it). Until you have seen the intro, it plays first; skip goes straight to the tour",
     { "admin", "/sc test - diagnostics panel (/sc test ping <name>)" },
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
     "/sc panel - open the window on the Party tab",
