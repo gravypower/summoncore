@@ -840,6 +840,20 @@ add("season marks travel: the admin's stamp is kept, another is refused, and a c
         tostring(out.made and out.made.kind), tostring(has(b)), tostring(has(c)), tostring(out.forged), tostring(out.badKind))
 end)
 
+add("whispers go to the name the game gave (Father-Realm), not the first word the addon keeps", function()
+    local a = newClient("Alpha")
+    cast(a, 1, true) -- Alpha holds a summon Father lacks, so it whispers him a hello back
+    local out = with(a, function()
+        Sync.OnMessage("1~H~0|0|0.9.0|0|0", "GUILD", "Father-Realm")
+        local back
+        for _, m in ipairs(a.state.queue) do if m.channel == "WHISPER" then back = m.target end end
+        Sync.SendDice("x", 50, "Father") -- a later whisper by the kept name (a record's caster) finds him too
+        return { back = back, dice = a.state.queue[#a.state.queue].target, stranger = Sync.Address("Nobody") }
+    end)
+    return out.back == "Father-Realm" and out.dice == "Father-Realm" and out.stranger == "Nobody",
+        string.format("hello back to %s, dice to %s, a stranger to %s", tostring(out.back), tostring(out.dice), tostring(out.stranger))
+end)
+
 add("the party's gag: one of his recordings at random, every one reachable, never the same twice running", function()
     local G, saved, played = ST.Gag, ST.Gag.Play, {}
     G.Play = function(_, clip) played[#played + 1] = clip end
