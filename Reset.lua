@@ -64,3 +64,58 @@ ST.Sync.onReset = function(sender, stamp)
             ST.print(string.format("reset by request of %s: %d summon%s removed.", sender, removed, removed == 1 and "" or "s"))
         end)
 end
+
+----------------------------------------------------------------------
+-- Seasons: the admin starts and stops them (Week.Marks); unlike a reset, nobody else is asked, and no summons are removed
+----------------------------------------------------------------------
+StaticPopupDialogs["SUMMONCORE_SEASON"] = {
+    text = "%s",
+    button1 = "Yes",
+    button2 = "Cancel",
+    OnAccept = function(_, data) if data then data() end end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-- What the Index says when a season starts or stops (here, or on the admin's word from another client).
+function Reset.SeasonNews(kind, sender)
+    local by = sender and (" (Heard from " .. sender .. ".)") or ""
+    if kind == "start" then
+        ST.print("|cffffd100A new season has begun.|r The race starts again from this week, 0 to 0. First to " ..
+            ST.Week.WINS .. " weekly wins takes the finale." .. by)
+    else
+        ST.print("|cffffd100The season has been stopped.|r The race counts nothing until the admin starts a new one. " ..
+            "Summons are still filed, under 'between seasons'." .. by)
+    end
+    if ST.Hub then ST.Hub.Refresh() end
+end
+
+-- The admin's client: asks, then starts ("start") or stops ("stop") the season and tells everyone.
+function Reset.Season(kind)
+    if not ST.IsAdmin() then return ST.print("that is an admin tool") end
+    local running = ST.Week.Running(ST.Week.Start())
+    if kind == "stop" and not running then return ST.print("no season is running, so there is nothing to stop.") end
+    local s = ST.Week.Season()
+    local text = kind == "stop" and string.format("Stop the season now? It ends at Zennit %d, the group %d, with no finale, " ..
+            "and this week will not count. Everyone's Summon Core hears of it.", s.zennit, s.group)
+        or (running and string.format("Start a new season? The one in progress ends at Zennit %d, the group %d, with no " ..
+            "finale, and the new one starts 0 to 0 with this week. Everyone's Summon Core hears of it.", s.zennit, s.group)
+        or "Start a new season? It starts 0 to 0 with this week. Everyone's Summon Core hears of it.")
+    StaticPopup_Show("SUMMONCORE_SEASON", text, nil, function()
+        local m, why = ST.Sync.MarkSeason(kind)
+        if not m then return ST.print(why) end
+        Reset.SeasonNews(kind)
+    end)
+end
+
+ST.Sync.onSeason = function(kind, t, sender)
+    -- only news when it is the newest word: an old mark caught up on later changes the past quietly
+    local last = ST.Week.LastMark()
+    if last and last.time == t and last.kind == kind then
+        if ST.Week.Start(t) == ST.Week.Start() then Reset.SeasonNews(kind, sender) else ST.print(kind == "start" and
+            "While you were away, the admin started a new season." or "While you were away, the admin stopped the season.") end
+    end
+    if ST.Hub then ST.Hub.Refresh() end
+end

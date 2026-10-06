@@ -783,6 +783,62 @@ add("the season: first to five weekly wins takes the finale, then the count star
         string.format("%d chapters, %d finale(s), season z%d g%d", #c, #season.finales, season.zennit, season.group)
 end)
 
+add("the admin's seasons: a stop ends the season with no finale and no week counts, a start begins again 0 to 0", function()
+    local a = newClient("Alpha")
+    local out = {}
+    with(a, function()
+        local W, this = ST.Week, ST.Week.Start()
+        local function week(i) return this - (8 - i) * 7 * 86400 end
+        -- seven finished weeks as above (Zennit, Zennit, Zennit, Zennit, Zennit, group, Zennit); stopped in week 3, started in week 5
+        local points = { 3, 3, 3, 3, 3, 20, 3 }
+        for i, pts in ipairs(points) do
+            a.db.events["s-" .. i] = { caster = "Alpha", target = "Target1", assistants = {}, points = pts, kind = "zone",
+                time = week(i) + 3600 }
+        end
+        W.PutMark("stop", week(3) + 100)
+        W.PutMark("start", week(5) + 100)
+        out.dupe = W.PutMark("start", week(5) + 100)
+        out.bad = W.PutMark("pause", week(5) + 200)
+        out.season = W.Season()
+        out.paused, out.week4, out.week5 = W.Score(week(3)), W.Running(week(4)), W.Running(week(5))
+        W.PutMark("stop", time())
+        out.now = W.Season()
+        out.thisWeek = W.Score(this)
+    end)
+    local s, n = out.season, out.now
+    local ok = not out.dupe and not out.bad and s.running and s.zennit == 2 and s.group == 1 and #s.chapters == 5
+        and #s.finales == 0 and #s.ended == 1 and s.ended[1].zennit == 2 and s.ended[1].group == 0
+        and out.paused.paused and out.paused.winner == nil and out.week4 == false and out.week5 == true
+        and not n.running and n.zennit == 0 and n.group == 0 and #n.ended == 2 and out.thisWeek.paused
+    return ok, string.format("season z%d g%d (%s), %d chapters, %d ended; after a stop: %s, %d ended", s.zennit, s.group,
+        tostring(s.running), #s.chapters, #s.ended, tostring(n.running), #n.ended)
+end)
+
+add("season marks travel: the admin's stamp is kept, another is refused, and a client that missed one catches up", function()
+    local a, b, c = newClient("Alpha"), newClient("Beta"), newClient("Cara")
+    local saved = ST.bnGetInfo
+    local out = {}
+    local ok, err = pcall(function()
+        ST.bnGetInfo = function() return 1, "Someone#1" end
+        out.refused = with(a, function() return (Sync.MarkSeason("stop")) end)
+        ST.bnGetInfo = function() return 1, ST.ADMIN_TAG end
+        out.made = with(a, function() return (Sync.MarkSeason("stop")) end)
+        settle({ a, b }) -- Cara is offline
+        out.forged = with(b, function() return Sync.OnMessage("1~C~start|" .. (BASE + 9) .. "|deadbeef", "PARTY", "Mallory") end)
+        out.badKind = with(b, function() return Sync.OnMessage("1~C~pause|" .. (BASE + 9) .. "|" .. ST.ADMIN_HASH, "PARTY", "Mallory") end)
+        with(c, function() Sync.Hello() end) -- Cara logs in: Beta holds the mark (Alpha has gone), so Beta passes it on
+        a.out = {}
+        settle({ b, c })
+    end)
+    ST.bnGetInfo = saved
+    if not ok then return false, "ERROR " .. tostring(err) end
+    local function has(cl) return with(cl, function() local m = ST.Week.LastMark() return m and m.kind == "stop" end) end
+    local good = out.refused == nil and out.made and has(b) and has(c) and out.forged == "rejected:stamp" and out.badKind == "bad"
+        and with(b, function() return #ST.Week.Marks() end) == 1
+    return good, string.format("refused %s, made %s, Beta %s, Cara %s, forged %s, bad kind %s", tostring(out.refused),
+        tostring(out.made and out.made.kind), tostring(has(b)), tostring(has(c)), tostring(out.forged), tostring(out.badKind))
+end)
+
 add("BattleTags: the admin and Zennit's account are told apart, case and spaces ignored", function()
     return ST.TagTest()
 end)
@@ -2550,7 +2606,7 @@ end)
 add("feelings: one answer a week, sent to everyone, kept and counted only by Zennit's and the admin's clients, never named", function()
     return newRules(function()
         local p, adm, other, F, W, out = newClient("Alpha"), newClient("Admin"), newClient("Bo"), ST.Feelings, ST.Week, {}
-        local realIs, realAdmin, realAsk, realPrint = ST.Gag.IsZennit, ST.IsAdmin, F.ask, ST.print
+        local realIs, realAdmin, realAccount, realAsk, realPrint = ST.Gag.IsZennit, ST.IsAdmin, ST.IsAdminAccount, F.ask, ST.print
         local asked = {}
         F.ask = function(week) asked[#asked + 1] = week end
         ST.print = function() end
@@ -2564,7 +2620,7 @@ add("feelings: one answer a week, sent to everyone, kept and counted only by Zen
             end)
             local sent
             for _, m in ipairs(p.state.queue) do if m.payload:find("~F~", 1, true) then sent = m.payload end end
-            ST.IsAdmin = function() return true end
+            ST.IsAdmin, ST.IsAdminAccount = function() return true end, function() return true end
             with(adm, function()
                 out.kept = Sync.OnMessage(sent, "PARTY", "Alpha")
                 out.again = Sync.OnMessage("1~F~" .. last .. "|p|2", "PARTY", "Alpha")      -- a later answer replaces it
@@ -2573,7 +2629,7 @@ add("feelings: one answer a week, sent to everyone, kept and counted only by Zen
                 out.zen = Sync.OnMessage("1~F~" .. last .. "|z|1", "PARTY", "Zennit")
                 out.summary = table.concat(F.Summary(4), " ")
             end)
-            ST.IsAdmin = function() return false end
+            ST.IsAdmin, ST.IsAdminAccount = function() return false end, function() return false end
             ST.Gag.IsZennit = function() return false end
             with(other, function()
                 out.ignored = Sync.OnMessage(sent, "PARTY", "Alpha")
@@ -2582,7 +2638,7 @@ add("feelings: one answer a week, sent to everyone, kept and counted only by Zen
                 out.off = F.Due()
             end)
         end)
-        ST.Gag.IsZennit, ST.IsAdmin, F.ask, ST.print = realIs, realAdmin, realAsk, realPrint
+        ST.Gag.IsZennit, ST.IsAdmin, ST.IsAdminAccount, F.ask, ST.print = realIs, realAdmin, realAccount, realAsk, realPrint
         if not ok then return false, "ERROR " .. tostring(err) end
         local good = #asked == 1 and out.mine == 1 and out.kept == "kept" and out.again == "kept" and out.bob == "kept"
             and out.fake == "rejected:role" and out.zen == "kept"
