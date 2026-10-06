@@ -261,9 +261,18 @@ end
 ----------------------------------------------------------------------
 -- Sending
 ----------------------------------------------------------------------
+-- Where a whisper to `name` must go: the full name the game gave when we last heard from them ("Father-Realm"), which is
+-- what it needs to deliver one; the addon itself only keeps the first word of a name (ST.baseName), which the game may not
+-- find ("No player named 'Father' is currently playing"). A name we have not heard from is used as it is.
+function Sync.Address(name)
+    local book = Sync.state.address
+    return book and book[ST.baseName(name) or ""] or name
+end
+
 local function enqueue(channel, target, typ, body)
     local payload = PROTO .. "~" .. typ .. "~" .. body
     if #payload > MAX_MSG then return false end
+    if channel == "WHISPER" then target = Sync.Address(target) end
     local q = Sync.state.queue
     q[#q + 1] = { channel = channel, target = target, payload = payload }
     return true
@@ -606,8 +615,14 @@ end
 
 -- Returns a short result string describing what happened (used by the self-test).
 function Sync.OnMessage(text, channel, sender)
+    local full = sender
     sender = short(sender)
     if sender == Sync.myName() or sender == "" then return "ignored:self" end
+    -- remember where to whisper them back: the name exactly as the game gave it
+    if type(full) == "string" and not ST.isSecret(full) and full ~= sender and #full <= 64 then
+        Sync.state.address = Sync.state.address or {}
+        Sync.state.address[sender] = full
+    end
     local proto, typ, body = tostring(text):match("^(%d+)~(%a)~(.*)$")
     if not proto then return "bad" end
     if tonumber(proto) > PROTO then return "ignored:version" end
