@@ -79,6 +79,6 @@ sure the things the playtest relies on work.
 | d-expire | An expired prompt counts as a decline | None: it would cost his free decline | Look at `C_SummonInfo.GetSummonConfirmTimeLeft` when the call comes: near zero means it expired, not that he declined |
 | d-overlap | The two prompts cover each other | None | Move the Index's form (lenses, Resonance, A) |
 | s-key | No key binding | `/sc writ` still works | Check `Bindings.xml` and the names |
-| d-say | `SendChatMessage` is blocked | It says so; `/sc week` still works | Use a printed line instead |
+| d-say | `C_ChatInfo.SendChatMessage` is blocked | It says so; `/sc week` still works | Use a printed line instead |
 | a-places | A map ID is wrong | That place scores as a zone (3) | Fix the ID in `Scoring.lua` (`/sc places` lists them) |
 | a-selftest | A rule behaves differently in the game | None | The failing test's name says which |

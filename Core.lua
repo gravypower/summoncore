@@ -436,7 +436,9 @@ function commands.week(rest)
     if rest == "say" then
         local ok, text = W.SayWeek({
             channel = function() return IsInRaid() and "RAID" or IsInGroup() and "PARTY" or nil end,
-            send = function(msg, channel) SendChatMessage(msg, channel) end,
+            -- The global SendChatMessage is only a deprecation fallback on 12.0-era clients (loaded when the
+            -- loadDeprecationFallbacks setting is on, and removed at the next expansion), so prefer the namespaced call.
+            send = function(msg, channel) ((C_ChatInfo and C_ChatInfo.SendChatMessage) or SendChatMessage)(msg, channel) end,
         })
         ST.Trace("week say: " .. (ok and "sent" or text))
         return print_(ok and ("Told the group: " .. text) or text)
