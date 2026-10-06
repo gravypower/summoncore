@@ -6,6 +6,7 @@ clips to Media/ledger/<id>.ogg and writes their lengths to LedgerClips.lua, whic
 
     python tools/intro/build_ledger_audio.py              # every line
     python tools/intro/build_ledger_audio.py --only wait,evidence
+    python tools/intro/build_ledger_audio.py --stale      # only the lines whose sentence changed since they were rendered
 
 Run it again after changing a sentence in LINES, then fully restart WoW (a /reload does not pick up new media).
 Needs the same things as render_takes.py (Python with sherpa-onnx, soundfile, numpy; ffmpeg; the Kokoro model).
@@ -21,25 +22,19 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RENDER = os.path.join(ROOT, ".claude", "skills", "zenit-narrator-audio", "scripts", "render_takes.py")
 sys.path.insert(0, os.path.dirname(RENDER))
 
-
-def read_lines():
-    src = open(os.path.join(ROOT, "Ledger.lua"), encoding="utf-8").read()
-    block = re.search(r"^local LINES = \{\n(.*?)^\}", src, re.S | re.M).group(1)
-    return dict(re.findall(r'^\s+(\w+) = "(.*)",\s*$', block, re.M))
-
-
-def speech(text):
-    """The caption's spelling is for the eye: the voice says Zennit as 'Zenit' (see the narrator skill)."""
-    return text.replace("Zennit", "Zenit")
+import narration_source as ns   # the sentences, how they are spoken, and the SRC_HASH tag the renderer stamps
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", help="comma-separated line ids to render")
+    ap.add_argument("--stale", action="store_true", help="render only the lines whose sentence or recipe changed")
     args = ap.parse_args()
 
-    lines = read_lines()
-    ids = args.only.split(",") if args.only else list(lines)
+    lines = ns.ledger_lines()
+    ids = ns.stale_ids("ledger") if args.stale else args.only.split(",") if args.only else list(lines)
+    if args.stale and not ids:
+        return print("every ledger line is up to date")
     unknown = [i for i in ids if i not in lines]
     if unknown:
         sys.exit("not in Ledger.lua LINES: " + ", ".join(unknown))
@@ -51,7 +46,7 @@ def main():
     extra = os.path.join(work, "lines.txt")
     with open(extra, "w", encoding="utf-8") as f:
         for n, i in numbers.items():
-            f.write("%d|%s\n" % (n, speech(lines[i])))
+            f.write("%d|%s\n" % (n, ns.speech(lines[i])))
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     subprocess.run([sys.executable, RENDER, "--only", ",".join(map(str, numbers)), "--extra", extra, "--out", work],
                    check=True, env=env)

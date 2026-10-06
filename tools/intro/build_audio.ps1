@@ -8,6 +8,18 @@
 # Needs ffmpeg (winget install Gyan.FFmpeg). The music is synthesised here in C#; nothing is sampled
 # from any existing recording.
 #   powershell -ExecutionPolicy Bypass -File tools\intro\build_audio.ps1
+#
+# Only what is out of date is rebuilt. Each scene mix is tagged MIX_HASH: a hash of its voice take (the take's
+# SRC_HASH), where its slice of the music starts, its length and fade, the mix filter and the music source. When
+# none of those changed the mix is left alone, so editing one scene does not rewrite the rest. A scene's length
+# moves the music for every scene after it, so those are rebuilt too, which is correct.
+#   -SceneList "10,11"  mix exactly these scenes (a text list: through -File, 10,11 would be flattened into 1011)
+#   -Force              mix every scene
+#   -Sfx                also regenerate the sound effects (otherwise only when a file is missing)
+#   -Stamp              with -SceneList: tag those existing mixes as current without mixing them (a baseline;
+#                       use it only for mixes you know are up to date)
+# IntroCues.lua is always rewritten: it is text, so git diff shows exactly what moved.
+param([string]$SceneList = "", [switch]$Force, [switch]$Sfx, [switch]$Stamp)
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
 $root = Split-Path -Parent (Split-Path -Parent $here)
@@ -33,6 +45,18 @@ function Ffmpeg([string[]]$ffArgs) {
     if ($code -ne 0) { throw "ffmpeg failed: $($out -join ' ')" }
 }
 
+function Tag([string]$file, [string]$key) {
+    if (-not (Test-Path -LiteralPath $file)) { return "" }
+    $v = & $ffprobe -v error -show_entries "stream_tags=$key" -of "default=noprint_wrappers=1:nokey=1" $file
+    if ($v) { return ("$v").Trim() } else { return "" }
+}
+
+function Sha([string]$text) {
+    $bytes = [Text.Encoding]::UTF8.GetBytes($text)
+    $hash = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+    return (([BitConverter]::ToString($hash) -replace "-", "").ToLower()).Substring(0, 16)
+}
+
 function Duration([string]$file) {
     [double]::Parse((& $ffprobe -v error -show_entries format=duration -of csv=p=0 $file), [Globalization.CultureInfo]::InvariantCulture)
 }
@@ -40,18 +64,23 @@ function Duration([string]$file) {
 # ---------------------------------------------------------------- 1. sound effects
 # Mono, 44.1 kHz, peak about -9 dBFS. Retro "terminal" blips: rising/falling chirps, a two-tone blip, key clicks.
 $fmt = "d=0.2:s=44100"
-$sfx = [ordered]@{
+$sfxSpec = [ordered]@{
     "sfx_chirp_1" = "aevalsrc='0.55*sin(2*PI*(900*t+5357*t*t))*exp(-t*13)':d=0.18:s=44100"
     "sfx_chirp_2" = "aevalsrc='0.55*sin(2*PI*(2200*t-4600*t*t))*exp(-t*12)':d=0.16:s=44100"
     "sfx_chirp_3" = "aevalsrc='0.5*sin(2*PI*if(lt(t,0.045),1500,2100)*t)*exp(-mod(t,0.045)*25)':d=0.12:s=44100"
     "sfx_keys_long" = "aevalsrc='0.55*random(0)*(exp(-mod(t,0.074)*700)*lt(mod(t,0.074),0.012)+0.7*exp(-mod(t,0.113)*650)*lt(mod(t,0.113),0.012))':d=16:s=44100"
     "sfx_pop"     = "aevalsrc='0.6*sin(2*PI*620*t)*exp(-t*26)':d=0.14:s=44100"
 }
-foreach ($name in $sfx.Keys) {
-    $filter = if ($name -like "sfx_keys*") { "highpass=f=1800,volume=0.7" } else { "volume=0.5" }
-    Ffmpeg @("-f", "lavfi", "-i", $sfx[$name], "-af", $filter, "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "4", (Join-Path $sfxDir "$name.ogg"))
+$sfxMissing = @($sfxSpec.Keys | Where-Object { -not (Test-Path (Join-Path $sfxDir "$_.ogg")) })
+if (-not $Stamp -and ($Sfx -or $sfxMissing.Count -gt 0)) {
+    foreach ($name in $sfxSpec.Keys) {
+        $filter = if ($name -like "sfx_keys*") { "highpass=f=1800,volume=0.7" } else { "volume=0.5" }
+        Ffmpeg @("-f", "lavfi", "-i", $sfxSpec[$name], "-af", $filter, "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "4", (Join-Path $sfxDir "$name.ogg"))
+    }
+    "sound effects: " + ($sfxSpec.Keys -join ", ")
+} else {
+    "sound effects: left as they are (-Sfx regenerates them)"
 }
-"sound effects: " + ($sfx.Keys -join ", ")
 
 # ---------------------------------------------------------------- 2. scene lengths
 $sceneCount = (Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg").Count
@@ -69,7 +98,7 @@ for ($k = 0; $k -lt $lengths.Count; $k++) {
 $totalSeconds = $acc + $ending + 3
 
 # ---------------------------------------------------------------- 3. music bed
-Add-Type -TypeDefinition @"
+$musicSource = @"
 using System;
 using System.IO;
 
@@ -154,9 +183,19 @@ public static class MusicGen {
     }
 }
 "@
+$musicHash = Sha $musicSource
 $musicWav = Join-Path $work "music.wav"
-[MusicGen]::Write($musicWav, $totalSeconds)
-"music bed: {0:N0} s" -f $totalSeconds
+$musicMade = $false
+function EnsureMusic {   # the music is synthesised only when a scene is actually mixed
+    if ($script:musicMade) { return }
+    Add-Type -TypeDefinition $musicSource
+    [MusicGen]::Write($musicWav, $totalSeconds)
+    "music bed: {0:N0} s" -f $totalSeconds
+    $script:musicMade = $true
+}
+$only = @($SceneList -split '[,\s]+' | Where-Object { $_ } | ForEach-Object { [int]$_ })
+if ($Stamp -and $only.Count -eq 0) { throw "-Stamp needs -SceneList: name the mixes you know are current" }
+$mixed = 0; $staleLeft = @(); $stamped = 0
 
 # ---------------------------------------------------------------- 4. mix each scene
 # The music is one continuous track cut at the scene boundaries, so it carries on across scenes. It is
@@ -171,8 +210,10 @@ for ($i = 0; $i -lt $sceneCount; $i++) {
         $musicFade = ",afade=t=out:st={0}:d={1}" -f ($len - $ending).ToString("0.###", $ci), $ending.ToString("0.###", $ci)
     }
     $voiceOnly = Join-Path $media ("intro_{0}_voice.ogg" -f $n)
-    Copy-Item -LiteralPath $voices[$i] -Destination $voiceOnly -Force
     $out = Join-Path $media ("intro_{0}.ogg" -f $n)
+    if (-not $Stamp -and (-not (Test-Path $voiceOnly) -or (Get-FileHash $voiceOnly).Hash -ne (Get-FileHash $voices[$i]).Hash)) {
+        Copy-Item -LiteralPath $voices[$i] -Destination $voiceOnly -Force
+    }
     $filter = ("[0:a]apad=whole_dur={0},asplit=2[v][sc];" +
         "[1:a]atrim=start={1}:duration={0},asetpts=PTS-STARTPTS,afade=t=in:d=0.02,afade=t=out:st={2}:d=0.02,volume=0.22{3}[m];" +
         "[m][sc]sidechaincompress=threshold=0.015:ratio=5:attack=30:release=500:makeup=1[md];" +
@@ -181,9 +222,31 @@ for ($i = 0; $i -lt $sceneCount; $i++) {
         $starts[$i].ToString("0.###", [Globalization.CultureInfo]::InvariantCulture),
         ($len - 0.02).ToString("0.###", [Globalization.CultureInfo]::InvariantCulture),
         $musicFade
-    Ffmpeg @("-i", $voices[$i], "-i", $musicWav, "-filter_complex", $filter, "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "3", $out)
+    $voiceTag = Tag $voices[$i] "SRC_HASH"
+    if (-not $voiceTag) { throw ("voice_{0:00}.ogg has no SRC_HASH tag: run tools\intro\check_audio.py (--stamp if you know it is current)" -f $n) }
+    $mixHash = Sha ("{0}|{1}|{2}|{3}|{4}|q3" -f $voiceTag, $starts[$i].ToString("0.###", $ci), $len.ToString("0.###", $ci), $filter, $musicHash)
+    $current = (Tag $out "MIX_HASH") -eq $mixHash
+    if ($Stamp) {
+        if ($only -contains $n -and -not (Tag $out "MIX_HASH")) {
+            $tmp = "$out.tagging.ogg"
+            Ffmpeg @("-i", $out, "-map_metadata", "0", "-c", "copy", "-metadata", "MIX_HASH=$mixHash", $tmp)
+            Move-Item -LiteralPath $tmp -Destination $out -Force
+            $stamped++
+        }
+        continue
+    }
+    $wanted = $Force -or ($only.Count -gt 0 -and $only -contains $n) -or ($only.Count -eq 0 -and -not $current)
+    if (-not $wanted) {
+        if (-not $current) { $staleLeft += $n }
+        continue
+    }
+    EnsureMusic
+    Ffmpeg @("-i", $voices[$i], "-i", $musicWav, "-filter_complex", $filter, "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "3", "-metadata", "MIX_HASH=$mixHash", $out)
+    $mixed++
     "intro_{0}.ogg  {1:N2} s  {2:N0} KB (voice only {3:N0} KB)" -f $n, (Duration $out), ((Get-Item $out).Length / 1KB), ((Get-Item $voiceOnly).Length / 1KB)
 }
+if ($Stamp) { "stamped $stamped mixes" } else { "mixed $mixed scene(s); the rest were up to date" }
+if ($staleLeft.Count -gt 0) { Write-Warning ("not mixed (out of date, outside -SceneList): " + ($staleLeft -join ", ")) }
 
 # ---------------------------------------------------------------- 5. key-phrase cues
 # Each cue names a phrase in the narration; its time is found from where the sentence sits in the audio
