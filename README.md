@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.25.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.25.1, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -313,7 +313,7 @@ Each clip is a sprite sheet: all frames in one power-of-two texture (`.tga` or `
 top to bottom, plus an optional short `.ogg`. Add an entry to `Gag.clips` in `Gag.lua`:
 `{ sheet = { file = ..., cols = 4, rows = 2, frames = 8, fps = 8 }, sound = ... }`. One is picked at random
 each time (add `duration = <seconds>` to keep a clip up as long as its recording). The bundled sheet, `Media/gag_wag_sheet.tga` (1024x512, 8 frames of 256), is a neon line-art cartoon man wagging his finger with "AH AH AH!" beside him, in the addon's look (an original drawing), made by
-`tools/make_gag_sheet.ps1`; replace it with your friends' frames. Zennit's gag plays `Media/gag_zennit.ogg`, a recording of his voice line (normalised, trimmed and converted from `tools/gag/gag_zennit_source.m4a` with ffmpeg: highpass 80 Hz, loudnorm, limiter, mono Ogg Vorbis); the party's gag on his tab uses the same animation without the recording. The diagnostics Sound/flip row looks for `Media/test.ogg`.
+`tools/make_gag_sheet.ps1`; replace it with your friends' frames. Zennit's gag plays `Media/gag_zennit.ogg`, a recording of his voice line (normalised, trimmed and converted from `tools/gag/gag_zennit_source.m4a` with ffmpeg: highpass 80 Hz, loudnorm, limiter, mono Ogg Vorbis); the party's gag on his tab uses the same animation with one of 13 recordings for the party, picked at random and never the same twice running (`Media/gag_party.ogg` and `gag_party_02.ogg` to `gag_party_13.ogg`, from `tools/gag/gag_party_source.m4a` and `tools/gag/party/`, made by `tools/gag/make_gag_audio.ps1`, which also cuts the silence at each end; their lengths are in `Gag.lua`). The diagnostics Sound/flip row looks for `Media/test.ogg`.
 
 ### Large images
 
