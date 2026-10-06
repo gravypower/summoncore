@@ -477,7 +477,8 @@ add("tour: every step has a line and a recording, every outline finds its part o
     local function has(list, id)
         for _, s in ipairs(list) do if s.line == id then return true end end
     end
-    if not (has(party, "writ") and not has(zennit, "writ") and has(zennit, "z_zennit") and not has(party, "z_zennit")) then
+    if not (has(party, "writ") and not has(zennit, "writ") and has(zennit, "z_zennit") and not has(party, "z_zennit")
+        and has(party, "goodbye") and has(zennit, "z_goodbye") and not has(zennit, "goodbye")) then
         bad[#bad + 1] = "the two sides do not get their own lines"
     end
     return #bad == 0, #bad == 0 and string.format("%d steps for the party, %d for Zennit", #party, #zennit) or table.concat(bad, "; ")
@@ -2020,9 +2021,9 @@ add("the welcome says taking part needs nothing new, who needs the addon, and wh
     local p, z = table.concat(party, " "), table.concat(zennit, " ")
     local ok = #party == 3 and #zennit == 3
         and p:find("cast and click portals as usual", 1, true) and z:find("answer summons in the game's own prompt", 1, true)
-        and p:find("Whoever casts the ritual needs Summon Core", 1, true) and z:find("Whoever casts the ritual needs Summon Core", 1, true)
+        and p:find("filed if the caster or Zennit has Summon Core", 1, true) and z:find("filed if the caster or Zennit has Summon Core", 1, true)
         and p:find("/sc rules", 1, true) and p:find("/sc intro", 1, true)
-        and card:find("Who needs Summon Core: whoever casts the ritual", 1, true)
+        and card:find("Who needs Summon Core: the caster or Zennit", 1, true)
     return ok, party[1]
 end)
 
