@@ -1,8 +1,8 @@
 """What the narration says and how it is rendered, in one place, and the tag that says a clip is up to date.
 
 Every rendered clip carries a Vorbis comment SRC_HASH: a hash of the words it speaks and of the recipe that
-voiced them. Change the words (in Intro.lua for a scene, in the LINES of Ledger.lua for "The Index today") or the
-recipe below, and the hash of the text no longer matches the tag in the file: that clip is stale and wants
+voiced them. Change the words (in Intro.lua for a scene, in the LINES of Ledger.lua for "The Index today", in the LINES
+of Tour.lua for the tour) or the recipe below, and the hash of the text no longer matches the tag in the file: that clip is stale and wants
 re-rendering. The check (tools/intro/check_audio.py) lists them; nothing here needs git.
 
 No sherpa-onnx here: the checks run without the voice model installed.
@@ -43,6 +43,7 @@ TENS = {20: "twenty", 30: "thirty", 40: "forty", 50: "fifty", 60: "sixty", 70: "
 def speech(text):
     """The caption's spelling is for the eye; the voice is given the spelling it says correctly."""
     text = text.replace("Zennit", "Zenit")          # the established pronunciation of Zennit
+    text = re.sub(r"/sc\b", "slash S C", text)        # the tour's commands: "/sc rules" is said "slash S C rules"
     text = re.sub(r"\+(\d)", lambda m: "plus " + DIGITS[int(m.group(1))], text)   # "adds +8": a plus sign is not reliably said
     return re.sub(r"\bthe letter Z\b", "the letter Zed", text)   # British
 
@@ -83,6 +84,16 @@ def number_fragments():
     return out
 
 
+def tour_lines():
+    """{id: sentence} from the LINES table of Tour.lua (the narrated tour of the window)."""
+    block = re.search(r"^local LINES = \{\n(.*?)^\}", _read("Tour.lua"), re.S | re.M).group(1)
+    return dict(re.findall(r'^\s+(\w+) = "(.*)",\s*$', block, re.M))
+
+
+def tour_speech():
+    return {i: speech(t) for i, t in tour_lines().items()}
+
+
 def ledger_fragments():
     """{id: text} of the phrases in the FRAGMENTS table of Ledger.lua."""
     block = re.search(r"^local FRAGMENTS = \{\n(.*?)^\}", _read("Ledger.lua"), re.S | re.M).group(1)
@@ -109,6 +120,10 @@ def scene_path(n):
 
 def ledger_path(i):
     return os.path.join(ROOT, "Media", "ledger", i + ".ogg")
+
+
+def tour_path(i):
+    return os.path.join(ROOT, "Media", "tour", i + ".ogg")
 
 
 def find_ffmpeg():
@@ -162,7 +177,7 @@ def status():
     """[(kind, id, path, state)] for every clip; state is "ok", "stale", "untagged" or "missing"."""
     rows = []
     for kind, speech_by_id, path_of in (("scene", scene_speech(), scene_path), ("ledger", ledger_speech(), ledger_path),
-                                        ("fragment", fragment_speech(), ledger_path)):
+                                        ("fragment", fragment_speech(), ledger_path), ("tour", tour_speech(), tour_path)):
         for i, spoken in speech_by_id.items():
             path = path_of(i)
             tag = read_tag(path)

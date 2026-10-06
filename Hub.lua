@@ -629,6 +629,7 @@ local function buildTools(f)
     local general = section("general")
     local windows = group(general, "WINDOWS")
     tool(windows, "IMPORT / EXPORT", function() ST.Export.Open("import") end)
+    tool(windows, "TAKE THE TOUR", function() ST.Tour.Start() end)
     tool(windows, "PLAY THE INTRO", function()
         window:Hide()
         ST.Intro.Play("1", function() Hub.Open("tools") end)
@@ -923,6 +924,7 @@ local function buildParty(f)
         buttons[s[1]] = button(f, s[2], 4 + (i - 1) * 126, -4, 120, function() party.select(s[1]) end, "tab")
     end
     party.select("summary")
+    party.buttons = buttons
     return function() -- the sections are small, so refresh them all (this also lets the self-check cover each one)
         for _, s in ipairs(SECTIONS) do sections[s[1]].refresh() end
     end
@@ -936,6 +938,7 @@ local BUILDERS = { party = buildParty, zennit = buildAnswer, log = buildLog, sto
 ----------------------------------------------------------------------
 local function buildChrome()
     local band = CreateFrame("Frame", nil, window)
+    chrome.band = band
     band:SetPoint("TOPLEFT", 12, -64)
     band:SetPoint("TOPRIGHT", -12, -64)
     band:SetHeight(26)
@@ -1085,6 +1088,19 @@ function Hub.Open(name)
     if SECTION_OF[name] then party.select(name) end
     if not window:IsShown() then window:Show() end
     selectTab(tab)
+end
+
+function Hub.Window() return window end
+
+-- A part of the window, for the tour to outline: "window", "season" (the band), "week" (this week, on the band), "status"
+-- (the line along the bottom), "tab:<name>" (a tab's button) or "section:<name>" (a Party section's button). nil if unknown.
+function Hub.Spot(name)
+    if not window then build() end
+    local tab = name:match("^tab:(%w+)$")
+    if tab then return tabs[tab] and tabs[tab].button end
+    local section = name:match("^section:(%w+)$")
+    if section then return party.buttons and party.buttons[section] end
+    return ({ window = window, season = chrome.band, week = chrome.week, status = chrome.status })[name]
 end
 
 function Hub.Toggle()

@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.23.2, work in progress**. See [Status](#status) for what has and has
+Status: **v0.24.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -62,6 +62,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. The chat window cannot be selected, so `/sc report copy` opens the same text in a window to copy from (Ctrl+A, Ctrl+C), then paste it into the group chat. Also the Tools tab's **Playtest report**, which prints it and hands it to its COPY button; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). `/sc rules copy` opens it in the copy window. Also the Tools tab's **The rules**, which prints it and hands it to COPY |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
+| `/sc tour [step]` | **The tour**: a narrated walk round the window for newcomers, in the Index's voice (about three minutes). It opens the window, moves through the tabs by itself and outlines each part in amber while the narrator talks about it; the words are typed in a box under the window, with BACK, PAUSE, NEXT, SOUND and END TOUR. Zennit's client gets his own lines for the Party and Zennit tabs (and no writ). Closing the window ends it; `/sc tour 5` starts at step 5. Also the Tools tab's **Take the tour**, and the welcome mentions it |
 | `/sc welcome` | The three lines a newcomer gets at their first login: taking part needs nothing new, who needs the addon, and where the rules and the story are |
 | `/sc intro previously` | **Previously on**: every chapter this season has reached, back to back, in the order the race reached them; closing the window stops it. For anyone catching up (the welcome mentions it). Nobody has to have watched anything to play any reached chapter |
 | `/sc intro <key> group` | **Show the group a chapter** (design/lenses.md, Pleasure): it plays here, and everyone else in the party or raid who runs the addon is asked "Watch now?" (a newcomer whose log is still syncing too: the sender's client checked the season has reached it). Chapters unlock by the season's race, not by what you have watched, so nobody has to watch the earlier ones first. When a raid gathers (once a week), its leader is offered last week's chapter, and everyone else is told the command |
@@ -91,6 +92,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `Week.lua` | Week | The weekly contest, his week off, and the season; all derived from the log |
 | `Reset.lua` | Reset | `/sc reset`: wipe this client, and the admin's request to everyone else |
 | `Export.lua` | Export | Import / Export window and the string codec |
+| `Tour.lua`, `TourClips.lua` | Tour | `/sc tour`, the narrated tour of the window (`TourClips.lua` is generated) |
 | `Intro.lua`, `IntroCues.lua`, `Comic.lua` | Intro | The illustrated story player, its generated timings, and the large-image test viewer |
 | `Voice.lua` | Voice | Pools of lines: the Index says a fact that repeats a few different ways, never the same one twice running |
 | `Cards.lua` | Cards | Summon cards: prepaid silver Zennit sells, with punches counted from the log |
@@ -169,6 +171,15 @@ new, would replace an existing copy, are already known or are rejected, then pre
 the same merge rules as sync, with one difference: because you are doing it yourself, your own events missing
 from your log can be restored, but an event you already have is never overwritten. Damaged, truncated or
 newer-version strings are refused. This is the manual fallback if addon messages turn out to be restricted.
+
+### Tour
+
+`/sc tour` is the how-to, told by the same narrator as the story. Its words are the `LINES` table at the top of `Tour.lua`
+(one sentence each, an id per line) and its order is `STEPS` (which tab to show, what to outline: the window, the season band,
+this week, a tab, a Party section or the status line, via `Hub.Spot`). Each line is one recording, `Media/tour/<id>.ogg`,
+rendered with the intro's recipe by `tools/intro/build_tour_audio.py` (`--stale` renders only the lines whose words
+changed; it rewrites `TourClips.lua`, the lengths that time each step), and `tools/intro/check_audio.py` covers them too.
+The voice is given `/sc` as "slash S C". A line with no recording is still typed, and its step lasts long enough to read it.
 
 ### Intro
 
@@ -318,6 +329,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
+| The tour (`/sc tour`) | Written; never run in the client (check `s-tour`). Nobody has listened to the recordings yet |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
 | Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (never run live yet). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |
 | Gag and voice clips | Not recorded yet; the gag is still the placeholder sheet |

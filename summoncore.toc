@@ -2,7 +2,7 @@
 ## Title: Summon Core
 ## Notes: Ritual of Summoning logger, shared tally and scoring (v1 in progress)
 ## Author: Aaron
-## Version: 0.23.2
+## Version: 0.24.0
 ## SavedVariables: SummonTrackerDB
 
 Core.lua
@@ -28,6 +28,8 @@ Cards.lua
 Silver.lua
 Reset.lua
 Hub.lua
+TourClips.lua
+Tour.lua
 Comic.lua
 IntroCues.lua
 Intro.lua

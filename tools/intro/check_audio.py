@@ -6,7 +6,7 @@
     python tools/intro/check_audio.py --verify --restore   # ... and put back the ones that only differ in their bytes
 
 A clip carries SRC_HASH, a hash of what it says and the recipe (narration_source.py). The check compares it with the
-current text in Intro.lua (scenes) and Ledger.lua (LINES); no git needed. Exit status 1 when anything is stale.
+current text in Intro.lua (scenes), Ledger.lua (LINES) and Tour.lua (LINES); no git needed. Exit status 1 when anything is stale.
 
 --stamp trusts you: it writes the tag without re-rendering, so use it only on clips you know are current (the first
 time, to start from a known state). --verify compares decoded audio, since encoding the same sound twice gives
@@ -33,12 +33,13 @@ def check():
     if any(r[3] in ("stale", "missing") for r in bad):
         print("render them:  python .claude/skills/zenit-narrator-audio/scripts/render_takes.py --stale --out <dir>   (then copy to tools/intro/narration/voice_NN.ogg)")
         print("              python tools/intro/build_ledger_audio.py --stale")
+        print("              python tools/intro/build_tour_audio.py --stale")
     return 1 if any(r[3] in ("stale", "missing") for r in bad) else 0
 
 
 def stamp():
     n = 0
-    spoken = {"scene": ns.scene_speech(), "ledger": ns.ledger_speech(), "fragment": ns.fragment_speech()}
+    spoken = {"scene": ns.scene_speech(), "ledger": ns.ledger_speech(), "fragment": ns.fragment_speech(), "tour": ns.tour_speech()}
     for kind, i, path, state in ns.status():
         if state == "untagged":
             before = ns.decoded_md5(path)
