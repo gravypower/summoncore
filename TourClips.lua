@@ -4,7 +4,7 @@ local ADDON, ST = ...
 ST.tourClips = {
     hello = 15.00,
     nothing_new = 13.60,
-    caster = 12.20,
+    caster = 14.40,
     z_nothing_new = 13.50,
     window = 12.90,
     season = 13.20,
@@ -38,4 +38,5 @@ ST.tourClips = {
     z_paid = 10.70,
     reset = 13.20,
     goodbye = 12.80,
+    z_goodbye = 13.10,
 }

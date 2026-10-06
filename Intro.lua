@@ -779,7 +779,7 @@ function Intro.WelcomeLines(zennit)
     return {
         zennit and "Welcome to Summon Core. You do not have to do anything new: answer summons in the game's own prompt, as you always have, and the Index takes that as your answer."
             or "Welcome to Summon Core. You do not have to do anything new: cast and click portals as usual, and your summons of Zennit count for the group.",
-        "Whoever casts the ritual needs Summon Core for the summons to count, and Zennit needs it for his answers to be his. Helpers are credited either way.",
+        "A summons of Zennit is filed if the caster or Zennit has Summon Core, and Zennit needs it for his answers to be his. Helpers are credited if the caster has it, or anyone at the portal does.",
         "|cffffd100/sc intro|r is the story (about four minutes), then |cffffd100/sc tour|r shows you round the window and its popups (about six minutes); |cffffd100/sc rules|r is the race in a minute, and |cffffd100/sc intro previously|r catches up on this season.",
     }
 end
