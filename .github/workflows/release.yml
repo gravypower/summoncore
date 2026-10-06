@@ -38,8 +38,21 @@ jobs:
           cp -r Media dist/summoncore/Media
           rm -f dist/summoncore/Media/.gitkeep
           (cd dist && zip -r "summoncore-${TAG}.zip" summoncore)
+      - name: Describe it for addon managers
+        # release.json is the BigWigs packager's metadata, which WowUp (and others) read to pick the zip for an install:
+        # without it WowUp offers a plain zip only to retail, and a Classic Beta install finds nothing. The addon is
+        # one zip for every flavour, so it is listed under each, with the TOC's interface number.
+        run: |
+          iface=$(grep -m1 '^## Interface:' summoncore.toc | sed 's/^## Interface: *//' | tr -d '\r')
+          meta=""
+          for flavor in mainline classic bcc wrath cata mists; do
+            meta="${meta}${meta:+,}{\"flavor\":\"$flavor\",\"interface\":$iface}"
+          done
+          printf '{"releases":[{"name":"Summon Core","version":"%s","filename":"summoncore-%s.zip","nolib":false,"metadata":[%s]}]}\n' \
+            "$TAG" "$TAG" "$meta" > dist/release.json
+          cat dist/release.json
       - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # --target creates the tag on this commit when it does not exist yet (a hand-run release)
-        run: gh release create "$TAG" "dist/summoncore-${TAG}.zip" --title "$TAG" --target "$GITHUB_SHA" --generate-notes
+        run: gh release create "$TAG" "dist/summoncore-${TAG}.zip" dist/release.json --title "$TAG" --target "$GITHUB_SHA" --generate-notes
