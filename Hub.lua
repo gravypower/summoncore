@@ -584,8 +584,8 @@ end
 -- the record, settings); Testing holds the things to try and the test switches; Checks holds the live checklist. Each
 -- section is a stack of titled groups, five buttons to a row; admin-only tools are hidden for everyone else and the rows
 -- close up around them, so nobody sees gaps. One output box sits under whichever section is on show. The tab opens on
--- the section used last.
-local TOOL_SECTIONS = { { "general", "GENERAL" }, { "testing", "TESTING" }, { "checks", "CHECKS" } }
+-- the section used last. Checks is the admin's only: its steps talk about the gags and Zennit's secrets (spoilers).
+local TOOL_SECTIONS = { { "general", "GENERAL" }, { "testing", "TESTING" }, { "checks", "CHECKS", true } }
 local tools = {} -- tools.select(name) shows one of the sections
 
 local function buildTools(f)
@@ -713,7 +713,8 @@ local function buildTools(f)
     local testing = section("testing")
     local try = group(testing, "TRY THINGS")
     tool(try, "WHERE AM I?", function() show(whereText()) end)
-    tool(try, "BATTLE.NET CHECK", function() show(ST.TagReport()) end)
+    -- the next three are the admin's: the BattleTag report names Zennit's account, and the clips may hold gag lines (spoilers)
+    tool(try, "BATTLE.NET CHECK", function() show(ST.TagReport()) end, true)
     tool(try, "LIST VOICE CLIPS", function()
         local cats = ST.Clips.Categories()
         if #cats == 0 then
@@ -723,7 +724,7 @@ local function buildTools(f)
         local lines = {}
         for _, c in ipairs(cats) do lines[#lines + 1] = string.format("%s: %d", c[1], c[2]) end
         show("Voice clips: " .. table.concat(lines, ",  "))
-    end)
+    end, true)
     tool(try, "TEST A SUMMONING", function() ST.Respond.Test() end, true)
     tool(try, "HELPERS PROMPT", function()
         ST.Prompt.Ask("Target", { "Alice", "Bob", "Cara" }, {}, function(names, confirmed)
@@ -735,7 +736,7 @@ local function buildTools(f)
     tool(try, "PARTY GAG", function() ST.Gag.PlayParty() end, true)
     tool(try, "SOUND CHECK", function() ST.Intro.Check() end, true)
 
-    local clipRow = row(testing, "VOICE CLIP")
+    local clipRow = row(testing, "VOICE CLIP", true)
     local clip = T.EditBox(clipRow, 170, 22)
     clip:SetPoint("TOPLEFT", 110, -1)
     local function playClip()
@@ -790,8 +791,8 @@ local function buildTools(f)
     intro:SetJustifyV("TOP")
     intro:SetText("The live-client checklist. RUN AUTO runs the checks the addon can do itself; NEXT shows the steps " ..
         "for the next one that needs a person, then PASS, FAIL or SKIP records it. REPORT opens the results to send back.")
-    checks.blocks[#checks.blocks + 1] = { kind = "row", widget = intro, height = 64 }
-    local checkRow, checkLabel = row(checks, "CHECKS")
+    checks.blocks[#checks.blocks + 1] = { kind = "row", widget = intro, height = 64, admin = true }
+    local checkRow, checkLabel = row(checks, "CHECKS", true)
     local current -- the check on show
     local function paintChecks()
         checkLabel:SetText("CHECKS " .. (ST.Check.Summary()))
@@ -898,7 +899,13 @@ local function buildTools(f)
     return function()
         paintChecks()
         local admin = ST.IsAdmin()
-        for _, s in ipairs(TOOL_SECTIONS) do layout(sections[s[1]], admin) end
+        for _, s in ipairs(TOOL_SECTIONS) do
+            sectionButtons[s[1]]:SetShown(admin or not s[3]) -- an admin-only section is the last, so no gap is left
+            layout(sections[s[1]], admin)
+        end
+        for _, s in ipairs(TOOL_SECTIONS) do
+            if s[1] == selected and s[3] and not admin then return tools.select("general") end
+        end
         placeOutput()
     end
 end
