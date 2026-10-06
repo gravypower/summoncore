@@ -840,6 +840,22 @@ add("season marks travel: the admin's stamp is kept, another is refused, and a c
         tostring(out.made and out.made.kind), tostring(has(b)), tostring(has(c)), tostring(out.forged), tostring(out.badKind))
 end)
 
+add("the party's gag: one of his recordings at random, every one reachable, never the same twice running", function()
+    local G, saved, played = ST.Gag, ST.Gag.Play, {}
+    G.Play = function(_, clip) played[#played + 1] = clip end
+    local ok, err = pcall(function() for _ = 1, 400 do G.PlayParty() end end)
+    G.Play = saved
+    if not ok then return false, "ERROR " .. tostring(err) end
+    local seen, n, twice = {}, 0, false
+    for i, clip in ipairs(played) do
+        if not seen[clip] then seen[clip], n = true, n + 1 end
+        if played[i - 1] == clip then twice = true end
+        if not (clip.sound:match("\\gag_party[_%d]*%.ogg$") and clip.duration >= 2.5) then return false, "a bad clip: " .. clip.sound end
+    end
+    return n == #G.partyClips and #G.partyClips == 13 and not twice,
+        string.format("%d of %d clips played, the same twice running: %s", n, #G.partyClips, tostring(twice))
+end)
+
 add("BattleTags: the admin and Zennit's account are told apart, case and spaces ignored", function()
     return ST.TagTest()
 end)

@@ -1895,7 +1895,7 @@ writes each of those, and whether the real Zennit gets a say.
 | The intro and the chapters | Us, narrated by a synthetic voice | The narrator's, about him |
 | The answer lines, the briefings, the Week lines | Us | The Index's, about him (third person, by the house style) |
 | The postcards | Us (Secrets, a day ago) | **His, in quotes, but written for him** |
-| The gags (`gag_zennit.ogg`, `gag_party.ogg`) | His recordings | **His own** |
+| The gags (`gag_zennit.ogg`, `gag_party.ogg`, `gag_party_02.ogg` to `_13`) | His recordings | **His own** |
 | The surprise clips when he is summoned (`zenit_land`, `zenit_refuse`, `zenit_win`) | The group, recorded for him | The group's. One clip so far (`Media/clips`), so none of these play |
 | The price of the silver | Him, each time | His only written word in the game |
 

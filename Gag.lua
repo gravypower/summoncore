@@ -17,8 +17,17 @@ local WAG = { file = MEDIA .. "gag_wag_sheet", cols = 4, rows = 2, frames = 8, f
 Gag.clips = {
     { sheet = WAG, sound = MEDIA .. "gag_zennit.ogg", duration = 2.9 },
 }
--- The party's gag, on Zennit's tab: the same finger, with his recording for the party (it runs 7.9 s).
-local PARTY_CLIP = { sheet = WAG, sound = MEDIA .. "gag_party.ogg", duration = 7.9 }
+-- The party's gag, on Zennit's tab: the same finger, with one of his recordings for the party, picked at random and never the
+-- same twice running. gag_party.ogg runs 7.9 s; gag_party_NN.ogg (tools/gag/party, made by tools/gag/make_gag_audio.ps1) run
+-- 1.5 to 4.1 s, and stay up a beat longer, and never less than DURATION.
+local PARTY_LENGTHS = { ["02"] = 3.6, ["03"] = 1.5, ["04"] = 1.6, ["05"] = 1.9, ["06"] = 3.0, ["07"] = 3.7, ["08"] = 3.0,
+    ["09"] = 2.3, ["10"] = 3.8, ["11"] = 4.1, ["12"] = 3.4, ["13"] = 1.8 }
+Gag.partyClips = { { sheet = WAG, sound = MEDIA .. "gag_party.ogg", duration = 7.9 } }
+for n, secs in pairs(PARTY_LENGTHS) do
+    Gag.partyClips[#Gag.partyClips + 1] = { sheet = WAG, sound = MEDIA .. "gag_party_" .. n .. ".ogg", duration = math.max(2.5, secs + 0.3) }
+end
+table.sort(Gag.partyClips, function(a, b) return a.sound < b.sound end)
+local lastParty
 
 local DURATION = 2.5
 local SHOW_SIZE = 192
@@ -99,7 +108,10 @@ end
 
 -- The same gag for the other side: the party opened Zennit's tab.
 function Gag.PlayParty()
-    Gag.Play(PARTY_CAPTION, PARTY_CLIP)
+    local i = math.random(#Gag.partyClips)
+    if #Gag.partyClips > 1 and i == lastParty then i = i % #Gag.partyClips + 1 end
+    lastParty = i
+    Gag.Play(PARTY_CAPTION, Gag.partyClips[i])
 end
 
 -- Returns true (after playing the gag) when the player is Zennit and the content is hidden.
