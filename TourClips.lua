@@ -28,5 +28,9 @@ ST.tourClips = {
     z_summoning = 11.70,
     z_choices = 15.90,
     asks = 10.60,
+    watch = 19.40,
+    z_price = 13.90,
+    z_paid = 10.70,
+    reset = 13.20,
     goodbye = 12.80,
 }

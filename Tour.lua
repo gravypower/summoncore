@@ -42,12 +42,17 @@ local LINES = {
     z_summoning = "It says who summoned you, and where to, what it is worth, and how the week stands. You may simply answer the game's own prompt, and the Index takes that as your answer.",
     z_choices = "Or choose here. Accept it. Decline it: the first decline each week is free. Name a price, in silver. Or roll the dice, three times a week.",
     asks = "Once a week, the Index asks how the week went. One click, or close it to skip. Nobody sees who said what.",
+    watch = "Sometimes a friend will show the group a chapter of the story, and the Index asks whether you would like to watch. Watch plays it. Not now does not. When a raid gathers, its leader may be offered last week's chapter in the same way.",
+    z_price = "Name a price, and the Index asks how much. Fifty silver, two gold, whatever you fancy. The summons counts either way, and the silver goes on the tab.",
+    z_paid = "When silver arrives by trade or by mail, the Index notices, and offers to mark the summons paid. Say yes, and the tab is settled.",
+    reset = "Very rarely, the admin may ask everyone to start the Index afresh. Press reset only if the admin has told you it is coming. Otherwise, cancel.",
     goodbye = "That concludes the tour. The Index thanks you for your attention, which it has noted. Go and summon someone. Preferably Zennit.",
 }
 Tour.LINES = LINES
 
 -- The tour, in order. tab: the window's tab to show (a Party section opens the Party tab on it); spot: what to outline
--- (Hub.Spot, or "demo" and "demo:<part>" for the popup on show); demo: a copy of a popup to show (DEMOS, below);
+-- (Hub.Spot, or "demo" and "demo:<part>" for the popup on show, "popup" for a game dialog); demo: a copy of a popup to
+-- show (DEMOS, below); popup: one of the game's own dialogs to show, with buttons that do nothing (POPUPS, below);
 -- only: "party" or "zennit", for the steps one side gets instead of the other.
 local STEPS = {
     { line = "hello", spot = "window" },
@@ -73,7 +78,11 @@ local STEPS = {
     { line = "z_popups", demo = "summoning", spot = "demo", only = "zennit" },
     { line = "z_summoning", demo = "summoning", spot = "demo:text", only = "zennit" },
     { line = "z_choices", demo = "summoning", spot = "demo:buttons", only = "zennit" },
+    { line = "z_price", popup = "price", spot = "popup", only = "zennit" },
+    { line = "z_paid", popup = "paid", spot = "popup", only = "zennit" },
     { line = "asks", demo = "asks", spot = "demo" },
+    { line = "watch", popup = "watch", spot = "popup" },
+    { line = "reset", popup = "reset", spot = "popup" },
     { line = "writ", only = "party" },
     { line = "commands" },
     { line = "goodbye", spot = "window" },
@@ -198,9 +207,50 @@ local function hideDemos()
     for _, w in pairs(demos) do w:Hide() end
 end
 
+----------------------------------------------------------------------
+-- The game's own dialogs (StaticPopup): these are shown for real, since their buttons only run what they are handed, and
+-- the tour hands them nothing to do. Each gives the dialog's name, its words (as the real one says them, with made-up
+-- names) and its data.
+----------------------------------------------------------------------
+local EXAMPLE = "\n\n(The tour's example: the buttons do nothing.)"
+local nothing = function() end
+local POPUPS = {
+    watch = function()
+        local title = ST.Intro.ChapterTitle("z1") or "chapter 2: The count"
+        return "SUMMONCORE_ASK", "Tester would like to show the group " .. title .. ". Watch now?" .. EXAMPLE, nothing
+    end,
+    price = function()
+        return "SUMMONCORE_ASK_SILVER", "The Index asks how much silver you ask of Tester, in cash, with no receipt. (50, 2g, 1g 20s.) "
+            .. "The summons counts either way; the silver goes on the tab." .. EXAMPLE, { default = 50, go = nothing }
+    end,
+    paid = function()
+        return "SUMMONCORE_SILVER", "Tester has paid you 50s by trade. The Index would like to mark 1 of Tester's summons paid (50 silver)."
+            .. EXAMPLE, nothing
+    end,
+    reset = function()
+        return "SUMMONCORE_RESET", "The admin asks everyone to reset all summons, badges and the story. Do it on this client?" .. EXAMPLE, nothing
+    end,
+}
+Tour.POPUPS = POPUPS
+local shown -- the dialog the tour put up: { which, dialog, data }
+
+local function hidePopup()
+    local p = shown
+    shown = nil
+    -- only ours: StaticPopup_Hide with data hides the dialog holding that data, so a real request is left alone
+    if p then StaticPopup_Hide(p.which, p.data) end
+end
+
+local function showPopup(name)
+    local which, words, data = POPUPS[name]()
+    if StaticPopup_Visible(which) then return end -- a real one is up: never write over it
+    shown = { which = which, data = data, dialog = StaticPopup_Show(which, words, nil, data) }
+end
+
 -- The region a step outlines: a part of the window, or of the popup it shows. Builds the popup if need be (not shown).
 function Tour.Spot(step)
     if not step.spot then return nil end
+    if step.spot == "popup" then return shown and shown.dialog end
     if step.spot == "demo" then return demo(step.demo) end
     local part = step.spot:match("^demo:(%w+)$")
     if part then return demo(step.demo).parts[part] end
@@ -236,6 +286,8 @@ local function go(i)
         end
     end
     hideDemos()
+    hidePopup()
+    if s.popup then showPopup(s.popup) end
     if s.demo then
         local w = demo(s.demo)
         w:ClearAllPoints()
@@ -338,6 +390,7 @@ local function build()
         stopVoice()
         glow:Hide()
         hideDemos()
+        hidePopup()
     end)
 end
 
