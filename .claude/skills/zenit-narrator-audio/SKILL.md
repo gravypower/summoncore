@@ -37,25 +37,41 @@ pauses, and falling intonation at the end of each sentence.
 
 ## Steps
 
-1. Put the wording in `TAKES` in `scripts/render_takes.py`, or, for a new scene, in a text file with lines
-   `N|text` and pass `--extra file.txt`. Keep it in step with the caption in `Intro.lua`.
-2. Render: `python scripts/render_takes.py --only 9,10 --extra file.txt --out <dir>` (or no `--only` for all). It writes
-   `narrator_backstory_NN_rp.ogg`. Set `PYTHONIOENCODING=utf-8` on Windows.
-3. Copy each take to `tools/intro/narration/voice_NN.ogg` (two digits).
-4. Add the scene to the viewer: an entry in `scenes` in `Intro.lua` (label, text) and artwork in
-   `tools/intro/source.html`, plus its key phrases and highlight boxes in `tools/intro/build_audio.ps1`
-   (`$cueSpec`, `$highlightSpec`). The number of scenes is the number of `voice_NN.ogg` files.
-5. Run `tools/intro/build_audio.ps1` (music, effects, mixes, scene lengths, cues, sentence times, highlights;
-   writes `IntroCues.lua`), then `tools/intro/render_intro.ps1 -Style lines -SceneList "9,10"` and the same for
-   `-Style storybook`. **Pass the scene list as text**: through `-File`, `9,10` would be flattened into 910.
+The words live in one place: the caption in `Intro.lua` (a scene) or the `LINES` of `Ledger.lua` ("The Index today").
+`scripts/narration_source.py` turns a caption into what the voice is given ("Zenit", "the letter Zed"). Every clip
+is tagged `SRC_HASH`, a hash of its words and the recipe, so the question "what needs re-recording?" has an answer
+without git. Set `PYTHONIOENCODING=utf-8` on Windows.
+
+1. Change the wording in `Intro.lua` or `Ledger.lua`. (A new scene: add its entry to `scenes` in `Intro.lua`, its
+   artwork in `tools/intro/source.html`, and its key phrases and highlight boxes in `tools/intro/build_audio.ps1`.)
+2. **See what is out of date:** `python tools/intro/check_audio.py`. It lists stale, missing and untagged clips
+   (exit status 1 if any need rendering).
+3. **Render only those:** `python scripts/render_takes.py --stale --install` (scene takes, installed as
+   `tools/intro/narration/voice_NN.ogg`) and `python tools/intro/build_ledger_audio.py --stale` (ledger lines, which
+   also rewrites `LedgerClips.lua`). `--only 10` renders a named take whatever its state. A take whose text is not in
+   `Intro.lua` yet can come from `--extra file.txt` (lines `N|text`). Rendering is not bit-for-bit repeatable, so do
+   not re-render clips that are current: that is what the tag avoids.
+4. **Rebuild the mixes:** `tools/intro/build_audio.ps1`. It mixes only the scenes whose `MIX_HASH` no longer
+   matches (their voice, where their slice of the music starts, their length, the mix filter, the music source), leaves
+   the sound effects alone unless `-Sfx`, and always rewrites `IntroCues.lua`. A scene that grows or shrinks moves the
+   music for every scene after it, so those are rebuilt too. `-SceneList "10,11"` (text, not `10,11`, which `-File`
+   flattens into 1011) mixes exactly those; `-Force` mixes all. Artwork only changes with a new or redrawn scene:
+   `tools/intro/render_intro.ps1 -Style lines -SceneList "9,10"` and the same for `-Style storybook`.
+5. **Prove nothing else moved:** `git status` lists every re-encoded file, because encoding the same sound twice gives
+   different bytes. `python tools/intro/check_audio.py --verify` compares what files decode to (and their tags) with
+   `HEAD` and says which really changed; `--restore` puts back the ones that did not. `git diff` on `IntroCues.lua`
+   and `LedgerClips.lua` is exact: it should show only the scenes you touched and the ones after them.
 6. Bump the version in `summoncore.toc` and `Core.lua`, update the README, and tell the user to restart WoW fully
    (new media files are not picked up by `/reload`) and run `/sc intro check` then `/sc intro`.
+
+First time on a checkout whose clips pre-date the tags: `check_audio.py --stamp` tags the clips you know are current
+without re-rendering (it asserts they match), and `build_audio.ps1 -Stamp -SceneList "1,2,3"` does the same for mixes.
 
 ## Honest limits
 
 - **Nothing here has been listened to by Claude.** Check levels and lengths with ffmpeg (`volumedetect`,
   `silencedetect`) and tell the user the real judgement is theirs.
 - A synthetic voice cannot match a human actor's timing; a recorded take is a drop-in replacement
-  (`tools/intro/narration/voice_NN.ogg`, then step 5).
-- Changing a take's wording or speed changes its length; `IntroCues.lua` carries the lengths, so just rerun step 5.
+  (`tools/intro/narration/voice_NN.ogg`, then `check_audio.py --stamp` for its tag, then step 4).
+- Changing a take's wording or speed changes its length; `IntroCues.lua` carries the lengths, so just rerun step 4.
 - Only the real client proves the clips play and stay in sync with the scenes.
