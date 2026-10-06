@@ -23,4 +23,5 @@ read_globals = {
     "PlaySound", "PlaySoundFile", "RANDOM_ROLL_RESULT", "RandomRoll", "StopSound", "SOUNDKIT", "UIParent", "UISpecialFrames", "UnitChannelInfo", "UnitClass",
     "UnitExists", "UnitFullName", "UnitGUID", "UnitHealth", "UnitInRange", "UnitIsConnected", "UnitName",
     "BNGetInfo", "CreateFont", "GameTooltip", "GetNumGroupMembers", "UnitIsUnit", "StaticPopup_Show", "UnitSpellTargetName", "date", "issecretvalue", "time", "tinsert", "hooksecurefunc", "SendChatMessage", "C_SummonInfo",
+    "UnitIsAFK", "UnitIsGroupLeader",
 }

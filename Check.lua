@@ -24,7 +24,7 @@ end
 ----------------------------------------------------------------------
 -- The calls the addon depends on. required ones break something when missing; the optional one only costs a nicety.
 Check.REQUIRED = {
-    "C_SummonInfo.ConfirmSummon", "C_SummonInfo.CancelSummon", "hooksecurefunc", "RandomRoll", "SendChatMessage",
+    "C_SummonInfo.ConfirmSummon", "C_SummonInfo.CancelSummon", "hooksecurefunc", "RandomRoll", "C_ChatInfo.SendChatMessage",
     "C_Map.GetMapInfo", "C_Map.GetBestMapForUnit", "C_ChatInfo.SendAddonMessage", "C_Timer.NewTicker", "StaticPopup_Show",
 }
 Check.OPTIONAL = { "C_SummonInfo.GetSummonConfirmSummoner" }
@@ -259,7 +259,7 @@ Check.LIST = {
       expect = "the count on the admin's client, nothing on the friend's", fails = "no count (check both are on the same version)" },
     { id = "d-say", kind = "duo", title = "/sc week say sends one line to the group", 
       steps = { "In a party or raid, either person runs /sc week say.", "The other sees 'Summon Core: Week: ...' in party chat." },
-      expect = "the line arrives", fails = "SendChatMessage is blocked; the addon says so" },
+      expect = "the line arrives", fails = "C_ChatInfo.SendChatMessage is blocked; the addon says so" },
     { id = "d-silver", kind = "duo", title = "Silver paid by trade or mail is noticed (existing /sc probe)",
       steps = { "Zennit runs /sc probe, the friend trades him some silver, then he checks the Index's popup.", "See README, 'Seeing it arrive'." },
       expect = "a confirmation popup", fails = "the client hides trade or mail money; payments are marked by hand" },
