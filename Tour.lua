@@ -35,12 +35,20 @@ local LINES = {
     writ = "If you expect Zennit to refuse, play a writ before you cast, with /sc writ. You have two a week. If he declines, it costs him the points.",
     status = "Along the bottom, the Index reports how many records it holds, and who it is talking to.",
     commands = "Three commands are worth remembering. /sc rules, for the race in a minute. /sc intro, for the story. And /sc help, for everything else.",
+    popups = "Now and then, the Index will put something in front of you. Here is what to expect, so that none of it comes as a surprise.",
+    assist = "When you cast, and the Index cannot tell who helped, it asks. Tick the two who clicked. Ignore it, and it saves itself after twenty seconds, as ticked.",
+    dice = "If Zennit suggests dice, this appears. Press roll. Beat his roll, plus his edge, and the summons counts. Your helpers add to your roll.",
+    z_popups = "When someone summons you, the Index puts its form in front of you. Here is a copy, so that it comes as no surprise.",
+    z_summoning = "It says who summoned you, and where to, what it is worth, and how the week stands. You may simply answer the game's own prompt, and the Index takes that as your answer.",
+    z_choices = "Or choose here. Accept it. Decline it: the first decline each week is free. Name a price, in silver. Or roll the dice, three times a week.",
+    asks = "Once a week, the Index asks how the week went. One click, or close it to skip. Nobody sees who said what.",
     goodbye = "That concludes the tour. The Index thanks you for your attention, which it has noted. Go and summon someone. Preferably Zennit.",
 }
 Tour.LINES = LINES
 
 -- The tour, in order. tab: the window's tab to show (a Party section opens the Party tab on it); spot: what to outline
--- (Hub.Spot); only: "party" or "zennit", for the steps one side gets instead of the other.
+-- (Hub.Spot, or "demo" and "demo:<part>" for the popup on show); demo: a copy of a popup to show (DEMOS, below);
+-- only: "party" or "zennit", for the steps one side gets instead of the other.
 local STEPS = {
     { line = "hello", spot = "window" },
     { line = "nothing_new", only = "party" },
@@ -58,8 +66,15 @@ local STEPS = {
     { line = "story", tab = "story", spot = "tab:story" },
     { line = "sync", tab = "sync", spot = "tab:sync" },
     { line = "tools", tab = "tools", spot = "tab:tools" },
-    { line = "writ", only = "party" },
     { line = "status", spot = "status" },
+    { line = "popups", only = "party" },
+    { line = "assist", demo = "assist", spot = "demo", only = "party" },
+    { line = "dice", demo = "dice", spot = "demo:roll", only = "party" },
+    { line = "z_popups", demo = "summoning", spot = "demo", only = "zennit" },
+    { line = "z_summoning", demo = "summoning", spot = "demo:text", only = "zennit" },
+    { line = "z_choices", demo = "summoning", spot = "demo:buttons", only = "zennit" },
+    { line = "asks", demo = "asks", spot = "demo" },
+    { line = "writ", only = "party" },
     { line = "commands" },
     { line = "goodbye", spot = "window" },
 }
@@ -83,6 +98,114 @@ end
 local panel, text, counter, playBtn, glow
 local steps, at, t, playing = {}, 1, 0, false
 local handle, missing
+
+----------------------------------------------------------------------
+-- The popups, as copies: the same look and wording as the real ones, with made-up names and buttons that do nothing. The
+-- real ones file a summons or make a real /roll, which a tour must not do. Each has its parts named for the outline.
+----------------------------------------------------------------------
+local demos = {}
+local function demoWindow(title, width, height)
+    local w = T.Window(nil, width, height, { strata = "DIALOG" })
+    w.TitleText:SetText(title)
+    w.CloseButton:SetScript("OnClick", nil)
+    local note = T.Text(w, 16, "dim")
+    note:SetPoint("BOTTOMRIGHT", -10, -18)
+    note:SetText("THE TOUR'S COPY: NOTHING IS FILED")
+    w.parts = {}
+    return w
+end
+local function demoText(w, x, y, width, height, words)
+    local fs = T.Text(w, 18, "green")
+    fs:SetPoint("TOPLEFT", x, y)
+    fs:SetSize(width, height)
+    fs:SetJustifyV("TOP")
+    fs:SetText(words)
+    return fs
+end
+local function demoButton(w, label, width, style)
+    return T.Button(w, label, width, 28, function() end, style)
+end
+
+local DEMOS = {
+    -- the caster's prompt when the helpers are not clear (Prompt.lua)
+    assist = function()
+        local w = demoWindow("SUMMON LOGGED", 320, 230)
+        demoText(w, 16, -36, 288, 44, "Who helped with the summon of " .. T.Paint("cyan", "Zennit") .. "? Tick up to two ritual assistants.")
+        for i, name in ipairs({ "Helper", "Another", "Bystander" }) do
+            local cb = T.Check(w, 280)
+            cb:SetPoint("TOPLEFT", 20, -82 - (i - 1) * 26)
+            cb.Text:SetText(name)
+            cb:SetChecked(i < 3)
+            cb:SetScript("OnClick", function(self) self:SetChecked(i < 3) end)
+        end
+        local ok = demoButton(w, "CONFIRM (20)", 110, "primary")
+        ok:SetPoint("BOTTOMLEFT", 16, 12)
+        demoButton(w, "SAVE UNCONFIRMED", 150):SetPoint("BOTTOMRIGHT", -16, 12)
+        return w
+    end,
+    -- the summoner's side when Zennit suggests dice (Respond.lua)
+    dice = function()
+        local w = demoWindow("DICE!", 400, 200)
+        demoText(w, 18, -40, 364, 90, "Zennit suggests dice for your summon of him, and has rolled 62.\n\nRoll 1-100: beat his roll plus his edge and "
+            .. "the summon counts. A tie goes to him. Your helpers add to your roll.")
+        w.parts.roll = demoButton(w, "ROLL 1-100", 170, "primary")
+        w.parts.roll:SetPoint("BOTTOMLEFT", 18, 16)
+        demoButton(w, "CLOSE", 170):SetPoint("BOTTOMRIGHT", -18, 16)
+        return w
+    end,
+    -- Zennit's form when he is summoned (Respond.lua)
+    summoning = function()
+        local w = demoWindow("A SUMMONING!", 440, 380)
+        w.parts.text = demoText(w, 18, -40, 404, 190, T.Paint("cyan", "Tester") .. " has summoned you to Sentinel Hill.\n("
+            .. "zone, " .. T.Paint("amber", "3 points") .. ". Helped by Helper.)\nIf you decline it in the game it is free: you have 1 free "
+            .. "decline this week.\nThe Index's tally for the week: you lead by 2, 3 of 10 filed, 3 dice left. How will you deal with it? "
+            .. "(Ignore it and it counts as accepted.)")
+        local labels = { "ACCEPT IT", "DECLINE (FREE)", "NAME A PRICE, IN SILVER (NO RECEIPT)", "ROLL THE DICE (1-100)" }
+        local first, last
+        for i, label in ipairs(labels) do
+            local b = demoButton(w, label, 404, i == 1 and "primary" or nil)
+            b:SetPoint("TOPLEFT", 18, -40 - 190 - 6 - (i - 1) * 34)
+            first, last = first or b, b
+        end
+        w.parts.buttons = CreateFrame("Frame", nil, w)
+        w.parts.buttons:SetPoint("TOPLEFT", first, "TOPLEFT")
+        w.parts.buttons:SetPoint("BOTTOMRIGHT", last, "BOTTOMRIGHT")
+        return w
+    end,
+    -- the weekly question (Feelings.lua)
+    asks = function()
+        local w = demoWindow("THE INDEX ASKS", 520, 150)
+        demoText(w, 16, -36, 488, 50, ST.Gag.IsZennit()
+            and "The Index is gathering opinions. How was being summoned last week? (Only the admin sees the count.)"
+            or "The Index is gathering opinions. How was last week? (Nobody sees who said what. Close this to skip.)")
+        local labels = ST.Gag.IsZennit() and { "BRING IT ON", "FINE", "TOO MUCH" } or { "GOOD FUN", "IT WAS FINE", "NOT FOR ME" }
+        for i, label in ipairs(labels) do demoButton(w, label, 156, "normal"):SetPoint("BOTTOMLEFT", 16 + (i - 1) * 164, 16) end
+        return w
+    end,
+}
+
+local function demo(name)
+    local zennit = ST.Gag.IsZennit() -- the weekly question is worded for one side or the other (and test mode can switch)
+    if not demos[name] or demos[name].zennit ~= zennit then
+        if demos[name] then demos[name]:Hide() end
+        demos[name] = DEMOS[name]()
+        demos[name].zennit = zennit
+    end
+    return demos[name]
+end
+
+local function hideDemos()
+    for _, w in pairs(demos) do w:Hide() end
+end
+
+-- The region a step outlines: a part of the window, or of the popup it shows. Builds the popup if need be (not shown).
+function Tour.Spot(step)
+    if not step.spot then return nil end
+    if step.spot == "demo" then return demo(step.demo) end
+    local part = step.spot:match("^demo:(%w+)$")
+    if part then return demo(step.demo).parts[part] end
+    return ST.Hub.Spot(step.spot)
+end
 
 local function stopVoice()
     if handle then
@@ -112,7 +235,14 @@ local function go(i)
             break
         end
     end
-    outline(s.spot and ST.Hub.Spot(s.spot))
+    hideDemos()
+    if s.demo then
+        local w = demo(s.demo)
+        w:ClearAllPoints()
+        w:SetPoint("CENTER", ST.Hub.Window(), "CENTER", 0, 20)
+        w:Show()
+    end
+    outline(Tour.Spot(s))
     counter:SetText(string.format("TOUR.EXE  %d/%d", at, #steps))
     stopVoice()
     if playing and not muted() then
@@ -173,7 +303,7 @@ local function build()
 
     -- the outline: amber, over the window, pulsing gently
     glow = CreateFrame("Frame", nil, UIParent)
-    glow:SetFrameStrata("DIALOG")
+    glow:SetFrameStrata("FULLSCREEN_DIALOG") -- over the popups on show too
     glow:EnableMouse(false)
     T.Border(glow, "amber", 1, 3)
     T.Border(glow, "amber", 0.3, 3, 3)
@@ -207,6 +337,7 @@ local function build()
         playing = false
         stopVoice()
         glow:Hide()
+        hideDemos()
     end)
 end
 

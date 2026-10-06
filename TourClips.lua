@@ -21,5 +21,12 @@ ST.tourClips = {
     writ = 12.60,
     status = 6.60,
     commands = 15.20,
+    popups = 9.20,
+    assist = 12.70,
+    dice = 13.70,
+    z_popups = 9.00,
+    z_summoning = 11.70,
+    z_choices = 15.90,
+    asks = 10.60,
     goodbye = 12.80,
 }
