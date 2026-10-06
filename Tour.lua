@@ -18,7 +18,7 @@ local CPS = 18       -- typing speed when a line has no recording (characters a 
 local LINES = {
     hello = "This is a short tour of Summon Core, conducted by the Index, which has been asked to be helpful and is doing its best. Close it whenever you like. The Index will not take it personally.",
     nothing_new = "First, the good news. You do not have to do anything new. Cast the ritual and click the portal as you always have, and the Index notices on its own.",
-    caster = "One thing to remember. Whoever casts the ritual needs Summon Core, or the summons is not filed. The helpers are credited either way.",
+    caster = "One thing to remember. A summons of Zennit is filed if the caster or Zennit has Summon Core. The helpers are credited if the caster has it, or if anyone at the portal does.",
     z_nothing_new = "First, the good news. You do not have to do anything new. Answer the game's summons prompt as you always have, and the Index takes that as your answer.",
     window = "This is the window. Type /sc and it opens. Everything the Index knows about you is in here, which is either reassuring or not.",
     season = "Along the top runs the season. Zennit in pink, the group in cyan. Each block is a week won, and the first side to five takes the season.",
@@ -52,6 +52,7 @@ local LINES = {
     z_paid = "When silver arrives by trade or by mail, the Index notices, and offers to mark the summons paid. Say yes, and the tab is settled.",
     reset = "Very rarely, the admin may ask everyone to start the Index afresh. Press reset only if the admin has told you it is coming. Otherwise, cancel.",
     goodbye = "That concludes the tour. The Index thanks you for your attention, which it has noted. Go and summon someone. Preferably Zennit.",
+    z_goodbye = "That concludes the tour. The Index thanks you for your attention, which it has noted. Go and summon someone. Preferably not Zennit.",
 }
 Tour.LINES = LINES
 
@@ -95,7 +96,8 @@ local STEPS = {
     { line = "writ", only = "party" },
     { line = "week_say", spot = "week", only = "party" },
     { line = "commands" },
-    { line = "goodbye", spot = "window" },
+    { line = "goodbye", spot = "window", only = "party" },
+    { line = "z_goodbye", spot = "window", only = "zennit" },
 }
 
 -- The steps this client gets: Zennit's lines on his client, the party's on everyone else's.

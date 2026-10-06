@@ -664,7 +664,7 @@ function Week.RulesCard(start)
             Week.ClosesText(start)),
         string.format("The season: win %d weeks to take its finale. A week he wins is followed by his week off: summons of him disturb his leave, which the race ignores but the postcards and the titles do not.",
             Week.WINS),
-        "Who needs Summon Core: whoever casts the ritual, for the summons to count, and Zennit, for his answers to be his. Helpers are credited either way.",
+        "Who needs Summon Core: the caster or Zennit, for a summons of him to be filed, and Zennit, for his answers to be his. Helpers are credited if the caster has it, or anyone at the portal does.",
     }
     local whim = Week.WhimLine(start)
     card[#card + 1] = whim and ("This week's whim: " .. whim) or "No whim this week."
