@@ -7,7 +7,7 @@ ST.version = "0.23.1"
 local DB_VERSION = 1
 
 local function print_(msg)
-    print("|cff33ccffST|r " .. tostring(msg))
+    print("|cff33ccffSC|r " .. tostring(msg))
 end
 ST.print = print_
 
