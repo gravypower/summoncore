@@ -554,7 +554,8 @@ The scene grew, so it is capped at two lines of memory (the silver counts as one
 `from` (the first week of that season) and the season in progress a `since`.
 
 **Not built.** B (the Index's voice in the five lines of a normal summon) and E (new chapters for season 2) wait for the
-playtest: B adds reading to chat the group may not want, and E is the largest piece of work.
+playtest: B adds reading to chat the group may not want, and E is the largest piece of work. E is now outlined in
+`design/season-two.md` (2026-10-06): one arc, "Zennit and the Audit", with an opening for each of season one's endings.
 
 **To decide before building**
 - Which feeling matters most at the end of a season: the group's pride, affection for Zennit, or the joke? (Asked at the playtest.)
