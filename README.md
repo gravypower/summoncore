@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.25.2, work in progress**. See [Status](#status) for what has and has
+Status: **v0.25.3, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -17,6 +17,10 @@ then offers each new release as an update. It installs the newest GitHub release
 it is released: push a tag `v<version>`, or run Actions > Release on master (it tags the TOC version itself). Each
 release carries a `release.json` (the BigWigs packager's metadata) that lists the zip for every game flavour, which is
 what lets WowUp offer it to a Classic Beta install.
+
+**The icon** is `Media/icon.tga` (256x256), which `## IconTexture` in the TOC shows next to the addon in the game's
+AddOns list (where the client supports it). `tools/make_icon.ps1` draws it, with a 512 px PNG in `tools/icon/`. WowUp
+shows the GitHub owner's avatar for an addon installed from GitHub, not this file.
 
 Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`SummonTrackerDB`).
 
