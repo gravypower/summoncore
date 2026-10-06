@@ -22,4 +22,8 @@ ST.ledgerClips = {
     week_closed = 8.40,
     week_none = 6.90,
     evidence = 4.00,
+    whim_distracted = 8.70,
+    whim_attentive = 8.40,
+    whim_feast = 8.70,
+    whim_tired = 9.30,
 }

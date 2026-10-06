@@ -517,6 +517,22 @@ add("the Index today: the intro's last scene follows the season, and holds back 
     return key == "g1" and L.ArtKey({ chapters = {} }) == nil, "standing, trunks, last wins and last season all follow the tree"
 end)
 
+add("the Index today: each whim has a recording that says what the whim now says, and a changed whim falls silent", function()
+    local L, W = ST.Ledger, ST.Week
+    local stale = {}
+    for id in pairs(W.WHIMS) do
+        if L.LINES["whim_" .. id] ~= "This week's whim: " .. W.WhimSentence(id) then stale[#stale + 1] = id end
+        if L.WhimClip("This week's whim: " .. W.WhimSentence(id)) ~= "whim_" .. id then stale[#stale + 1] = id .. " (no clip)" end
+    end
+    if #stale > 0 then
+        table.sort(stale)
+        return false, "the recorded whim line no longer matches the rules for: " .. table.concat(stale, ", ")
+            .. " (update LINES in Ledger.lua and run tools/intro/build_ledger_audio.py --stale)"
+    end
+    local good = L.WhimClip("This week's whim: The Index is distracted. Zennit's edge on the dice is 6 lower this week.") == nil
+    return good, "a whim whose number moved must be typed and silent, not read out wrongly"
+end)
+
 add("the Index today: every fixed line has a recorded clip, and a clip sets how long its line lasts", function()
     local L = ST.Ledger
     local missing = {}
