@@ -12,6 +12,12 @@ Copy this folder to `World of Warcraft\_classic_beta_\Interface\AddOns\summoncor
 match `summoncore.toc`). The TOC uses interface `16001`, which matches client 1.60.1 build 70205. If the
 addon does not appear, enable "Load out of date AddOns".
 
+**With WowUp:** Get Addons > Install from URL, paste `https://github.com/gravypower/summoncore`, and install. WowUp
+then offers each new release as an update. It installs the newest GitHub release, so a version only reaches WowUp once
+it is released: push a tag `v<version>`, or run Actions > Release on master (it tags the TOC version itself). Each
+release carries a `release.json` (the BigWigs packager's metadata) that lists the zip for every game flavour, which is
+what lets WowUp offer it to a Classic Beta install.
+
 Saved data lives in `WTF\Account\<account>\SavedVariables\summoncore.lua` (`SummonTrackerDB`).
 
 **Who needs it.** Only the caster's client sees a Ritual of Summoning, so whoever casts should run Summon Core for the summons to be
