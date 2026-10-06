@@ -468,7 +468,10 @@ add("tour: every step has a line and a recording, every outline finds its part o
         for i, s in ipairs(list) do
             if not ST.Tour.LINES[s.line] then bad[#bad + 1] = i .. ": no line " .. tostring(s.line) end
             if not (ST.tourClips and ST.tourClips[s.line]) then bad[#bad + 1] = i .. ": no recording of " .. s.line end
-            if s.spot and not ST.Hub.Spot(s.spot) then bad[#bad + 1] = i .. ": nothing at " .. s.spot end
+            if s.popup then -- a game dialog: shown only while its step plays, so check it names a real one
+                local which = ST.Tour.POPUPS[s.popup] and ST.Tour.POPUPS[s.popup]()
+                if not (which and StaticPopupDialogs[which]) then bad[#bad + 1] = i .. ": no dialog for " .. s.popup end
+            elseif s.spot and not ST.Tour.Spot(s) then bad[#bad + 1] = i .. ": nothing at " .. s.spot end
         end
     end
     local function has(list, id)
