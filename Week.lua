@@ -124,12 +124,65 @@ function Week.NewRules(start)
     return start >= Week.RULES.from
 end
 
+-- Seasons started and stopped by the admin (/sc season start|stop). A stop ends the season in progress at once, with no
+-- finale, and the race counts no week until a start; a start begins a new season, 0 to 0, from the week it is made in.
+-- Kept in ST.db.seasonMarks as { [kind:time] = { kind, time } } and synced (Sync, "C"), so every client works out the same
+-- seasons whenever it hears of them. With no marks at all the season runs from the first summon, as it always has.
+local function marks()
+    ST.db.seasonMarks = ST.db.seasonMarks or {}
+    return ST.db.seasonMarks
+end
+
+-- Keeps a mark if it is new. Returns true when it was.
+function Week.PutMark(kind, t)
+    if (kind ~= "start" and kind ~= "stop") or type(t) ~= "number" then return false end
+    local key = kind .. ":" .. t
+    if marks()[key] then return false end
+    marks()[key] = { kind = kind, time = t }
+    return true
+end
+
+-- Every mark, oldest first.
+function Week.Marks()
+    local list = {}
+    for _, m in pairs(marks()) do list[#list + 1] = m end
+    table.sort(list, function(a, b)
+        if a.time ~= b.time then return a.time < b.time end
+        return a.kind > b.kind -- a stop and a start made in the same second: the start is the later word
+    end)
+    return list
+end
+
+-- The newest mark, or nil.
+function Week.LastMark()
+    local list = Week.Marks()
+    return list[#list]
+end
+
+-- Is a season running in the week starting at `start`? The last mark made before the week ended decides; no mark, it is.
+function Week.Running(start)
+    local last
+    for _, m in ipairs(Week.Marks()) do
+        if m.time < start + LENGTH then last = m else break end
+    end
+    return not last or last.kind == "start"
+end
+
+-- Was a mark made in the week starting at `start`? (A season started that week owes nothing to the week before.)
+function Week.MarkIn(start)
+    for _, m in ipairs(Week.Marks()) do
+        if m.time >= start and m.time < start + LENGTH then return true end
+    end
+    return false
+end
+
 -- Is the week starting at `start` Zennit's week off? From the new rules on, a week off is real: he won the week before,
 -- so summons of him are filler (logged, answered and gagged as usual, but the race ignores them) and nobody wins the
 -- week: a win for Zennit is a pause, not a head start. The search back through the weeks ends at the first real summon
 -- or at a week whose winner is frozen.
 function Week.IsOff(start)
     if not Week.NewRules(start) then return false end
+    if not Week.Running(start) or Week.MarkIn(start) then return false end -- no race, or a season started this week
     local prev, first = start - LENGTH, nil
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and (not first or ev.time < first) then first = ev.time end
@@ -143,6 +196,7 @@ end
 -- Why a summon of Zennit in the week starting at `start` does not count, and what the Index files it under. `you` words
 -- it for Zennit's own client.
 function Week.Why(start, you)
+    if not Week.Running(start) then return "No season is running", "between seasons" end
     if Week.IsOff(start) then return you and "It is your week off" or "It is his week off", "disturbing his leave" end
     if Week.IsClosed(start) then
         return you and "You have closed the Index for the week" or "He has closed the Index for the week", "enthusiasm"
@@ -178,7 +232,7 @@ end
 
 -- Writs the group can still play in the week starting at `start` (none outside the new rules, or in his week off).
 function Week.WritsLeft(start)
-    if not Week.NewRules(start) or Week.IsOff(start) then return 0 end
+    if not Week.NewRules(start) or Week.IsOff(start) or not Week.Running(start) then return 0 end
     return math.max(0, Week.RULES.writs - #Week.Writs(start))
 end
 
@@ -270,7 +324,8 @@ function Week.LastCall(now)
     now = now or time()
     local start = Week.Start(now)
     local left = start + LENGTH - now
-    if Week.RULES.lastCall and left > 0 and left <= Week.RULES.lastCall and Week.NewRules(start) and not Week.IsOff(start) then
+    if Week.RULES.lastCall and left > 0 and left <= Week.RULES.lastCall and Week.NewRules(start) and not Week.IsOff(start)
+        and Week.Running(start) then
         return left
     end
 end
@@ -296,7 +351,7 @@ end
 function Week.Counts(ev)
     local start = Week.Start(ev.time)
     if not Week.NewRules(start) then return true end
-    if not isZennit(ev.target) or Week.IsOff(start) then return false end
+    if not isZennit(ev.target) or Week.IsOff(start) or not Week.Running(start) then return false end
     local list, counted, closed = filed(start)
     local before = 0
     for i, s in ipairs(list) do
@@ -344,11 +399,12 @@ end
 -- The score for the week starting at `start`: { start, group, zennit, summons, winner, over, new, counted, extra,
 -- closed }. winner is "zennit", "group", or nil when there were no summons that week. Under the new rules, counted is
 -- how many summons of Zennit count toward the week, extra how many came after those, and closed whether he closed
--- the Index.
+-- the Index. paused: no season was running that week (Week.Running), so nothing counts and nobody wins it.
 function Week.Score(start)
     local new = Week.NewRules(start)
     local r = { start = start, group = 0, zennit = new and Week.RULES.headstart or Week.HEADSTART, summons = 0,
-        over = time() >= start + LENGTH, new = new, counted = 0, extra = 0, off = new and Week.IsOff(start) }
+        over = time() >= start + LENGTH, new = new, counted = 0, extra = 0, off = new and Week.IsOff(start),
+        paused = not Week.Running(start) }
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and ev.time >= start and ev.time < start + LENGTH then
             r.summons = r.summons + 1
@@ -359,7 +415,7 @@ function Week.Score(start)
         end
     end
     if new then
-        local list, counted, closed = filed(start, r.off)
+        local list, counted, closed = filed(start, r.off or r.paused)
         r.closed = closed
         for i, s in ipairs(list) do
             if i <= counted then
@@ -371,9 +427,11 @@ function Week.Score(start)
             end
         end
     end
-    if r.summons > 0 and not r.off then r.winner = r.zennit >= r.group and "zennit" or "group" end
+    if r.summons > 0 and not r.off and not r.paused then r.winner = r.zennit >= r.group and "zennit" or "group" end
+    -- a frozen winner stands, unless the admin's marks (which can arrive late) say the week was not raced, or was after all
     local f = frozen() and frozen()[start]
-    if f then r.winner = f ~= "none" and f or nil end
+    if f and f ~= "paused" and not r.paused then r.winner = f ~= "none" and f or nil end
+    if r.paused then r.winner = nil end
     return r
 end
 
@@ -390,7 +448,8 @@ function Week.Freeze()
     local start = Week.Start(first)
     while Week.Closed(start) do
         if not settings.weekFrozen[start] then
-            settings.weekFrozen[start] = Week.Score(start).winner or "none"
+            local r = Week.Score(start)
+            settings.weekFrozen[start] = r.winner or (r.paused and "paused") or "none"
         end
         start = start + LENGTH
     end
@@ -416,6 +475,10 @@ end
 
 -- One line saying how the week is going, or how it ended.
 function Week.Describe(r)
+    if r.paused then
+        return r.summons == 0 and "no season running, and no summons" or
+            string.format("no season running, so the race skipped the week (%d summons filed under 'between seasons')", r.summons)
+    end
     if r.off then
         return (r.over and "Zennit's week off: " or "Zennit's week off, ") .. (r.extra == 0 and "nobody summoned him" or
             string.format("his leave disturbed %d time%s", r.extra, r.extra == 1 and "" or "s")) ..
@@ -430,23 +493,40 @@ end
 
 -- The season is a race: the first side to WINS weekly wins takes the finale, then the count starts again.
 -- Worked out from the log, one completed week at a time, so every client reaches the same story.
--- Returns { zennit, group (wins so far this season), since (the season's first week), finales = { { start, side, from } }, chapters = { { start, side, n, key } } }
--- where key is the story chapter that win plays: z<n> or g<n> (n = 5 is the finale).
+-- Returns { zennit, group (wins so far this season), since (the season's first week), running (false once the admin has
+-- stopped it), finales = { { start, side, from } }, ended = { { from, to, zennit, group } } (seasons the admin stopped
+-- before a finale), chapters = { { start, side, n, key } } } where key is the story chapter that win plays: z<n> or g<n>
+-- (n = 5 is the finale).
 Week.WINS = 5
 
 function Week.Season(now)
     now = now or time()
-    local s = { zennit = 0, group = 0, finales = {}, chapters = {} }
+    local s = { zennit = 0, group = 0, finales = {}, chapters = {}, ended = {}, running = true }
     local first
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and (not first or ev.time < first) then first = ev.time end
     end
+    local list = Week.Marks()
+    if list[1] and list[1].time <= now and (not first or list[1].time < first) then first = list[1].time end
     if not first then return s end
     local start, current = Week.Start(first), Week.Start(now)
     s.since = start -- the first week of the season in progress (each finale lists its own as `from`)
-    while start < current do
-        local r = Week.Score(start)
-        local side = r.winner
+    local m = 1
+    while start <= current do
+        -- the admin's marks in this week (only those already made, when `now` is in it): the last one decides
+        local last
+        while list[m] and list[m].time < start + LENGTH and list[m].time <= now do
+            last = list[m]
+            m = m + 1
+        end
+        if last then
+            if s.running and (s.zennit > 0 or s.group > 0) then
+                s.ended[#s.ended + 1] = { from = s.since, to = start, zennit = s.zennit, group = s.group }
+            end
+            s.zennit, s.group, s.since, s.running = 0, 0, start, last.kind == "start"
+        end
+        local r = start < current and s.running and Week.Score(start)
+        local side = r and r.winner
         if side then
             s[side] = s[side] + 1
             s.chapters[#s.chapters + 1] = { start = start, side = side, n = s[side], key = (side == "zennit" and "z" or "g") .. s[side] }
@@ -738,6 +818,7 @@ function Week.StatusLine(start, you)
     start = start or Week.Start()
     if not Week.NewRules(start) then return nil end
     local r = Week.Score(start)
+    if r.paused then return "Week: no season is running, so the race is off until the admin starts one." end
     if r.off then return "Week: Zennit's week off, so the race is off; summons of him disturb his leave, and still earn postcards and titles." end
     local parts = { leadText(r, you), string.format("%d of %d filed", r.counted, Week.RULES.cap),
         r.closed and "the Index is closed" or diceText(Week.DiceLeft(start)) }

@@ -648,8 +648,9 @@ local function buildTools(f)
         show(table.concat({
             "This week: " .. W.Describe(W.Score(W.Start())),
             "Last week: " .. W.Describe(W.Score(W.Start() - 7 * 86400)),
-            string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
-                season.group, W.WINS, #season.finales),
+            season.running and string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit,
+                W.WINS, season.group, W.WINS, #season.finales)
+                or string.format("Season: none is running; the admin stopped the last one. Finales so far: %d.", #season.finales),
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",
         }, "\n"))
     end)
@@ -711,6 +712,17 @@ local function buildTools(f)
     end)
     tool(data, "RESET MY DATA...", function() ST.Reset.Ask(false) end, nil, "danger")
     tool(data, "RESET ALL...", function() ST.Reset.Ask(true) end, true, "danger")
+    -- the admin's account sees the addon as a player does: this one switch stays in reach while it is on
+    switch(data, "VIEW AS PLAYER", function() return ST.db.settings.viewAsPlayer == true end, function(v)
+        ST.db.settings.viewAsPlayer = v or nil
+        Hub.Refresh()
+    end, true)
+    data.items[#data.items].account = true
+
+    -- the season, for everyone: the admin starts a new one or stops the one in progress (each asks first)
+    local season = group(general, "THE SEASON (ADMIN)", true)
+    tool(season, "START NEW SEASON...", function() ST.Reset.Season("start") end, true)
+    tool(season, "STOP SEASON...", function() ST.Reset.Season("stop") end, true, "danger")
 
     -- TESTING ------------------------------------------------------------------------------------------------------
     local testing = section("testing")
@@ -844,14 +856,14 @@ local function buildTools(f)
     button(checkRow, "COPY", 598, 0, 60, function() ST.Check.Copy(shown) end)
 
     -- Lays a section out top to bottom for this player, and returns how far down it ran.
-    local function layout(sec, admin)
+    local function layout(sec, admin, account) -- account: the admin's own account, even while viewing as a player
         local y = -6
         for _, block in ipairs(sec.blocks) do
             local visible = admin or not block.admin
             if block.kind == "group" then
                 local n = 0
                 for _, item in ipairs(block.items) do
-                    local on = visible and (admin or not item.admin)
+                    local on = visible and (admin or not item.admin or (item.account and account))
                     item.widget:SetShown(on)
                     if on then
                         item.widget:ClearAllPoints()
@@ -904,7 +916,7 @@ local function buildTools(f)
         local admin = ST.IsAdmin()
         for _, s in ipairs(TOOL_SECTIONS) do
             sectionButtons[s[1]]:SetShown(admin or not s[3]) -- an admin-only section is the last, so no gap is left
-            layout(sections[s[1]], admin)
+            layout(sections[s[1]], admin, ST.IsAdminAccount())
         end
         for _, s in ipairs(TOOL_SECTIONS) do
             if s[1] == selected and s[3] and not admin then return tools.select("general") end
@@ -998,7 +1010,9 @@ local function refreshChrome()
         m.count:SetText(string.format("%d/%d", wins, W.WINS))
     end
     local immune, untilT = W.Immune(time())
-    if immune then
+    if not season.running then
+        chrome.week:SetText(T.Paint("amber", "NO SEASON RUNNING · THE RACE IS OFF"))
+    elseif immune then
         chrome.week:SetText(T.Paint("amber", "ZENNIT IS ON HIS WEEK OFF UNTIL " .. date("%a %d %b", untilT):upper()))
     else
         local week = W.Score(W.Start())

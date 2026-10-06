@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.24.3"
+ST.version = "0.25.0"
 
 local DB_VERSION = 1
 
@@ -79,9 +79,29 @@ function ST.TagMatches(tag, expected)
     return tag ~= "" and tag:lower() == expected:lower()
 end
 
-function ST.IsAdmin()
+-- The admin's own account, whatever it is set to show.
+function ST.IsAdminAccount()
     return ST.TagMatches(ST.BattleTag(), ST.ADMIN_TAG)
 end
+
+-- The admin acting as one: the admin's account, unless it has switched to seeing the addon as a player does (/sc asplayer),
+-- which hides the admin's tools, help lines and spoilers until it is switched back.
+function ST.IsAdmin()
+    return ST.IsAdminAccount() and not (ST.db and ST.db.settings and ST.db.settings.viewAsPlayer)
+end
+
+-- A short hash of a BattleTag (case and stray spaces do not matter), or nil. Season commands carry the admin's (ST.ADMIN_HASH)
+-- so other clients know them for the admin's. The hash is worked out from a tag that is in this file, so anyone who reads it
+-- can stamp a message the same way: it keeps out mistakes and mischief, not a determined friend.
+function ST.TagHash(tag)
+    if type(tag) ~= "string" then return nil end
+    tag = tag:match("^%s*(.-)%s*$"):lower()
+    if tag == "" then return nil end
+    local h = 5381
+    for i = 1, #tag do h = (h * 33 + tag:byte(i)) % 4294967296 end
+    return string.format("%08x", h)
+end
+ST.ADMIN_HASH = ST.TagHash(ST.ADMIN_TAG)
 
 -- Zennit's own Battle.net account: it is Zennit whichever character he is playing.
 ST.ZENNIT_TAG = "Zennit#11523"
@@ -104,12 +124,24 @@ function ST.TagTest()
     for i, c in ipairs(cases) do
         if ST.TagMatches(c[1], c[2]) ~= c[3] then return false, "sample " .. i .. " matched wrongly" end
     end
+    -- the season stamp: the same for any spelling of a tag, different for another tag, nothing for no tag
+    if ST.TagHash(" GRAVYPOWER#1577 ") ~= ST.ADMIN_HASH or ST.TagHash("Gravypower#1578") == ST.ADMIN_HASH
+        or ST.TagHash("Zennit#11523") == ST.ADMIN_HASH or ST.TagHash("") or ST.TagHash(nil) or not ST.ADMIN_HASH:match("^%x+$") then
+        return false, "the BattleTag hash for season commands is wrong"
+    end
     -- as the game would report them: id, tag, ...
-    local saved = ST.bnGetInfo
+    local saved, savedView = ST.bnGetInfo, ST.db and ST.db.settings and ST.db.settings.viewAsPlayer
     local function report(tag) return function() return 1, tag end end
+    local function view(on) if ST.db and ST.db.settings then ST.db.settings.viewAsPlayer = on end end
     local out
+    view(nil)
     ST.bnGetInfo = report("Gravypower#1577")
     if not (ST.IsAdmin() and not ST.IsZennitAccount()) then out = "the admin account is not recognised" end
+    view(true)
+    if not out and ST.db and ST.db.settings and (ST.IsAdmin() or not ST.IsAdminAccount()) then
+        out = "viewing as a player does not hide the admin, or loses the account"
+    end
+    view(nil)
     ST.bnGetInfo = report("Zennit#11523")
     if not out and not (ST.IsZennitAccount() and not ST.IsAdmin()) then out = "Zennit's account is not recognised" end
     ST.bnGetInfo = report("Someone#1")
@@ -117,6 +149,7 @@ function ST.TagTest()
     ST.bnGetInfo = function() error("no Battle.net") end
     if not out and (ST.BattleTag() ~= nil or ST.IsAdmin()) then out = "a failing lookup is not handled" end
     ST.bnGetInfo = saved
+    view(savedView)
     if out then return false, out end
     return true, string.format("%d samples and 4 account lookups behave. Live: %s", #cases, ST.TagReport())
 end
@@ -125,7 +158,8 @@ end
 function ST.TagReport()
     local tag = ST.BattleTag()
     if not tag then return "BattleTag: the game does not report one (admin: no, Zennit's account: no)" end
-    return string.format("BattleTag %s: admin %s, Zennit's account %s", tag, ST.IsAdmin() and "yes" or "no",
+    return string.format("BattleTag %s: admin %s, Zennit's account %s", tag,
+        ST.IsAdminAccount() and (ST.IsAdmin() and "yes" or "yes (viewing as a player)") or "no",
         ST.IsZennitAccount() and "yes" or "no")
 end
 
@@ -462,8 +496,12 @@ function commands.week(rest)
             W.WritsLeft(W.Start()), W.RULES.writs))
     end
     local season = W.Season()
-    print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
-        season.group, W.WINS, #season.finales))
+    if season.running then
+        print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
+            season.group, W.WINS, #season.finales))
+    else
+        print_(string.format("Season: none is running; the admin stopped the last one. Finales so far: %d.", #season.finales))
+    end
     local facts = ST.Ledger.Facts(season)
     local leave = ST.Ledger.LeaveLine(facts)
     if leave then print_(leave) end
@@ -588,6 +626,29 @@ function commands.admin()
     print_(ST.TagReport())
 end
 
+-- The season: anyone can ask whether one is running; the admin starts one (0 to 0, from this week) or stops the one in progress.
+function commands.season(rest)
+    local kind = (rest or ""):lower()
+    if kind == "start" or kind == "stop" then return ST.Reset.Season(kind) end
+    if ST.Week.Running(ST.Week.Start()) then
+        local s = ST.Week.Season()
+        print_(string.format("a season is running: Zennit %d, the group %d, first to %d.", s.zennit, s.group, ST.Week.WINS))
+    else
+        print_("no season is running: the race counts nothing until the admin starts one.")
+    end
+    if ST.IsAdmin() then print_("/sc season start begins a new season; /sc season stop ends this one now (both ask first)") end
+end
+
+-- The admin's account sees the addon as a player does, and back (the switch is the account's, so it works while on).
+function commands.asplayer()
+    if not ST.IsAdminAccount() then return print_("that is an admin tool") end
+    ST.db.settings.viewAsPlayer = not ST.db.settings.viewAsPlayer or nil
+    print_(ST.db.settings.viewAsPlayer and
+        "viewing as a player: the admin's tools, help lines and spoilers are hidden. /sc asplayer again to switch back." or
+        "viewing as the admin again.")
+    if ST.Hub then ST.Hub.Refresh() end
+end
+
 -- /sc reset - wipes this client's summons, badges and story progress (asks first).
 -- /sc reset all - the admin also asks every other Summon Core user in the party, raid and guild to do the same.
 function commands.reset(rest)
@@ -643,6 +704,9 @@ local HELP = {
     { "zennit", "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)" },
     { "zennit", "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office" },
     { "admin", "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's" },
+    { "admin", "/sc asplayer - see the addon as a player does (admin tools, help lines and spoilers hidden); again to switch back" },
+    "/sc season - whether a season is running",
+    { "admin", "/sc season start|stop - begin a new season (0 to 0, from this week) or end this one now, for everyone" },
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [say|copy|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, copy opens the same line in a window you can copy from, login says this week's login lines again, a key plays that chapter of the story",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",

@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.24.3, work in progress**. See [Status](#status) for what has and has
+Status: **v0.25.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -46,6 +46,8 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
 | `/sc admin` | What the game reports as this account's BattleTag, and whether it is the admin's or Zennit's |
 | `/sc reset [all]` | Wipe this client's summons, badges and story (it asks first). `all` is admin only: it asks everyone else to do the same |
+| `/sc season [start\|stop]` | Whether a season is running. `start` and `stop` are admin only (each asks first): `stop` ends the season in progress now, with no finale; `start` begins a new one, 0 to 0, from this week. Everyone's client hears of it, now or at its next hello. Also Tools > General > **The season** |
+| `/sc asplayer` | Admin's account only: see the addon as a player does (admin tools, help lines and spoilers hidden), and back. Also Tools > General > **View as player** |
 | `/sc export`, `/sc import` | Import / Export window (copy-paste strings of the summon log) |
 | `/sc sync` | Send a HELLO to party and guild, show sync status |
 | `/sc synctest` | Run the sync self-test with simulated clients (scratch data only) |
@@ -144,11 +146,13 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts), `X` (a request to reset), `F` (how a player felt about a week, kept only by Zennit's and the admin's clients), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) and `W` (what a group member saw of a ritual, kept only by Zennit's client: see below). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
+alts), `X` (a request to reset), `F` (how a player felt about a week, kept only by Zennit's and the admin's clients), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) `W` (what a group member saw of a ritual, kept only by Zennit's client: see below) and `C` (the admin started or stopped
+a season: see [The season](#the-season)). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from
-Zennit, and the last reset time, so a peer notices a missing summon, a changed answer or a missed reset.
+Zennit, the last reset time and the time of the newest season mark, so a peer notices a missing summon, a changed answer,
+a missed reset or a missed season start or stop (season marks are sent in reply to its `R`).
 
 Merge rules:
 - Same event ID: keep the confirmed copy; if both are (or neither is), keep the earlier write.
@@ -472,11 +476,21 @@ All ten chapters are written (scenes 11 to 32). Zennit's track ends with him bec
 the group's with Form 27B/6 turning out to be the receipt for the fifty silver, the Ritual getting its closure and Zennit
 being freed. `/sc week` shows the standing.
 
+The admin can also stop and start seasons (`/sc season stop|start`, or Tools > General > The season). A **stop** ends the
+season in progress at once, with no finale (`Week.Season` lists it under `ended`), and no week counts while none is running:
+summons are still filed, under "between seasons", and nobody wins the week. A **start** begins a new season, 0 to 0, from the
+week it is made in, with no week off carried over. Each is a mark (`ST.db.seasonMarks`, `Week.Marks`) that every client keeps
+and passes on (`C`), so a client that was offline catches up at its next hello and works out the same seasons. A mark is kept
+only if it carries `ST.ADMIN_HASH`, a hash of the admin's BattleTag. That tag is in `Core.lua`, so the stamp keeps out mistakes
+and mischief, not a friend who reads the code. With no marks at all the season runs from the first summon, as before.
+
 ### Admin and Zennit's account
 
 The debug tools (`/sc test`, `fake`, `fakeprompt`, `comic`, `synctest`, `debug`, `gag`, `zennit` test mode, `respond test`, and the
 matching buttons in the window) and every chapter of the story not yet reached by the season are for the admin's Battle.net
-account only (`ST.ADMIN_TAG` in `Core.lua`). `/sc admin` says whether this account is the admin. Zennit's own account
+account only (`ST.ADMIN_TAG` in `Core.lua`). `/sc admin` says whether this account is the admin. `/sc asplayer` (Tools >
+General > View as player) makes the admin's account see the addon as a player does, to check what friends see; that one
+switch stays in reach while it is on, and data kept only for the admin (how the week felt) is still kept. Zennit's own account
 (`ST.ZENNIT_TAG`) is treated as Zennit whichever character he plays. The check runs on each player's own computer, so it keeps
 things out of the way but is not security.
 

@@ -11,6 +11,8 @@
 --                                           kept only by Zennit's and the admin's clients, shown as counts)
 --   V  WATCH    body: key                   (someone is showing the group a chapter of the story: z1..z5, g1..g5)
 --   W  WITNESS  body: caster|target|helpers|mapID|subzone|time|helping   (what a group member saw of a ritual, for Zennit's client)
+--   C  SEASON   body: kind|time|stamp       (the admin started or stopped a season; stamp: ST.TagHash of the sender's BattleTag,
+--                                           kept only when it is the admin's. Anyone may pass a mark on: the stamp travels with it)
 -- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote[|answer[|w[|by]]]
 -- A record filed by Zennit's client for a caster without the addon carries "by" (his name): its id starts with it, and only he
 -- can send or delete it (design/lenses.md, Accessibility, G).
@@ -298,9 +300,15 @@ function Sync.VersionNote(sender, theirs, mine)
         sender, theirs, mine)
 end
 
+-- When the newest season mark we hold was made (0 for none): a hello carries it, so a client that missed one asks for it.
+local function lastMarkTime()
+    local m = ST.Week.LastMark()
+    return m and m.time or 0
+end
+
 local function helloBody()
-    return string.format("%d|%d|%s|%d|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse(),
-        ST.db.resetAt or 0)
+    return string.format("%d|%d|%s|%d|%d|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse(),
+        ST.db.resetAt or 0, lastMarkTime())
 end
 
 function Sync.Hello(channel, target)
@@ -404,7 +412,7 @@ end
 
 -- Keeps an answer from `sender`, if this client is one that keeps them. One answer per person per week: a later one replaces it.
 function Sync.PutFeeling(sender, week, role, n)
-    if not (ST.Gag.IsZennit() or ST.IsAdmin()) then return "ignored" end
+    if not (ST.Gag.IsZennit() or ST.IsAdminAccount()) then return "ignored" end -- kept while viewing as a player too
     ST.db.settings.feelings = ST.db.settings.feelings or {}
     local all = ST.db.settings.feelings
     all[week] = all[week] or {}
@@ -517,6 +525,29 @@ function Sync.SendLines()
     end
 end
 
+----------------------------------------------------------------------
+-- Seasons (Week.Marks): the admin starts and stops them; every client keeps the marks and passes them on
+----------------------------------------------------------------------
+local function sendMark(m, channel, target)
+    enqueue(channel, target, "C", string.format("%s|%d|%s", m.kind, m.time, ST.ADMIN_HASH))
+end
+
+-- The admin's client: makes a mark ("start" or "stop") now and tells everyone. Returns the mark, or nil and why not.
+function Sync.MarkSeason(kind)
+    if not ST.IsAdminAccount() then return nil, "only the admin can start or stop a season" end
+    local last = ST.Week.LastMark()
+    local t = math.max(time(), last and last.time + 1 or 0) -- never two marks in one second, so the order is plain
+    if not ST.Week.PutMark(kind, t) then return nil, "that mark is already made" end
+    local m = { kind = kind, time = t }
+    for _, ch in ipairs(Sync.channels()) do sendMark(m, ch) end
+    return m
+end
+
+-- Whispers every mark we hold to someone who has fewer (in reply to their request).
+function Sync.SendMarks(target)
+    for _, m in ipairs(ST.Week.Marks()) do sendMark(m, "WHISPER", target) end
+end
+
 -- A deleted summon: only its caster can say so. `T` carries the id.
 function Sync.SendTombstone(id)
     for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "T", esc(id)) end
@@ -584,10 +615,12 @@ function Sync.OnMessage(text, channel, sender)
     local now = Sync.now()
 
     if typ == "H" then
-        local count, latest, respT, theirReset = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)|?(%d*)")
+        local count, latest, respT, theirReset, theirMark = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)|?(%d*)|?(%d*)")
         count, latest, respT, theirReset = tonumber(count), tonumber(latest), tonumber(respT) or 0, tonumber(theirReset) or 0
+        theirMark = tonumber(theirMark) or 0
         if not count then return "bad" end
         local myCount, myLatest, myResp = ST.Store.Count(), ST.Store.Latest(), ST.Store.LatestResponse()
+        local myMark = lastMarkTime()
         local actions = {}
         -- a friend on another version: say so once
         st.versionNoted = st.versionNoted or {}
@@ -600,13 +633,14 @@ function Sync.OnMessage(text, channel, sender)
             end
         end
         -- They may hold something we lack: ask for everything (set union makes repeats harmless).
-        if count > myCount or latest > myLatest or (count == myCount and latest ~= myLatest) or respT > myResp then
+        if count > myCount or latest > myLatest or (count == myCount and latest ~= myLatest) or respT > myResp
+            or theirMark > myMark then
             st.requested[sender] = now
             enqueue("WHISPER", sender, "R", tostring(ST.db.resetAt or 0)) -- never ask for what a reset removed
             actions[#actions + 1] = "request"
         end
         -- We hold more than they do: tell them so they can ask us.
-        if count < myCount or latest < myLatest or respT < myResp then
+        if count < myCount or latest < myLatest or respT < myResp or theirMark < myMark then
             if not st.lastHelloBack[sender] or now - st.lastHelloBack[sender] >= HELLO_BACK_COOLDOWN then
                 st.lastHelloBack[sender] = now
                 enqueue("WHISPER", sender, "H", helloBody())
@@ -636,6 +670,7 @@ function Sync.OnMessage(text, channel, sender)
         end
         Sync.SendTombstones(sender)
         Sync.SendCards(sender)
+        Sync.SendMarks(sender)
         return "batch:" .. sent
 
     elseif typ == "E" or typ == "B" then
@@ -730,6 +765,16 @@ function Sync.OnMessage(text, channel, sender)
         t = tonumber(t)
         if not key or not Sync.LineKey(key) or not t or t > time() + 86400 or #unesc(text) > Sync.LINE_MAX * 2 then return "bad" end
         return Sync.PutLine(key, unesc(text), t) and "stored" or "kept"
+
+    elseif typ == "C" then
+        -- the admin started or stopped a season: kept when the stamp is the admin's (not proof, see ST.TagHash)
+        local kind, t, stamp = body:match("^(%a+)|(%d+)|(%x+)$")
+        t = tonumber(t)
+        if not kind or (kind ~= "start" and kind ~= "stop") or not t or t > time() + 86400 then return "bad" end
+        if stamp ~= ST.ADMIN_HASH then return "rejected:stamp" end
+        if not ST.Week.PutMark(kind, t) then return "kept" end
+        if Sync.onSeason and not Sync.quiet then Sync.onSeason(kind, t, sender) end
+        return "stored"
 
     elseif typ == "W" then
         -- what a group member saw of a ritual: kept a few minutes on Zennit's client, for a summons whose caster has no addon
