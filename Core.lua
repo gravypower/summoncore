@@ -443,6 +443,11 @@ function commands.week(rest)
         ST.Trace("week say: " .. (ok and "sent" or text))
         return print_(ok and ("Told the group: " .. text) or text)
     end
+    if rest == "copy" then -- the "Week:" line, in the copy window, to paste where /sc week say would send it
+        local text, why = W.SayText()
+        if not text then return print_(why) end
+        return ST.Check.Copy(text)
+    end
     local this, last = W.Score(W.Start()), W.Score(W.Start() - 7 * 86400)
     print_("This week: " .. W.Describe(this))
     print_("Last week: " .. W.Describe(last))
@@ -539,14 +544,22 @@ function commands.tab()
     for _, line in ipairs(ST.Silver.Lines()) do print_(line) end
 end
 
--- What the log says about how the race is being played (for a playtest).
-function commands.report()
-    for _, line in ipairs(ST.Report.Lines()) do print_(line) end
+-- Prints these lines to the chat window, and with the word "copy" puts them in the copy window instead (the chat window
+-- cannot be selected). Copy is a word rather than the default because the window takes the keyboard: someone who only wants
+-- to read the rules should not have to press Escape to get back to playing (design/lenses.md, Flow).
+local function printOrCopy(lines, rest)
+    if rest == "copy" then return ST.Check.CopyLines(lines) end
+    for _, line in ipairs(lines) do print_(line) end
 end
 
--- The rules of the race, with this week's live numbers.
-function commands.rules()
-    for _, line in ipairs(ST.Week.RulesCard()) do print_(line) end
+-- What the log says about how the race is being played (for a playtest). `/sc report copy` opens it to paste.
+function commands.report(rest)
+    printOrCopy(ST.Report.Lines(), rest)
+end
+
+-- The rules of the race, with this week's live numbers. `/sc rules copy` opens them to paste.
+function commands.rules(rest)
+    printOrCopy(ST.Week.RulesCard(), rest)
 end
 
 -- The Index's keepsake of each finished season, newest first.
@@ -600,9 +613,9 @@ end
 -- What a player needs: five lines. /sc help all has the rest (design/lenses.md, Interface).
 local HELP_SHORT = {
     "/sc - the Summon Core window: the party's tally and badges, Zennit's answers, the log, the story and the tools",
-    "/sc rules - the rules of the race, with this week's live numbers    /sc week - how this week and the season stand (/sc week say tells the group)",
+    "/sc rules - the rules of the race, with this week's live numbers    /sc week - how this week and the season stand (/sc week say tells the group, /sc week copy lets you paste it)",
     "/sc tab - what is owed in silver    /sc cards - who holds a summon card    /sc titles - who leads the season's titles",
-    "/sc report - how the race is going (paste it to the group)    /sc seasons - the record of every finished season",
+    "/sc report - how the race is going (/sc report copy opens it to paste into the group chat)    /sc seasons - the record of every finished season",
     "/sc help all - every command (the rest are for setting up, testing and Zennit)    /sc tips off - stop the Monday tip",
 }
 
@@ -623,13 +636,13 @@ local HELP = {
     "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office",
     "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
-    "/sc week [say|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, login says this week's login lines again, a key plays that chapter of the story",
+    "/sc week [say|copy|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, copy opens the same line in a window you can copy from, login says this week's login lines again, a key plays that chapter of the story",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",
     "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)",
-    "/sc report - what the log says about how the race is being played (for a playtest)",
-    "/sc rules - the rules of the race, with this week's live numbers",
+    "/sc report [copy] - what the log says about how the race is being played (for a playtest); copy opens it in a window you can copy from",
+    "/sc rules [copy] - the rules of the race, with this week's live numbers; copy opens them in a window you can copy from",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
     "/sc respond [test] - Zennit answers a summon of him (accept, decline, ask for silver, dice); test tries it",
     "/sc tips [on|off] - the one-line tip about a command, at the Monday login",

@@ -54,6 +54,10 @@ prints to the chat window (`commands.report`, Core.lua:543), which cannot be sel
 what the playtest needs, which the freeze allows ("fixes for what the checks find, and wording, are fine", lenses.md, Playtesting
 revisited). It is not Interface D, which would send the report to party chat and stays deferred.
 
+*Built:* the commands take a word, `/sc report copy`, `/sc rules copy` and `/sc week copy`, and print to chat as before without it. A word, not
+always-open, because the copy window takes the keyboard, and someone who only wants to read the rules should not have to press Escape
+to get back to playing (design/lenses.md, Flow). The Tools tab's two buttons print as before and also hand the full text to COPY.
+
 **Stage 1: `/sc discord`.** A new `Discord.lua` rewords views every player already sees into Discord's formatting and puts them in
 the copy window: the week's result (provisional or final), the season, a newly reached chapter as an invitation to watch it at the
 raid, and `/sc discord record` for the pinned Record. It posts only from a fixed list of views written into the addon, so what may be
