@@ -101,11 +101,23 @@ function Week.Rule(name, start)
     return math.max(0, base + (whim and whim.rules[name] or 0))
 end
 
--- The week's whim in one sentence ("The Index is distracted. Zennit's edge on the dice is 5 lower this week."), or nil.
-function Week.WhimLine(start)
-    local whim = Week.Whim(start)
+-- A whim in one sentence ("The Index is distracted. Zennit's edge on the dice is 5 lower this week."), the number being the
+-- rule's value in a week that has that whim. Needs no week, so the Ledger can compare it with its recorded lines.
+function Week.WhimSentence(id)
+    local whim = Week.WHIMS[id]
     if not whim then return nil end
-    return whim.name .. ". " .. (whim.show and string.format(whim.text, Week.Rule(whim.show, start)) or whim.text)
+    local text = whim.text
+    if whim.show then
+        local base = whim.show == "edge" and ST.Respond.EDGE or Week.RULES[whim.show]
+        text = string.format(text, math.max(0, base + (whim.rules[whim.show] or 0)))
+    end
+    return whim.name .. ". " .. text
+end
+
+-- The week's whim in one sentence, or nil.
+function Week.WhimLine(start)
+    local _, id = Week.Whim(start)
+    return id and Week.WhimSentence(id) or nil
 end
 
 function Week.NewRules(start)

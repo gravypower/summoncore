@@ -28,11 +28,13 @@ RECIPE = {
     "vorbis_q": 4,
 }
 TAG = "SRC_HASH"
+DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
 
 def speech(text):
     """The caption's spelling is for the eye; the voice is given the spelling it says correctly."""
     text = text.replace("Zennit", "Zenit")          # the established pronunciation of Zennit
+    text = re.sub(r"\+(\d)", lambda m: "plus " + DIGITS[int(m.group(1))], text)   # "adds +8": a plus sign is not reliably said
     return re.sub(r"\bthe letter Z\b", "the letter Zed", text)   # British
 
 

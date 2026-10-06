@@ -10,7 +10,9 @@ ST.Ledger = Ledger
 -- The scene's fixed sentences: no names and no numbers in them, so each one has a recorded clip
 -- (Media/ledger/<id>.ogg, with its length in LedgerClips.lua). tools/intro/build_ledger_audio.py renders the clips from
 -- this table, so keep every entry a single string on one line. The lines that carry a name or a number are built
--- below and stay typed and silent.
+-- below and stay typed and silent. The exception is the week's whim: there are four, each a fixed sentence with a rule's
+-- number in it (Week.WHIMS), so each is recorded as the whole line; it plays only while the line the scene builds is
+-- still word for word that one (see Ledger.WhimClip), and a self-test fails when a rule change makes a recording stale.
 local LINES = {
     -- Where each trunk stands after its nth win of the season (the fifth is the finale, told as the last season's end).
     recap_z1 = "Zennit has had his week off, and has not yet decided whether he liked it.",
@@ -37,6 +39,11 @@ local LINES = {
     week_closed = "Zennit has closed the Index for the week. Anything more is filed under enthusiasm.",
     week_none = "Nobody has summoned Zennit this week. The Index is patient.",
     evidence = "The Index is accepting further evidence.",
+    -- The week's whim, as the scene says it (Week.WHIMS; the numbers are the rules' values with the whim applied).
+    whim_distracted = "This week's whim: The Index is distracted. Zennit's edge on the dice is 5 lower this week.",
+    whim_attentive = "This week's whim: The Index is attentive. Zennit's edge on the dice is 5 higher this week.",
+    whim_feast = "This week's whim: A helpers' feast. Each helper adds +8 to the summoner's roll this week.",
+    whim_tired = "This week's whim: The helpers are tired. Each helper adds only +2 to the summoner's roll this week.",
 }
 Ledger.LINES = LINES
 
@@ -529,9 +536,21 @@ function Ledger.Build(s)
 
     local text, cue, clip = weekLine(s)
     say(text, cue, clip)
-    if s.whim and not s.immune then say("This week's whim: " .. s.whim, "THE WHIM OF THE WEEK") end
+    if s.whim and not s.immune then
+        local text = "This week's whim: " .. s.whim
+        say(text, "THE WHIM OF THE WEEK", Ledger.WhimClip(text))
+    end
     say(LINES.evidence, nil, "evidence")
     return out
+end
+
+-- The recording of a whim line, when the line is word for word what was recorded; nil otherwise (it is then typed and silent,
+-- never read out wrongly).
+function Ledger.WhimClip(text)
+    for id, line in pairs(LINES) do
+        if id:find("^whim_") and line == text then return id end
+    end
+    return nil
 end
 
 -- Reading speed of the typed-out lines: a sentence stays up for a second and a bit, plus a share of its length.
