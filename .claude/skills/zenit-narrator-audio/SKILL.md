@@ -51,6 +51,16 @@ without git. Set `PYTHONIOENCODING=utf-8` on Windows.
    also rewrites `LedgerClips.lua`). `--only 10` renders a named take whatever its state. A take whose text is not in
    `Intro.lua` yet can come from `--extra file.txt` (lines `N|text`). Rendering is not bit-for-bit repeatable, so do
    not re-render clips that are current: that is what the tag avoids.
+   **Spliced lines.** The lines of "The Index today" that carry only numbers ("The group leads the season, 3 to 2") are
+   said like a station announcement: `Ledger.Splice` joins short recordings, each started when the one before ends.
+   The phrases are the `FRAGMENTS` table in `Ledger.lua`; the numbers 0 to 99 are generated (`n<k>c`/`n<k>f`, and `t<k>c`,
+   `t<k>f`, `t<k>m` for the tens: c = more follows, f = the sentence ends, m = a tens word with its units to come, so
+   "twenty-one" is `t20m` + `n1f`). A phrase's last mark sets how it is said: a comma keeps the voice level, a full stop
+   falls. Fragments are rendered with no pad or pause and the silence trimmed (`render_takes.py --fragments`, driven by
+   `build_ledger_audio.py`), and their hash covers `FRAGMENT_RECIPE` as well as the recipe. Names are not recordable, so a
+   line with a name in it stays typed and silent; so does a number beyond 99. Phrases are only ever played whole, so add a
+   new one to `FRAGMENTS` rather than cutting an existing one, and use `Ledger.Splice` so the text shown is built from the
+   same parts as the clips.
 4. **Rebuild the mixes:** `tools/intro/build_audio.ps1`. It mixes only the scenes whose `MIX_HASH` no longer
    matches (their voice, where their slice of the music starts, their length, the mix filter, the music source), leaves
    the sound effects alone unless `-Sfx`, and always rewrites `IntroCues.lua`. A scene that grows or shrinks moves the

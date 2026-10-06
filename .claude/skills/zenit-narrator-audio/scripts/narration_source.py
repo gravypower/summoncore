@@ -30,6 +30,15 @@ RECIPE = {
 TAG = "SRC_HASH"
 DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
+# Fragments: the short phrases and numbers a scene line is spliced from, like a station announcement (Ledger.Splice). They
+# are rendered one utterance at a time with no pad and no pause, the silence trimmed from both ends, and a falling
+# inflection only when the text ends in a full stop. Kept apart from RECIPE so that changing it does not make the whole
+# lines stale; a fragment's hash covers both.
+FRAGMENT_RECIPE = {"trim_peak": 0.03, "margin": 0.015, "vorbis_q": 4}
+UNITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen",
+         "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+TENS = {20: "twenty", 30: "thirty", 40: "forty", 50: "fifty", 60: "sixty", 70: "seventy", 80: "eighty", 90: "ninety"}
+
 
 def speech(text):
     """The caption's spelling is for the eye; the voice is given the spelling it says correctly."""
@@ -38,8 +47,10 @@ def speech(text):
     return re.sub(r"\bthe letter Z\b", "the letter Zed", text)   # British
 
 
-def src_hash(spoken):
+def src_hash(spoken, fragment=False):
     blob = json.dumps(RECIPE, sort_keys=True) + "\n" + spoken
+    if fragment:
+        blob += "\n" + json.dumps(FRAGMENT_RECIPE, sort_keys=True)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
@@ -59,6 +70,29 @@ def ledger_lines():
     """{id: sentence} from the LINES table of Ledger.lua."""
     block = re.search(r"^local LINES = \{\n(.*?)^\}", _read("Ledger.lua"), re.S | re.M).group(1)
     return dict(re.findall(r'^\s+(\w+) = "(.*)",\s*$', block, re.M))
+
+
+def number_fragments():
+    """{id: spoken text} for the numbers 0 to 99, as Ledger.lua names them: n<k>c and n<k>f for 0-19, t<k>c, t<k>f and
+    t<k>m for the tens (c: more follows, f: the end of the sentence, m: a tens word with its units still to come)."""
+    out = {}
+    for k, word in enumerate(UNITS):
+        out["n%dc" % k], out["n%df" % k] = word + ",", word + "."
+    for k, word in TENS.items():
+        out["t%dc" % k], out["t%df" % k], out["t%dm" % k] = word + ",", word + ".", word
+    return out
+
+
+def ledger_fragments():
+    """{id: text} of the phrases in the FRAGMENTS table of Ledger.lua."""
+    block = re.search(r"^local FRAGMENTS = \{\n(.*?)^\}", _read("Ledger.lua"), re.S | re.M).group(1)
+    return dict(re.findall(r'^\s+(\w+) = "(.*)",\s*$', block, re.M))
+
+
+def fragment_speech():
+    out = {i: speech(t) for i, t in ledger_fragments().items()}
+    out.update(number_fragments())
+    return out
 
 
 def scene_speech():
@@ -127,11 +161,12 @@ def decoded_md5(source):
 def status():
     """[(kind, id, path, state)] for every clip; state is "ok", "stale", "untagged" or "missing"."""
     rows = []
-    for kind, speech_by_id, path_of in (("scene", scene_speech(), scene_path), ("ledger", ledger_speech(), ledger_path)):
+    for kind, speech_by_id, path_of in (("scene", scene_speech(), scene_path), ("ledger", ledger_speech(), ledger_path),
+                                        ("fragment", fragment_speech(), ledger_path)):
         for i, spoken in speech_by_id.items():
             path = path_of(i)
             tag = read_tag(path)
-            want = src_hash(spoken)
+            want = src_hash(spoken, fragment=(kind == "fragment"))
             state = "missing" if not os.path.exists(path) else "untagged" if tag is None else "ok" if tag == want else "stale"
             rows.append((kind, i, path, state))
     return rows
