@@ -2324,6 +2324,24 @@ praise the two things the judgment now misses: him being a good sport, and the g
 - Does Zennit care about his titles? Does the group compete for the Process Server?
 - How does the report's "time to answer" land with him?
 
+## Parked ideas
+
+Not built: the Playtesting entry holds new rules until the first week's report. Each waits for a lens (or the report) to pick it up.
+
+- **Stranded: summon him to the middle of nowhere when he has no hearthstone** (2026-10-06, from the group). A challenge
+  summons: the group drags him somewhere remote while his hearthstone is on cooldown (or not in his bags), so the trip back is
+  his problem. Today the place is always the caster's choice and the only randomness is the dice and the whim; "the middle of
+  nowhere" just scores as a zone (3). Open questions:
+  - *Can the addon tell?* Only his client can see his hearthstone (item 6948: its cooldown and whether he carries it), at the
+    moment the game's prompt appears; never tried in this client. A mage's portal or a friend's summons home would undo it.
+  - *What is "nowhere"?* The game gives a map and a subzone name, not a distance to the nearest flight path. An empty subzone,
+    or a short list of truly empty spots, is the likeliest test; the far-flung list (10) is the nearest thing we have.
+  - *What does it pay?* Points on top of the place, a badge or title ("Left in the Wilds"), or a postcard only, to keep it a joke.
+  - *Is it fair on him?* A walk back costs him real time (Griefing / Friendship, Freedom): his free decline already covers a
+    summons he cannot afford, and it should stay rare, like a writ (say once a week, or once a season).
+- **A place the Index draws each week**, picked from the week number like the whim (so nothing is synced), worth extra; or a
+  spot Zennit names himself as the week's dare. Both answer "who chooses where", which today is always the caster.
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
