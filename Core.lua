@@ -622,23 +622,27 @@ local HELP_SHORT = {
     "/sc help all - every command (the rest are for setting up, testing and Zennit)    /sc tips off - stop the Monday tip",
 }
 
+-- Every command. A line tagged "admin" is listed only for the admin, and one tagged "zennit" for Zennit's account and the
+-- admin: the rest of the party would learn the gags and his secrets from them (spoilers).
 local HELP = {
     "/sc - open the Summon Core window (everything below is also in it)    /sc help - the short list    /sc help all - this list",
     "/sc tour [step] - a narrated tour of the window: the Index outlines each part as it talks about it (again: stops it)",
-    "/sc test - diagnostics panel (/sc test ping <name>)",
+    { "admin", "/sc test - diagnostics panel (/sc test ping <name>)" },
     "/sc log [n] - recent summons    /sc tally - counts and points    /sc badges",
-    "/sc panel - open the window on the Party tab    /sc zenit - toggle Zennit test mode    /sc party - toggle party test mode",
+    "/sc panel - open the window on the Party tab",
+    { "admin", "/sc zenit - toggle Zennit test mode    /sc party - toggle party test mode" },
     "/sc writ - arm a writ for your next ritual on Zennit: if he declines that summons in the game, it costs him its points",
-    "/sc check - the live-client checklist: run the automatic checks, follow the steps with a friend, and print a report to send back",
+    { "admin", "/sc check - the live-client checklist: run the automatic checks, follow the steps with a friend, and print a report to send back" },
     "/sc where - current map, subzone and how it scores    /sc places - what every place is worth, checked against the game",
-    "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>",
-    "/sc sync - say hello to party/guild and show sync status    /sc synctest - run the merge self-test",
+    { "admin", "/sc fake <target> [h1 h2] - add a test summon    /sc fakeprompt <target> <members...>" },
+    "/sc sync - say hello to party/guild and show sync status",
+    { "admin", "/sc synctest - run the merge self-test" },
     "/sc export / /sc import - copy-paste strings of the summon log",
     "/sc intro [scene] - play the illustrated intro (/sc intro check tests its sound files; /sc intro g2 group shows a chapter to the group; /sc intro previously plays this season's chapters back to back)    /sc welcome - the newcomer's welcome again",
-    "/sc clip [category|file] - list or play voice clips from Media/clips",
-    "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)",
-    "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office",
-    "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's",
+    { "admin", "/sc clip [category|file] - list or play voice clips from Media/clips" },
+    { "zennit", "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)" },
+    { "zennit", "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office" },
+    { "admin", "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's" },
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
     "/sc week [say|copy|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, copy opens the same line in a window you can copy from, login says this week's login lines again, a key plays that chapter of the story",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
@@ -648,17 +652,19 @@ local HELP = {
     "/sc report [copy] - what the log says about how the race is being played (for a playtest); copy opens it in a window you can copy from",
     "/sc rules [copy] - the rules of the race, with this week's live numbers; copy opens them in a window you can copy from",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
-    "/sc respond [test] - Zennit answers a summon of him (accept, decline, ask for silver, dice); test tries it",
+    { "zennit", "/sc respond [test] - Zennit answers a summon of him (accept, decline, ask for silver, dice); test tries it" },
     "/sc tips [on|off] - the one-line tip about a command, at the Monday login",
     "/sc feelings [on|off] - the weekly one-click question about how the week felt (Zennit and the admin see the counts)",
     "/sc errors [clear] - problems the addon caught in itself this session (tell Aaron what they say)",
-    "/sc gag - preview the Zennit gag",
-    "/sc comic [256|512|1024|2048] - large-image test pattern viewer",
-    "/sc undo - remove the latest summon    /sc debug - toggle detector messages",
+    { "admin", "/sc gag - preview the Zennit gag" },
+    { "admin", "/sc comic [256|512|1024|2048] - large-image test pattern viewer" },
+    "/sc undo - remove the latest summon",
+    { "admin", "/sc debug - toggle detector messages" },
 }
 
--- Debug and test tools are for the admin's account only.
-for _, name in ipairs({ "test", "fake", "fakeprompt", "comic", "synctest", "debug", "gag" }) do
+-- Debug and test tools are for the admin's account only, and so is anything that gives the gags away: the live
+-- checklist's steps, the voice clips, and the BattleTag report (it names Zennit's account).
+for _, name in ipairs({ "test", "fake", "fakeprompt", "comic", "synctest", "debug", "gag", "check", "clip", "admin" }) do
     local run = commands[name]
     commands[name] = function(...)
         if not ST.IsAdmin() then return print_("that is an admin tool") end
@@ -679,6 +685,11 @@ SlashCmdList["SUMMONCORE"] = function(input)
         if cmd ~= "" and cmd ~= "help" then print_("unknown command '" .. cmd .. "'") end
         print_("v" .. ST.version)
         local all = cmd == "help" and rest:lower() == "all"
-        for _, l in ipairs(all and HELP or HELP_SHORT) do print_(l) end
+        local admin = ST.IsAdmin()
+        local zennit = admin or ST.IsZennitAccount()
+        for _, l in ipairs(all and HELP or HELP_SHORT) do
+            if type(l) == "string" then print_(l)
+            elseif (l[1] == "admin" and admin) or (l[1] == "zennit" and zennit) then print_(l[2]) end
+        end
     end
 end
