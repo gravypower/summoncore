@@ -350,11 +350,12 @@ points. Parked because it would be a second weekly draw on top of the whim.
 
 **Discord: the Index's noticeboard** (researched, for later; `design/discord.md`). The addon cannot reach the internet, so Discord
 can only hear about a week after the fact, never a summons as it happens. The plan, in stages that each stand alone: `/sc report`,
-`/sc rules` and the week's line in the copy box; then `/sc discord`, a ready-to-paste digest (the week's result, the season, a
+`/sc rules` and the "Week:" line in a copy window; then `/sc discord`, a ready-to-paste digest (the week's result, the season, a
 reached chapter, a pinned Record) worded by the addon; then, optionally, a small script on the admin's PC that posts the same text to
-one webhook after a `/reload` or logout and edits it in place. Nothing comes back into the game, and the secret list, the feelings
-and anyone's debts are never posted. Parked until the first week's report, two checks in the game (saved variables survive a
-restart; whether Blizzard's own Discord link is on for Forever) and the group's say, Zennit's first.
+one Discord channel after a `/reload` or logout and edits it in place. Nothing comes back into the game, and the secret list, the
+feelings and what anyone owes are never posted. The first stage is a fix the playtest needs now (its Monday report cannot be copied
+out of the chat window); the rest is parked until the first week's report, two checks in the game (saved variables survive a
+restart; whether Blizzard's own Discord link is on for Forever) and the group's say, Zennit's above all.
 
 Challenge import strings, emote bonus challenges and Zennit's objective. (Catching summons by warlocks who do not run the addon is
 built: Accessibility, G.)
