@@ -650,8 +650,9 @@ local function buildTools(f)
         }, "\n"))
     end)
     tool(record, "THE RULES", function() -- long: it goes to the chat window, which scrolls
-        for _, line in ipairs(ST.Week.RulesCard()) do ST.print(line) end
-        show("The rules of the race, with this week's numbers, are in the chat window.")
+        local lines = ST.Week.RulesCard()
+        for _, line in ipairs(lines) do ST.print(line) end
+        show("The rules of the race, with this week's numbers, are in the chat window; COPY copies them.", ST.Check.Joined(lines))
     end)
     tool(record, "THE TITLES", function()
         for _, line in ipairs(ST.Ledger.Standings()) do ST.print(line) end
@@ -678,8 +679,9 @@ local function buildTools(f)
         show("How the group felt, week by week, is in the chat window. Counts only, never names.")
     end, true)
     tool(record, "PLAYTEST REPORT", function() -- long: it goes to the chat window, which scrolls
-        for _, line in ipairs(ST.Report.Lines()) do ST.print(line) end
-        show("What the log says about how the race is being played is in the chat window.")
+        local lines = ST.Report.Lines()
+        for _, line in ipairs(lines) do ST.print(line) end
+        show("What the log says about how the race is being played is in the chat window; COPY copies it.", ST.Check.Joined(lines))
     end)
 
     local paints = {} -- every switch repaints after any click, because the two test modes turn each other off

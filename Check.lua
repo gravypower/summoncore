@@ -435,6 +435,18 @@ function Check.Copy(text)
     if CreateFrame then showCopy(text) end
 end
 
+-- The lines a command prints, as the one text its copy window holds: the same lines, one to a row, without colour codes.
+function Check.Joined(lines)
+    return Check.Plain(table.concat(lines, "\n"))
+end
+
+-- Opens the copy window with these lines (/sc report copy, /sc rules copy). Returns the text it holds.
+function Check.CopyLines(lines)
+    local text = Check.Joined(lines)
+    Check.Copy(text)
+    return text
+end
+
 -- /sc check [auto | trace | report | reset | <id> | pass|fail|skip <id> [note]]
 function Check.Command(rest)
     rest = rest or ""

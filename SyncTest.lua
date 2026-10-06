@@ -925,6 +925,35 @@ add("/sc week say: one line to the party or the raid, and a reason when it canno
     end)
 end)
 
+add("copy window: /sc report copy, /sc rules copy and /sc week copy hold the printed lines, without colour codes", function()
+    return newRules(function()
+        local C, W, a = ST.Check, ST.Week, newClient("Alpha")
+        local out = {}
+        with(a, function()
+            out.report, out.rules = ST.Report.Lines(), W.RulesCard()
+            out.sayText = W.SayText()
+            local sent
+            W.SayWeek({ channel = function() return "PARTY" end, send = function(text) sent = text end })
+            out.sent = sent
+            W.RULES.from = math.huge
+            out.old = { W.SayText() }
+            W.RULES.from = 0
+        end)
+        local function plain(lines)
+            local t = {}
+            for i, l in ipairs(lines) do t[i] = (l:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+            return table.concat(t, "\n")
+        end
+        local painted = { "|cff33ff66PASS|r one", "two", "|cffff4444FAIL|r three" }
+        local ok = C.Joined(painted) == "PASS one\ntwo\nFAIL three"
+            and #out.report > 0 and C.Joined(out.report) == plain(out.report) and not C.Joined(out.report):find("|", 1, true)
+            and #out.rules > 0 and C.Joined(out.rules) == plain(out.rules) and not C.Joined(out.rules):find("|", 1, true)
+            and out.sayText and out.sayText == out.sent and out.sayText:find("^Summon Core: Week:")
+            and out.old[1] == nil and out.old[2]:find("old rules", 1, true)
+        return ok, tostring(out.sayText)
+    end)
+end)
+
 add("voice clips: a refusal and a dice win each play their own category, other answers are silent", function()
     local a = newClient("Alpha")
     local id = cast(a, 950, true, { target = "Zennit" })

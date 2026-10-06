@@ -17,7 +17,8 @@ Several things have only been run in a stub, never in the game. Fix these before
 3. `/sc places`: every city and far-flung map should read as found; any line saying "the client has no such map" or "calls it" is a
    wrong ID in `Scoring.lua` (fix it and say which). Then stand at a dungeon entrance you pass and run `/sc where`: it should say `dungeon`.
 4. `/sc rules` (the whole race on one card), `/sc report` and `/sc seasons` (empty until a finale) print to chat; the same three
-   are buttons on the Tools tab.
+   are buttons on the Tools tab. Chat cannot be selected: `/sc rules copy` and `/sc report copy` (or the Tools tab's button, then COPY)
+   open the text in a window to copy from, and `/sc week copy` does so for the "Week:" line.
 5. About a minute after login, the chat should say how the last week ended (if it did) and **this week's whim** (if it has one).
    This is the first real Monday rollover.
 6. A summon of Zennit with two friends helping: the briefing, "Summon logged", "Week:", his popup and the answer line all appear,
@@ -39,7 +40,8 @@ The addon also asks everyone one question at their first login of the week (`/sc
 revisited). The admin reads the counts with `/sc feelings`; they are never named, so read them as a trend, and act on a "Too much"
 from Zennit or "Not for me" twice running.
 
-Anyone runs `/sc report` and pastes it into the group chat. Then ask, out loud or in chat, one line each:
+Anyone runs `/sc report copy`, presses Ctrl+C in the window that opens (the text is already selected), and pastes it into the group chat (`/sc report` alone only
+prints to your own chat window, which cannot be copied from; the Tools tab's PLAYTEST REPORT then COPY does the same). Then ask, out loud or in chat, one line each:
 
 1. What was the best moment of the week?
 2. Did anything feel unfair?

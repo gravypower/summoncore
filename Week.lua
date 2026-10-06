@@ -746,14 +746,20 @@ function Week.StatusLine(start, you)
         table.concat(parts, ", "))
 end
 
+-- The line `/sc week say` sends, and the one `/sc week copy` puts in the copy window. Or nil and why not.
+function Week.SayText(start)
+    start = start or Week.Start()
+    if not Week.NewRules(start) then return nil, "The race runs on the old rules this week, so there is no standing to say." end
+    return "Summon Core: " .. Week.StatusLine(start)
+end
+
 -- The week's standing, said to the group: `chat.channel()` is "PARTY", "RAID" or nil (not in a group) and `chat.send(text,
 -- channel)` sends it. Returns true and the text sent, or false and why not. Anyone can say it; it is one line, not a report.
 function Week.SayWeek(chat, start)
-    start = start or Week.Start()
-    if not Week.NewRules(start) then return false, "The race runs on the old rules this week, so there is no standing to say." end
+    local text, why = Week.SayText(start)
+    if not text then return false, why end
     local channel = chat.channel()
     if not channel then return false, "You are not in a group, so there is nobody to tell." end
-    local text = "Summon Core: " .. Week.StatusLine(start)
     local ok, err = pcall(chat.send, text, channel)
     if not ok then return false, "The game would not send that to the group (" .. tostring(err) .. ")." end
     return true, text
