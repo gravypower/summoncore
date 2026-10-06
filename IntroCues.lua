@@ -2,7 +2,7 @@
 -- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.
 local ADDON, ST = ...
 ST.introEnding = 3.20
-ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.40, 45.90, 52.70, 24.70, 27.00, 27.70, 26.50, 25.90, 29.80, 27.60, 29.40, 24.50, 22.70, 25.70, 28.80, 26.70, 21.40, 22.70, 22.00, 23.90, 25.30, 29.40, 19.10, 23.70, 28.80 }
+ST.introLength = { 22.10, 9.80, 26.40, 24.70, 21.90, 12.50, 14.00, 14.40, 45.90, 55.20, 24.70, 27.00, 27.70, 26.50, 25.90, 29.80, 27.60, 29.40, 24.50, 22.70, 25.70, 28.80, 26.70, 21.40, 22.70, 22.00, 23.90, 25.30, 29.40, 19.10, 23.70, 28.80 }
 ST.introCues = {
     [1] = {
         { t = 0.55, text = "THE COSMIC INDEX OF SUMMONABLE PERSONS" },
@@ -54,14 +54,14 @@ ST.introCues = {
         { t = 43.68, text = "VICTORY FOR PERSISTENCE" },
     },
     [10] = {
-        { t = 3.04, text = "ZENNIT WINS THE WEEK" },
-        { t = 5.45, text = "IMMUNE FOR 7 DAYS" },
-        { t = 10.62, text = "HE MAY REFUSE" },
-        { t = 14.06, text = "50 SILVER. CASH. NO RECEIPT." },
-        { t = 19.81, text = "OR DICE" },
-        { t = 20.61, text = "3 DICE A WEEK" },
-        { t = 28.37, text = "HE MAY CLOSE THE INDEX" },
-        { t = 50.35, text = "THE INDEX ACCEPTS MOST THINGS" },
+        { t = 3.11, text = "ZENNIT WINS THE WEEK" },
+        { t = 5.59, text = "IMMUNE FOR 7 DAYS" },
+        { t = 13.16, text = "HE MAY REFUSE" },
+        { t = 16.60, text = "50 SILVER. CASH. NO RECEIPT." },
+        { t = 22.34, text = "OR DICE" },
+        { t = 23.15, text = "3 DICE A WEEK" },
+        { t = 30.91, text = "HE MAY CLOSE THE INDEX" },
+        { t = 52.85, text = "THE INDEX ACCEPTS MOST THINGS" },
     },
     [11] = {
         { t = 1.70, text = "THE INDEX COUNTED" },
@@ -261,16 +261,16 @@ ST.introSentences = {
         { t = 39.54, text = [=[If the group has more points at the end of the week, the Index records a victory for persistence.]=] },
     },
     [10] = {
-        { t = 0.42, text = [=[If Zennit is not behind when the week ends, he wins the week, and goes on leave for the seven days that follow, when summons of him are filed as filler.]=] },
-        { t = 10.26, text = [=[He may refuse a summons.]=] },
-        { t = 13.26, text = [=[He may demand fifty silver, or whatever he fancies, in cash, with no receipt.]=] },
-        { t = 19.38, text = [=[Or he may suggest dice, three times a week, though each helper may lean on the summoner's side.]=] },
-        { t = 25.73, text = [=[Once five summons are filed, he may also close the Index until Monday.]=] },
-        { t = 31.38, text = [=[When one side runs well ahead, the Index, which takes no sides, will lean toward the other.]=] },
-        { t = 37.74, text = [=[Some weeks it has a whim.]=] },
-        { t = 40.67, text = [=[The first to five weeks takes the season.]=] },
-        { t = 44.87, text = [=[The Ritual, which has always wanted closure, approves.]=] },
-        { t = 49.73, text = [=[The Index accepts most things.]=] },
+        { t = 0.42, text = [=[If Zennit is not behind when the week ends, he wins the week, and goes on leave for the seven days that follow, when the race is off, and any summons of him is filed as disturbing his leave.]=] },
+        { t = 12.80, text = [=[He may refuse a summons.]=] },
+        { t = 15.80, text = [=[He may demand fifty silver, or whatever he fancies, in cash, with no receipt.]=] },
+        { t = 21.92, text = [=[Or he may suggest dice, three times a week, though each helper may lean on the summoner's side.]=] },
+        { t = 28.27, text = [=[Once five summons are filed, he may also close the Index until Monday.]=] },
+        { t = 33.92, text = [=[When one side runs well ahead, the Index, which takes no sides, will lean toward the other.]=] },
+        { t = 40.29, text = [=[Some weeks it has a whim.]=] },
+        { t = 43.20, text = [=[The first to five weeks takes the season.]=] },
+        { t = 47.41, text = [=[The Ritual, which has always wanted closure, approves.]=] },
+        { t = 52.23, text = [=[The Index accepts most things.]=] },
     },
     [11] = {
         { t = 0.41, text = [=[At the end of the week, the Index counted.]=] },
@@ -471,11 +471,11 @@ ST.introHighlights = {
         { t = 43.78, x = 36, y = 56, w = 448, h = 278 },
     },
     [10] = {
-        { t = 3.14, x = 36, y = 96, w = 272, h = 380 },
-        { t = 10.72, x = 326, y = 86, w = 188, h = 258 },
-        { t = 14.16, x = 516, y = 86, w = 188, h = 258 },
-        { t = 19.91, x = 706, y = 86, w = 188, h = 258 },
-        { t = 50.45, x = 326, y = 356, w = 426, h = 140 },
+        { t = 3.21, x = 36, y = 96, w = 272, h = 380 },
+        { t = 13.26, x = 326, y = 86, w = 188, h = 258 },
+        { t = 16.70, x = 516, y = 86, w = 188, h = 258 },
+        { t = 22.44, x = 706, y = 86, w = 188, h = 258 },
+        { t = 52.95, x = 326, y = 356, w = 426, h = 140 },
     },
     [11] = {
         { t = 1.80, x = 40, y = 60, w = 440, h = 270 },

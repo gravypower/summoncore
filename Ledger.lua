@@ -33,7 +33,7 @@ local LINES = {
     end_group = "The group is one win from the finale, and the Ritual has started to glow in a meaningful manner.",
     end_zennit = "Zennit is one win from the clerk's chair, and the kettle is on.",
     -- This week.
-    week_leave = "This week is Zennit's. He is on leave and cannot be summoned, and the Index files the attempts as filler.",
+    week_leave = "This week is Zennit's. He is on leave, the race is off, and the Index files any summons as disturbing it.",
     week_closed = "Zennit has closed the Index for the week. Anything more is filed under enthusiasm.",
     week_none = "Nobody has summoned Zennit this week. The Index is patient.",
     evidence = "The Index is accepting further evidence.",
