@@ -159,8 +159,10 @@ soul shard) and rendered as `Media/intro_<n>.blp` and `intro_l<n>.blp` for scene
 `tools/intro/narration/voice_<n>.ogg` and mixed into `Media/intro_<n>.ogg`; the cues, sentences and highlights are in
 `IntroCues.lua`; the Ledger lines are in `Ledger.LINES` as `recap_z1_2` and so on, with their recordings in `Media/ledger`. A scene
 is "recorded" when `IntroCues.lua` has a length for it, so a scene without a clip falls back to being typed and silent.
-Poogs is the "horns" hero of the party (rust robe, grey horned cap); the Auditor's over-large hat covers that cap, and two white
-horn tips show under its brim.
+Poogs is the party's warlock: a dark hooded robe lined in rust, two white horns on the hood, spiked pauldrons, a skull for a belt
+buckle, a pouch of soul shards, and eyes that glow fel green (the `poogs` symbol in `tools/intro/source.html`). The Auditor's
+over-large hat covers that hood, and two white horn tips show under its brim. (The party's fourth figure in season one, the "horns"
+hero in `hero()`, is a plain pictogram and was not changed.)
 
 ## Hooks for mechanics (not decided)
 
