@@ -98,6 +98,31 @@ local EPI = RECORDED + 1
 scenes[EPI] = { chapter = "now", label = "The Index today", dur = 30, text = "", silent = true }
 firstOf.now, lastOf.now = EPI, EPI
 
+-- Later seasons' scenes (Season2.lua) follow "The Index today", so season one's scene numbers, pictures and recordings do not
+-- move. Their chapters are named by key (2a, 2z1, ...). Until a scene is recorded it is typed and silent: its sentences are
+-- timed to be read, as the Ledger scene's are, and it borrows a season-one scene's picture (`art`).
+local READ_LEAD, READ_PER_CHAR = 1.2, 1 / 16 -- reading speed of a typed sentence (Ledger.Timed uses the same)
+function Intro.TypedTimings(text)
+    local sentences, t = {}, 0
+    for sentence in (text .. " "):gmatch("(.-[%.%?!]\"?)%s+") do
+        sentences[#sentences + 1] = { t = t, text = sentence }
+        t = t + READ_LEAD + #sentence * READ_PER_CHAR
+    end
+    return sentences, t
+end
+local seasonOf = {} -- a later season's chapter (its key) -> the season's number
+for number = 2, 9 do
+    for _, def in ipairs(ST.seasonScenes and ST.seasonScenes[number] or {}) do
+        local scene = { chapter = def.chapter, label = def.label, art = def.art, text = def.text, silent = true }
+        scene.sentences, scene.length = Intro.TypedTimings(def.text)
+        scene.dur = scene.length + PAUSE
+        scenes[#scenes + 1] = scene
+        firstOf[def.chapter] = firstOf[def.chapter] or #scenes
+        lastOf[def.chapter] = #scenes
+        seasonOf[def.chapter] = number
+    end
+end
+
 -- Scene lengths come from IntroCues.lua (measured from the narration); the table above is the fallback.
 local ENDING = ST.introEnding or 3.2 -- after the last line: the music fades out, the picture fades to black, "THE END"
 local starts, total = {}, 0
@@ -114,19 +139,37 @@ local lo, hi = 1, lastOf[1]
 
 -- The story after the intro is a race: z<n> is the chapter for Zennit's nth win of the season, g<n> for the group's.
 -- The fifth win of either side is that side's finale. victory and group are the first win of each.
+-- Each season after the first has keys of its own (Week.ChapterKey): 2z1 is Zennit's first win of season two, and 2a or 2b
+-- its opening (Week.OpeningKey), which a later season's chapters are their own names for.
 local CHAPTER_KEYS = { now = "now", victory = 2, group = 3, z1 = 2, g1 = 3, z2 = 4, g2 = 5, z3 = 6, g3 = 7, z4 = 8, g4 = 9, z5 = 10, g5 = 11 }
+for chapter in pairs(seasonOf) do CHAPTER_KEYS[chapter] = chapter end
 function Intro.HasChapter(key) return firstOf[CHAPTER_KEYS[key] or 0] ~= nil end
 
--- Chapter number -> its key (z1, g1, ...); the intro (chapter 1) has none.
-Intro.KeyOf = {}
-for key, chapter in pairs(CHAPTER_KEYS) do
-    if key:match("^[zg]%d$") then Intro.KeyOf[chapter] = key end
+-- A chapter's key, read: its season, its side ("z" or "g") and which win, or "a" or "b" for a season's opening. nil if it is
+-- not a chapter key at all (season one's keys have no number in front, and a later season's always has).
+function Intro.ParseKey(key)
+    key = tostring(key or "")
+    local number, side, n = key:match("^(%d*)([zg])(%d)$")
+    if not side then number, side = key:match("^(%d+)([ab])$") end
+    if not side or number:match("^0") then return nil end
+    local season = number == "" and 1 or tonumber(number)
+    if (number ~= "" and season < 2) or (n and (tonumber(n) < 1 or tonumber(n) > ST.Week.WINS)) then return nil end
+    return season, side, n and tonumber(n)
 end
 
--- Has the season's race reached this chapter's win?
+-- Chapter -> its key (z1, g1, 2a, 2z1, ...); the intro (chapter 1) has none.
+Intro.KeyOf = {}
+for key, chapter in pairs(CHAPTER_KEYS) do
+    if Intro.ParseKey(key) then Intro.KeyOf[chapter] = key end
+end
+
+-- Has the race reached this chapter's win (or, for an opening, the season it opens)?
 function Intro.Reached(key)
-    for _, c in ipairs(ST.Week.Season().chapters) do
-        if c.key == key then return true end
+    local season = ST.Week.Season()
+    for _, list in ipairs({ season.chapters, season.openings or {} }) do
+        for _, c in ipairs(list) do
+            if c.key == key then return true end
+        end
     end
     return false
 end
@@ -153,7 +196,8 @@ local function setChapter(chapter)
         local key = ST.Ledger.ArtKey(W.season)
         local scene = scenes[EPI]
         scene.sentences, scene.cues, scene.length = sentences, cues, length
-        scene.art = key and lastOf[CHAPTER_KEYS[key]] or 8 -- the latest chapter reached, else "The week"
+        local last = key and lastOf[CHAPTER_KEYS[key] or 0]
+        scene.art = last and (scenes[last].art or last) or 8 -- the latest chapter reached, else "The week"
         scene.dur = length + PAUSE + ENDING
         -- chained after the intro: scene 10 ends where its narration does, and no "THE END" until the Ledger's
         local before = playlist[epi - 1]
@@ -702,8 +746,15 @@ function Intro.Toggle(arg)
     local si
     local key = CHAPTER_KEYS[arg or ""]
     if key then
-        if not firstOf[key] then return ST.print("that chapter of the story has not been written yet") end
+        if not firstOf[key] then
+            frame:Hide()
+            return ST.print("that chapter of the story has not been written yet")
+        end
         si = firstOf[key]
+    elseif Intro.ParseKey(arg) then
+        frame:Hide()
+        return ST.print(string.format("season %d of the story is not in this version of Summon Core: an update will have it",
+            (Intro.ParseKey(arg))))
     else
         si = tonumber(arg) or 1
     end
@@ -711,6 +762,7 @@ function Intro.Toggle(arg)
     -- a chapter can only be played once the season has reached it (the admin can play any)
     local chapterKey = Intro.KeyOf[scenes[si].chapter]
     if chapterKey and not ST.IsAdmin() and not Intro.Reached(chapterKey) and shownBy ~= chapterKey then
+        frame:Hide() -- so Intro.Play sees it did not open
         return ST.print("that chapter of the story has not been reached yet")
     end
     setChapter(scenes[si].chapter)
@@ -734,9 +786,12 @@ function Intro.StartChapter(key)
     setPlaying(true)
 end
 
--- This season's chapters so far, in the order the race reached them (the keys), for "previously on".
+-- This season's chapters so far, in the order the race reached them (the keys), for "previously on". A season after the
+-- first starts with its opening.
 function Intro.SeasonSoFar()
     local season, keys = ST.Week.Season(), {}
+    local open = season.openings and season.openings[#season.openings]
+    if open and open.season == season.number and Intro.HasChapter(open.key) then keys[1] = open.key end
     for _, c in ipairs(season.chapters) do
         if c.start >= (season.since or 0) and Intro.HasChapter(c.key) then keys[#keys + 1] = c.key end
     end
@@ -799,11 +854,16 @@ end))
 -- The one who starts it sends the chapter's key; every addon client in the party or raid that has reached it is asked "Watch now?".
 -- The raid leader is offered last week's chapter when the raid gathers, once a week.
 ----------------------------------------------------------------------
--- "chapter 5: The carbon", from the chapter's first scene.
+-- "chapter 5: The carbon", from the chapter's first scene; "season 2, chapter 3: Witnesses" in a later season, numbered as
+-- season one's are: the opening first, then each side's wins in turn.
 function Intro.ChapterTitle(key)
     local ch = CHAPTER_KEYS[key]
     local i = ch and firstOf[ch]
-    return i and string.format("chapter %d: %s", ch, scenes[i].label) or nil
+    if not i then return nil end
+    local season, side, n = Intro.ParseKey(key)
+    if not season or season == 1 then return string.format("chapter %d: %s", ch, scenes[i].label) end
+    local at = n and (side == "z" and 2 * n or 2 * n + 1) or 1
+    return string.format("season %d, chapter %d: %s", season, at, scenes[i].label)
 end
 
 -- A seam: how a client is asked (a popup in the game; the self-test answers itself).
@@ -818,7 +878,7 @@ StaticPopupDialogs["SUMMONCORE_ASK"] = {
 
 -- Plays a reached chapter here and asks the rest of the group to watch it too.
 function Intro.PlayForGroup(key)
-    if not (key and key:match("^[zg]%d$") and Intro.HasChapter(key)) then return ST.print("no such chapter: " .. tostring(key)) end
+    if not (Intro.ParseKey(key) and Intro.HasChapter(key)) then return ST.print("no such chapter: " .. tostring(key)) end
     if not Intro.Reached(key) and not ST.IsAdmin() then return ST.print("the season has not reached that chapter yet") end
     if not (IsInGroup() or IsInRaid()) then return ST.print("you are not in a group: /sc intro " .. key .. " plays it for you") end
     ST.Sync.SendWatch(key)
@@ -832,6 +892,11 @@ end
 function Intro.OnWatch(sender, key)
     if not Intro.HasChapter(key) then
         ST.Trace(string.format("%s showed %s, which this version of the addon does not have", tostring(sender), tostring(key)))
+        local season = Intro.ParseKey(key)
+        if season and season > 1 then
+            ST.print(string.format("%s is showing the group a chapter of season %d, which this version of Summon Core does not " ..
+                "have. An update will.", tostring(sender), season))
+        end
         return false
     end
     Intro.ask(string.format("%s would like to show the group %s. Watch now?", sender, Intro.ChapterTitle(key)),

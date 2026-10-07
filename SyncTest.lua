@@ -779,9 +779,54 @@ add("the season: first to five weekly wins takes the finale, then the count star
         season = ST.Week.Season()
     end)
     local c = season.chapters
-    return #c == 7 and c[5].key == "z5" and c[6].key == "g1" and c[7].key == "z1" and #season.finales == 1
-        and season.finales[1].side == "zennit" and season.zennit == 1 and season.group == 1,
-        string.format("%d chapters, %d finale(s), season z%d g%d", #c, #season.finales, season.zennit, season.group)
+    return #c == 7 and c[5].key == "z5" and c[6].key == "2g1" and c[7].key == "2z1" and #season.finales == 1
+        and season.finales[1].side == "zennit" and season.zennit == 1 and season.group == 1 and season.number == 2,
+        string.format("%d chapters, %d finale(s), season %d: z%d g%d", #c, #season.finales, season.number, season.zennit, season.group)
+end)
+
+add("season two: a finale opens the next season with its own chapters, and a restart by the admin is the same season", function()
+    local a = newClient("Alpha")
+    local I, L, out = ST.Intro, ST.Ledger, {}
+    local realAdmin, realPrint = ST.IsAdmin, ST.print
+    local printed = {}
+    ST.IsAdmin = function() return false end
+    ST.print = function(text) printed[#printed + 1] = text end
+    local ok, err = pcall(function()
+        with(a, function()
+            local W, this = ST.Week, ST.Week.Start()
+            -- nine finished weeks: Zennit takes season one 5 to 0, then the group, Zennit, the group, the group in season two
+            local points = { 3, 3, 3, 3, 3, 20, 3, 20, 20 }
+            for i, pts in ipairs(points) do
+                a.db.events["s-" .. i] = { caster = "Alpha", target = "Target1", assistants = {}, points = pts, kind = "zone",
+                    time = this - (10 - i) * 7 * 86400 + 3600 }
+            end
+            out.season = W.Season()
+            out.soFar = table.concat(I.SeasonSoFar(), ",")
+            out.reached = I.Reached("2a") and I.Reached("2g3") and not I.Reached("2b") and not I.Reached("2g4")
+            out.title = I.ChapterTitle("2g1")
+            out.art = L.ArtKey(out.season)
+            local texts = {}
+            for _, item in ipairs(L.Build(L.State())) do texts[#texts + 1] = item.text end
+            out.today = table.concat(texts, " ")
+            I.Toggle("3z1")
+            out.later = printed[#printed]
+            -- the admin stops and starts the season again: still season two, from 0 to 0
+            W.PutMark("stop", this - 7 * 86400 + 100)
+            W.PutMark("start", this + 100)
+            out.restart = W.Season()
+        end)
+    end)
+    ST.IsAdmin, ST.print = realAdmin, realPrint
+    if not ok then return false, "ERROR " .. tostring(err) end
+    local s, r = out.season, out.restart
+    local good = s.number == 2 and #s.openings == 1 and s.openings[1].key == "2a" and s.chapters[6].season == 2
+        and out.soFar == "2a,2g1,2z1,2g2,2g3" and out.reached and out.title == "season 2, chapter 3: Witnesses" and out.art == "2g3"
+        and out.today:find("Last season ended with Zennit in the clerk's chair", 1, true)
+        and out.today:find(ST.seasonLines[2].recap_g3, 1, true) and not out.today:find("Ritual has handed up", 1, true)
+        and out.later and out.later:find("season 3 of the story is not in this version", 1, true)
+        and r.number == 2 and r.zennit == 0 and r.group == 0
+    return good, string.format("season %d, so far %s, art %s, after a restart season %d", s.number, out.soFar, tostring(out.art),
+        r.number)
 end)
 
 add("the admin's seasons: a stop ends the season with no finale and no week counts, a start begins again 0 to 0", function()

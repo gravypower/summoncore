@@ -1,8 +1,8 @@
 # Season two: "Zennit and the Audit" (outline, draft)
 
-Status: **premise and twist agreed; narration drafted** ([below](#narration-draft)). Nothing is built in the addon yet. The next steps are
-the art in `tools/intro/source.html`, the voice (`zenit-narrator-audio`), and the code that tells the seasons apart (see
-[What the code needs](#what-the-code-needs)).
+Status: **premise and twist agreed; narration drafted** ([below](#narration-draft)); **the code is built** (v0.26.0, see
+[The code](#the-code)), with every season-two scene typed and silent on a borrowed picture. Still to do: the art in
+`tools/intro/source.html` and the voice (`zenit-narrator-audio`).
 
 Decided so far (2026-10-06):
 - **One arc, two openings.** Season one ends in one of two ways (Zennit in the clerk's chair, or Zennit freed). Season two has one
@@ -13,6 +13,9 @@ Decided so far (2026-10-06):
   pronouns that would give him away.
 - **Zennit is not consulted on season two.** Asking him what he wants from the story is kept for season three.
 - **Season three is not planned yet.**
+- **Only a finale moves the story to its next season** (2026-10-07). A season the admin stops and starts again is the same season,
+  so a test season before the beta cannot skip season one's story. That leaves no "season stopped with no finale" opening to
+  write, so Opening C is dropped.
 - **Mechanics wait for the beta.** This outline is story only. New rules or a new mechanic are decided around week 2 or 3 of the
   beta, once `/sc report` has real numbers. The [hooks](#hooks-for-mechanics-not-decided) below are places a rule *could* echo the
   story, not decisions.
@@ -79,12 +82,6 @@ opening from how the last season ended (`Week.Season().finales`).
    entered as "pending review", summonable as evidence until the audit closed. The Ritual apologised. The Auditor noted the apology
    as evidence too.*
 
-### Opening C: after a season the admin stopped
-
-A season stopped with `/sc season stop` has no finale. Season two then plays a neutral opening: Opening B's first scene without the
-receipt ("The Index has been changed, and nobody can say how. The bell for audits rang."), followed by "Pending review". This could
-also be one scene, typed and silent, like "The Index today".
-
 ## Zennit's trunk: the audit, from his side (z1 to z5)
 
 Zennit's side is the detective story: he works out who the Auditor is. Two scenes each, three for the finale, as in season one.
@@ -142,21 +139,24 @@ empty_audit = "The audit is open, and its file is empty. Nobody has won a week."
 | Narration | about 11 minutes | At season one's pace, about 25 s a scene |
 | Art | 26 scenes | New scenes in `source.html`, rendered by `render_intro.ps1` (on Aaron's PC). The Auditor needs a design: a disguise (the hat, spectacles, the stamp) with Poogs recognisable underneath once you know. Some backgrounds can be reused: the corridor, the desk, the cellar |
 | Ledger lines | 13 | Recorded the way season one's are |
-| Opening C | 1 | Typed and silent, so no art or voice of its own |
 
-## What the code needs
+## The code
 
-This is separate from the story, and can be built before the story is final.
+Built in v0.26.0 (README, [Season two](../README.md#season-two)):
+- **A season number**: `Week.Season().number`, worked out from the log, so every client agrees. Each finale adds one.
+- **Keys by season**: `Week.ChapterKey` gives `z3` in season one and `2z3` in season two; `Week.OpeningKey` gives `2a` or `2b`, and
+  `Week.Season().openings` lists each season's opening. The story player, the Story tab, "Previously on", "Show the group", the
+  `V` sync message and `/sc week <key>` all take the new keys.
+- **The scenes** are in `Season2.lua` and follow "The Index today" (scene 33), so season one's numbers do not move. Each borrows a
+  season-one picture (`art`) and is typed and silent, timed to be read, until it is drawn and recorded.
+- **A season with no story in this version** (season three, for now) shows its chapters as not written and says an update will
+  have them; a client shown a chapter it does not have says the same.
+- **"The Index today"** takes its story lines by season (`ST.seasonLines`). Season two's are typed and silent until recorded.
+- **Self-test**: "season two: a finale opens the next season..." in `/sc synctest`.
 
-- **A season number**, worked out from the log so every client agrees: count the finales and the admin's season starts in
-  `Week.Season`.
-- **Chapters per season**: keys such as `2z1` or a `season` field on each scene, the opening chosen by the last finale, and
-  `CHAPTER_KEYS`, the Story tab, "Previously on", "Show the group" and the `V` sync message made season-aware.
-- **A client without season two** must not replay season one's chapters as if they were new. It should say that the season has moved
-  on and the addon needs updating.
-- **The intro for a newcomer**: season one's intro is still the setup (who Zennit is, the sneeze, the rules), so a newcomer plays it,
-  then this season's opening. Check that `/sc tour`, which waits for the intro, still waits for the right thing.
-- **The Ledger** takes its lines by season (`recap_*`, `last_*`, `end_*`).
+To finish season two: draw its scenes in `source.html` and render them as `Media/intro_<n>.blp` for scenes 34 to 59; record the
+narration and the Ledger lines; then remove `silent` from the recorded scenes (and give them their cues in `IntroCues.lua`), and
+move the Ledger lines into `Ledger.LINES`.
 
 ## Hooks for mechanics (not decided)
 
@@ -262,8 +262,3 @@ follow season one: "Form 27B slash 7", never "27B/7".
 3. *Form 27B slash 7.* Poogs wrote the finding himself, and stamped it, in triplicate: Zennit had been summoned persistently,
    unreasonably, and out of affection, which is not an offence. He filed himself under it first. Then Zennit was handed a new form,
    a Request to Be Summoned. He filled it in at once and gave it to Poogs. It was, by general agreement, a slightly larger cake.
-
-### Opening C (typed, silent)
-
-*The Index has been changed, and nobody can say how. The bell for audits, which had not rung in nine thousand years, rang, and
-nobody saw who rang it. The Auditor arrived on a Monday, with a stamp and a hat slightly too large, and entered Zennit as pending review: summonable, as evidence, until the audit closes.*

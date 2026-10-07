@@ -47,6 +47,19 @@ local LINES = {
 }
 Ledger.LINES = LINES
 
+-- The scene's lines that belong to a season's story (where its trunks stand, how it ended, the pressure near its finale):
+-- season one's are in LINES, a later season's in ST.seasonLines (Season2.lua) and not recorded, so they are typed and silent.
+-- A season with no lines of its own says none of these, rather than season one's. Returns the text and its recording's id.
+local STORY = { recap_ = true, last_ = true, end_zennit = true, end_group = true }
+local function storyLine(number, id)
+    if number <= 1 then return LINES[id], LINES[id] and id or nil end
+    local own = ST.seasonLines and ST.seasonLines[number]
+    if own and own[id] then return own[id], nil end
+    if STORY[id] or STORY[id:match("^%a+_")] then return nil end
+    return LINES[id], LINES[id] and id or nil -- a line that is the same in every season
+end
+Ledger.StoryLine = storyLine
+
 -- Spliced lines, like a station announcement: the lines that carry only numbers are said by playing short recordings
 -- one after another (Media/ledger/<id>.ogg, lengths in LedgerClips.lua). A phrase's ending sets how it is said: a comma
 -- means more follows, a full stop ends the sentence. tools/intro/build_ledger_audio.py renders these too, so keep every
@@ -573,18 +586,21 @@ function Ledger.Build(s)
     end
     local z, g, wins = s.season.zennit, s.season.group, s.wins
     local finales = s.season.finales
-    local number = #finales + 1
+    local number = s.season.number or #finales + 1
+    local function story(id, cue)
+        local text, clip = storyLine(number, id)
+        if text then say(text, cue, clip) end
+    end
 
-    -- how the season began, or how the last one ended
+    -- how the season began, or how the last one ended (told in that season's words)
     if number > 1 then
-        local clip = "last_" .. finales[#finales].side
-        say(LINES[clip], "SEASON " .. number, clip)
+        local text, clip = storyLine(finales[#finales].season or number - 1, "last_" .. finales[#finales].side)
+        if text then say(text, "SEASON " .. number, clip) end
     end
 
     -- the standing
     if z == 0 and g == 0 then
-        local clip = number > 1 and "empty_fresh" or "empty_first"
-        say(LINES[clip], "NOBODY HAS WON A WEEK", clip)
+        story(number > 1 and "empty_fresh" or "empty_first", "NOBODY HAS WON A WEEK")
         say(LINES.wait, nil, "wait")
     elseif z == g then
         splice({ "level_at", z, z == 1 and "week_each" or "weeks_each", "|", "not_taking_sides" }, "LEVEL AT " .. z)
@@ -595,8 +611,8 @@ function Ledger.Build(s)
     end
 
     -- how far down each trunk
-    if z > 0 and LINES["recap_z" .. z] then say(LINES["recap_z" .. z], nil, "recap_z" .. z) end
-    if g > 0 and LINES["recap_g" .. g] then say(LINES["recap_g" .. g], nil, "recap_g" .. g) end
+    if z > 0 then story("recap_z" .. z) end
+    if g > 0 then story("recap_g" .. g) end
 
     -- what the Index remembers of this season, by name, and the silver
     if s.facts then
@@ -612,9 +628,9 @@ function Ledger.Build(s)
     if z == wins - 1 and g == wins - 1 then
         say(LINES.end_both, "ONE WIN FROM THE END", "end_both")
     elseif g == wins - 1 then
-        say(LINES.end_group, "ONE WIN FROM THE FINALE", "end_group")
+        story("end_group", "ONE WIN FROM THE FINALE")
     elseif z == wins - 1 then
-        say(LINES.end_zennit, "ONE WIN FROM THE CHAIR", "end_zennit")
+        story("end_zennit", number == 1 and "ONE WIN FROM THE CHAIR" or "ONE WIN FROM THE FINALE")
     end
 
     -- the Index's thumb on the scale, when the season is lopsided (Week.Edge)
@@ -671,9 +687,11 @@ function Ledger.Timed(list)
     return sentences, cues, t
 end
 
--- The chapter key whose picture the scene borrows: the latest win of the season, or nil before any.
+-- The chapter key whose picture the scene borrows: the latest win, or a later season's opening until it has one; nil before any.
 function Ledger.ArtKey(season)
     local last = season.chapters[#season.chapters]
+    local open = season.openings and season.openings[#season.openings]
+    if open and (not last or last.start < open.start) then return open.key end
     return last and last.key or nil
 end
 
