@@ -43,7 +43,11 @@ the `LINES` of `Tour.lua` (the tour).
 is tagged `SRC_HASH`, a hash of its words and the recipe, so the question "what needs re-recording?" has an answer
 without git. Set `PYTHONIOENCODING=utf-8` on Windows.
 
-1. Change the wording in `Intro.lua` or `Ledger.lua`. (A new scene: add its entry to `scenes` in `Intro.lua`, its
+0. **Numbering.** Scenes are numbered as the story numbers them: 1 to 32 are season one's (`Intro.lua`), 33 is "The Index today"
+   (no clip of its own: its lines are the Ledger's) and season two's start at 34 (`Season2.lua`, its scenes in order). The takes are
+   `voice_01` to `voice_32` and `voice_34` to `voice_59`; there is no `voice_33`. A season's "Index today" lines are in `Ledger.LINES`
+   with the season after the id (`recap_z1_2`). `narration_source.py`, `build_audio.ps1` and `render_intro.ps1` all use these numbers.
+1. Change the wording in `Intro.lua`, `Season2.lua` or `Ledger.lua`. (A new scene: add its entry to `scenes` in `Intro.lua`, its
    artwork in `tools/intro/source.html`, and its key phrases and highlight boxes in `tools/intro/build_audio.ps1`.)
 2. **See what is out of date:** `python tools/intro/check_audio.py`. It lists stale, missing and untagged clips
    (exit status 1 if any need rendering).

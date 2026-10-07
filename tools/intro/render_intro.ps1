@@ -7,19 +7,24 @@
 #      4th cell empty) and writes Media\intro_<n>.blp (DXT1 with mipmaps).
 #
 #   powershell -ExecutionPolicy Bypass -File tools\intro\render_intro.ps1 [-Format tga]
+#
+# Scene numbers are the story's: 1 to 32 are season one, 33 is "The Index today" (no picture of its own), and season two's
+# scenes follow it from 34 (Season2.lua). -Source and -Work render a copy of the page into a folder of your own, so two
+# renders cannot step on each other; -PngOnly stops after the screenshots (no sheets, nothing written to Media).
 param([ValidateSet("blp", "tga")][string]$Format = "blp", [switch]$SkipRender,
       [ValidateSet("storybook", "lines")][string]$Style = "storybook",
-      [string]$SceneList = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32")  # for example "9,10"; a text list because -File flattens 9,10 into 910
+      [string]$SceneList = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59",  # for example "9,10"; a text list because -File flattens 9,10 into 910
+      [string]$Source = "", [string]$Work = "", [switch]$PngOnly)
 $ErrorActionPreference = "Stop"
 $sceneIds = @($SceneList -split '[,\s]+' | Where-Object { $_ } | ForEach-Object { [int]$_ })
 $here = $PSScriptRoot
 $root = Split-Path -Parent (Split-Path -Parent $here)
 $media = Join-Path $root "Media"
-$work = Join-Path ([IO.Path]::GetTempPath()) "summoncore_intro"
+$work = if ($Work) { $Work } else { Join-Path ([IO.Path]::GetTempPath()) "summoncore_intro" }
 New-Item -ItemType Directory -Force $media, $work | Out-Null
 
 # --- 1. patch the page ---
-$html = [IO.File]::ReadAllText((Join-Path $here "source.html"))
+$html = [IO.File]::ReadAllText($(if ($Source) { $Source } else { Join-Path $here "source.html" }))
 $tail = [regex]'update\(0\);\s*requestAnimationFrame\(loop\);\s*\}\)\(\);'
 if (-not $tail.IsMatch($html)) { throw "source.html changed: could not find the start-up code to patch" }
 $patch = @'
@@ -69,8 +74,8 @@ $lineCss = 'html.shot.line .stage{background:#000}' +
   'html.shot.line .sym-hall path,html.shot.line .sym-hall polygon,html.shot.line .sym-hall rect,html.shot.line .sym-hall circle,html.shot.line .sym-hall line{stroke:#6a5718!important;stroke-width:1.3px!important}' +
   'html.shot.line .sym-hall [fill="url(#spines)"]{fill:url(#spinesLine)!important;stroke:#6a5718!important}' +
   # solid characters: filled black so nothing behind shows through, with a bolder, brighter outline
-  'html.shot.line :is(.sym-zenit,.sym-clerkFront,.sym-clerkBack,.sym-book,.sym-form) :is(path,rect,circle,ellipse,polygon):not([fill="none"]){fill:#000!important}' +
-  'html.shot.line :is(.sym-zenit,.sym-clerkFront,.sym-clerkBack,.sym-book,.sym-form) :is(path,rect,circle,ellipse,polygon,line){stroke:#ffe270!important;stroke-width:2.6px!important}' +
+  'html.shot.line :is(.sym-zenit,.sym-clerkFront,.sym-clerkBack,.sym-book,.sym-form,.sym-auditor,.sym-poogs) :is(path,rect,circle,ellipse,polygon):not([fill="none"]){fill:#000!important}' +
+  'html.shot.line :is(.sym-zenit,.sym-clerkFront,.sym-clerkBack,.sym-book,.sym-form,.sym-auditor,.sym-poogs) :is(path,rect,circle,ellipse,polygon,line){stroke:#ffe270!important;stroke-width:2.6px!important}' +
   # the figures inside the ritual circles (someone else, the goat): bright white outline over a dark fill so they stand out from the circle
   'html.shot.line .feature path,html.shot.line .feature circle,html.shot.line .feature ellipse,html.shot.line .feature rect,html.shot.line .feature polygon{fill:#07102e!important;stroke:#fff3b0!important;stroke-width:3px!important}' +
   'html.shot.line .feature path[fill="none"]{fill:none!important}' +
@@ -94,7 +99,8 @@ $browser = @(
 if (-not $browser) { throw "Edge or Chrome not found" }
 $styleFlag = switch ($Style) { "lines" { "&line=1" } default { "" } }
 $namePrefix = switch ($Style) { "lines" { "intro_l" } default { "intro_" } }
-$scenes = 32
+$scenes = $sceneIds.Count
+$done = 0
 foreach ($n in $sceneIds) {
     if ($SkipRender) { break }
     $s = $n - 1
@@ -103,11 +109,13 @@ foreach ($n in $sceneIds) {
         Remove-Item -LiteralPath $png -ErrorAction SilentlyContinue
         $p = Start-Process -FilePath $browser -PassThru -Wait -WindowStyle Hidden -ArgumentList @(
             "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
-            "--window-size=1024,512", "--virtual-time-budget=8000", "--screenshot=`"$png`"", "`"$url#s=$s&f=$f$styleFlag`"")
+            "--user-data-dir=`"$work\edge-profile`"", "--window-size=1024,512", "--virtual-time-budget=8000", "--screenshot=`"$png`"", "`"$url#s=$s&f=$f$styleFlag`"")
         if (-not (Test-Path -LiteralPath $png)) { throw "no screenshot for scene $s frame $f" }
     }
-    "rendered scene {0}/{1}" -f ($s + 1), $scenes
+    $done++
+    "rendered scene {0} ({1}/{2})" -f ($s + 1), $done, $scenes
 }
+if ($PngOnly) { "frames are in $work (" + $Style + "_s<scene-1>_f<0-2>.png)"; return }
 
 # --- 3. sheets ---
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @"

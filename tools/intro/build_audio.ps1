@@ -83,17 +83,24 @@ if (-not $Stamp -and ($Sfx -or $sfxMissing.Count -gt 0)) {
 }
 
 # ---------------------------------------------------------------- 2. scene lengths
-$sceneCount = (Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg").Count
-$voices = 1..$sceneCount | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
+# The scenes are numbered as the story numbers them: 1 to 32 are season one, 33 is "The Index today" (no narration of its own),
+# and season two's follow from 34. So the scene numbers are the voice files' numbers, not 1..N.
+$sceneNums = @(Get-ChildItem (Join-Path $here "narration") -Filter "voice_*.ogg" | ForEach-Object { [int]($_.BaseName -replace '^voice_', '') } | Sort-Object)
+$sceneCount = $sceneNums.Count
+$voices = $sceneNums | ForEach-Object { Join-Path $here ("narration\voice_{0:00}.ogg" -f $_) }
 $pause = 0.6   # keep in step with PAUSE in Intro.lua
 $ending = 3.2   # extra seconds after the last scene: the music fades out while the picture fades to black
-$chapterEnds = @(10, 12, 14, 16, 18, 20, 22, 24, 26, 29, 32)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua)
+$chapterEnds = @(10, 12, 14, 16, 18, 20, 22, 24, 26, 29, 32, 35, 37, 39, 41, 43, 45, 48, 50, 52, 54, 56, 59)   # the last scene of each chapter (keep in step with the chapter fields in Intro.lua and Season2.lua)
 $lengths = $voices | ForEach-Object { Duration $_ }
 $starts = @(); $acc = 0.0
+$voiceOf = @{}; $lengthOf = @{}
+for ($k = 0; $k -lt $lengths.Count; $k++) {
+    $voiceOf[$sceneNums[$k]] = $voices[$k]; $lengthOf[$sceneNums[$k]] = $lengths[$k]
+}
 for ($k = 0; $k -lt $lengths.Count; $k++) {
     $starts += $acc
     $acc += $lengths[$k] + $pause
-    if ($chapterEnds -contains ($k + 1)) { $acc += $ending }
+    if ($chapterEnds -contains $sceneNums[$k]) { $acc += $ending }
 }
 $totalSeconds = $acc + $ending + 3
 
@@ -183,7 +190,7 @@ public static class MusicGen {
     }
 }
 "@
-$musicHash = Sha $musicSource
+$musicHash = Sha ($musicSource -replace "`r`n", "`n")   # the source is hashed with LF line endings, so a CRLF checkout (Windows) agrees with the tags in the repo
 $musicWav = Join-Path $work "music.wav"
 $musicMade = $false
 function EnsureMusic {   # the music is synthesised only when a scene is actually mixed
@@ -201,7 +208,7 @@ $mixed = 0; $staleLeft = @(); $stamped = 0
 # The music is one continuous track cut at the scene boundaries, so it carries on across scenes. It is
 # ducked while the narrator speaks (sidechain compression) and rises in the pauses.
 for ($i = 0; $i -lt $sceneCount; $i++) {
-    $n = $i + 1
+    $n = $sceneNums[$i]
     $len = $lengths[$i] + $pause
     $ci = [Globalization.CultureInfo]::InvariantCulture
     $musicFade = ""
@@ -389,14 +396,150 @@ $cueSpec = @(
     @(32, "summoned by nobody", "SUMMONED BY NOBODY"),
     @(32, "free", "FREE"),
     @(32, "for cake", "FOR CAKE"),
-    @(32, "very small cake", "A VERY SMALL CAKE")
+    @(32, "very small cake", "A VERY SMALL CAKE"),
+    # season two (scenes 34 to 59)
+    @(34, "nobody added anything", "NOBODY ADDED ANYTHING"),
+    @(34, "in alphabetical order", "IN ALPHABETICAL ORDER"),
+    @(34, "notes of thanks", "NOTES OF THANKS"),
+    @(34, "any map", "NOT ON ANY MAP"),
+    @(34, "bell for audits", "THE BELL FOR AUDITS"),
+    @(34, "Nobody saw", "NOBODY SAW WHO"),
+    @(35, "on a Monday", "ARRIVED ON A MONDAY"),
+    @(35, "hat slightly too large", "A HAT SLIGHTLY TOO LARGE"),
+    @(35, "clerk not in order", "THE CLERK: NOT IN ORDER"),
+    @(35, "to pending review", "PENDING REVIEW"),
+    @(35, "as evidence", "SUMMONABLE AS EVIDENCE"),
+    @(35, "stop apologising", "ASKED TO STOP APOLOGISING"),
+    @(36, "irregular", "IRREGULAR"),
+    @(36, "to itself", "A RECEIPT TO ITSELF"),
+    @(36, "matter for audit", "A MATTER FOR AUDIT"),
+    @(36, "nine thousand years", "NOT RUNG FOR 9,000 YEARS"),
+    @(36, "Nobody saw", "NOBODY SAW WHO RANG IT"),
+    @(37, "suspended the receipt", "THE RECEIPT, SUSPENDED"),
+    @(37, "free for almost a week", "FREE FOR ALMOST A WEEK"),
+    @(37, "small click", "THE SMALL CLICK, IN REVERSE"),
+    @(37, "summonable as evidence", "SUMMONABLE AS EVIDENCE"),
+    @(37, "The Ritual apologised", "THE RITUAL APOLOGISED"),
+    @(37, "noted the apology", "THE APOLOGY: EVIDENCE TOO"),
+    @(38, "gardening leave pending audit", "GARDENING LEAVE, PENDING AUDIT"),
+    @(38, "did not have a garden", "NO GARDEN"),
+    @(38, "a borrowed deckchair", "A BORROWED DECKCHAIR"),
+    @(38, "wondering what, exactly", "AUDITED? WHAT, EXACTLY?"),
+    @(38, "asked to see his file", "FRIDAY: MAY I SEE MY FILE?"),
+    @(39, "did not open the file", "THE FILE STAYS CLOSED"),
+    @(39, "with the date, the place, and what he had said", "DATE. PLACE. WHAT HE SAID."),
+    @(39, "without once looking down", "NOT ONCE LOOKING DOWN"),
+    @(39, "a dog knowing your birthday", "A DOG KNOWING YOUR BIRTHDAY"),
+    @(39, "made a note", "ZENNIT MAKES A NOTE"),
+    @(40, "was very thin", "A VERY THIN FILE"),
+    @(40, "the sneeze", "ONE SNEEZE ON RECORD"),
+    @(40, "that said see also", "SEE ALSO..."),
+    @(40, "studied the syllabus", "HE HAS STUDIED THE SYLLABUS"),
+    @(40, "under A", "LOOK UP THE AUDITOR: UNDER A"),
+    @(41, "no Auditor under A", "NO AUDITOR UNDER A"),
+    @(41, "no Auditor under Z", "NOT UNDER Z, NOT THE SNEEZE"),
+    @(41, "a bell for audits", "A BELL FOR AUDITS"),
+    @(41, "appointed to answer it", "NOBODY APPOINTED TO ANSWER"),
+    @(41, "Who rang the bell", "WHO RANG THE BELL?"),
+    @(42, "The bell for audits hung", "THE BELL FOR AUDITS"),
+    @(42, "Its rope was new", "THE ROPE IS NEW"),
+    @(42, "frayed, recently", "FRAYED, RECENTLY"),
+    @(42, "ordinary boots", "A PAIR OF ORDINARY BOOTS"),
+    @(42, "in a hurry", "WALKED OUT IN A HURRY"),
+    @(43, "a soul shard", "A SOUL SHARD"),
+    @(43, "faintly warm", "FAINTLY WARM"),
+    @(43, "turned it over", "PICKED UP, TURNED OVER"),
+    @(43, "He knew several warlocks", "HE KNOWS SEVERAL WARLOCKS"),
+    @(43, "went to see the Auditor", "OFF TO SEE THE AUDITOR"),
+    @(44, "for the evidence", "FOR THE EVIDENCE"),
+    @(44, "hesitated", "AUDITORS DO NOT HESITATE"),
+    @(44, "gathered two helpers", "TWO HELPERS GATHERED"),
+    @(44, "from memory", "CAST FROM MEMORY"),
+    @(44, "in under a minute", "0:58 ON THE CLOCK"),
+    @(45, "slightly confused", "SLIGHTLY CONFUSED"),
+    @(45, "He knew that ritual", "HE KNEW THAT RITUAL"),
+    @(45, "the same pace", "SAME PACE, SAME FLOURISH"),
+    @(45, "the same small impatience", "THE SAME SMALL IMPATIENCE"),
+    @(45, "He thanked the Auditor", "THANK YOU. NOTHING ELSE."),
+    @(46, "entered in the Index", "AUDITOR MUST BE IN THE INDEX"),
+    @(46, "uncapped the pen", "THE PEN, UNCAPPED"),
+    @(46, "for a long time", "A VERY LONG LOOK"),
+    @(46, "took off the hat", "THE HAT COMES OFF"),
+    @(46, "It was Poogs", "IT WAS POOGS"),
+    @(47, "rung the bell himself", "HE RANG THE BELL"),
+    @(47, "borrowed a stamp", "A BORROWED STAMP"),
+    @(47, "bought a hat", "A HAT, SLIGHTLY TOO LARGE"),
+    @(47, "Pending review meant summonable", "PENDING REVIEW = SUMMONABLE"),
+    @(47, "not, entirely, sorry", "VERY SORRY. NOT ENTIRELY."),
+    @(48, "under P", "UNDER P"),
+    @(48, "Summons Zennit, persistently", "SUMMONS ZENNIT, PERSISTENTLY"),
+    @(48, "stamped it Correct", "STAMPED CORRECT"),
+    @(48, "same time next week", "SAME TIME NEXT WEEK"),
+    @(48, "wrote that down", "THE INDEX WROTE IT DOWN"),
+    @(49, "by a ritual nobody in the room had cast", "CAST BY NOBODY"),
+    @(49, "a small sign that said Witnesses", "A SIGN: WITNESSES"),
+    @(49, "slightly confused", "SLIGHTLY CONFUSED"),
+    @(49, "still holding a fork", "STILL HOLDING A FORK"),
+    @(49, "who sent apologies", "SENT APOLOGIES"),
+    @(50, "without looking up", "WITHOUT LOOKING UP"),
+    @(50, "summoned, not invited", "SUMMONED, NOT INVITED"),
+    @(50, "very understanding", "VERY UNDERSTANDING"),
+    @(50, "So You Have Been Summoned", "SO YOU HAVE BEEN SUMMONED"),
+    @(50, "never had anyone to give it to", "NOBODY TO GIVE IT TO"),
+    @(51, "the evidence: a notebook", "EVIDENCE: A NOTEBOOK"),
+    @(51, "every summons of Zennit", "EVERY SUMMONS OF ZENNIT"),
+    @(51, "Nobody at the table remembered keeping it", "NOBODY REMEMBERED KEEPING IT"),
+    @(51, "neat, and slanted, and familiar", "NEAT, SLANTED, FAMILIAR"),
+    @(51, "had sent apologies", "APOLOGIES, AGAIN"),
+    @(52, "stamped the notebook Received", "STAMPED: RECEIVED"),
+    @(52, "Exhibit A", "EXHIBIT A"),
+    @(52, "as a compliment", "TAKEN AS A COMPLIMENT"),
+    @(52, "after the audit", "AFTER THE AUDIT"),
+    @(52, "a feeling about that", "A FEELING ABOUT THAT"),
+    @(53, "asked to give evidence", "A SPELL GIVES EVIDENCE"),
+    @(53, "not built for a spell", "NOT BUILT FOR A SPELL"),
+    @(53, "a statement about Zennit", "A STATEMENT ABOUT ZENNIT"),
+    @(53, "slightly too long", "MOSTLY KIND, SLIGHTLY TOO LONG"),
+    @(53, "he complained very well", "HE COMPLAINED VERY WELL"),
+    @(54, "noticed the Auditor", "THE RITUAL SPOTS THE AUDITOR"),
+    @(54, "We work together most Tuesdays", "WE WORK TOGETHER MOST TUESDAYS"),
+    @(54, "The Auditor coughed", "THE AUDITOR COUGHED"),
+    @(54, "glowed in the wrong places", "GLOWING IN THE WRONG PLACES"),
+    @(54, "did not note the cough", "NOBODY NOTED THE COUGH"),
+    @(55, "closed the notebook", "THE NOTEBOOK, CLOSED"),
+    @(55, "set down the stamp", "THE STAMP, LAID ASIDE"),
+    @(55, "Why do you keep summoning him?", "THE ONLY QUESTION"),
+    @(55, "less like a question than a confession", "MORE CONFESSION THAN QUESTION"),
+    @(56, "looked at one another", "NOBODY HAD AN ANSWER"),
+    @(56, "none of which were filed", "NONE OF THEM FILED"),
+    @(56, "due at the close of the audit", "ANSWER DUE AT CLOSE OF AUDIT"),
+    @(56, "in triplicate", "IN TRIPLICATE"),
+    @(56, "did the Auditor", "THE AUDITOR THOUGHT TOO"),
+    @(57, "came back to the long table", "BACK AT THE LONG TABLE"),
+    @(57, "crossed out a great deal", "A WEEK OF CROSSING OUT"),
+    @(57, "Because he comes.", "BECAUSE HE COMES"),
+    @(57, "once per copy", "ONE READING PER COPY"),
+    @(57, "took off the hat", "THE HAT COMES OFF"),
+    @(58, "It was Poogs.", "IT WAS POOGS"),
+    @(58, "at every session as the Auditor", "EVERY SESSION, AS THE AUDITOR"),
+    @(58, "suspected since the notebook", "SUSPECTED SINCE THE NOTEBOOK"),
+    @(58, "They had not.", "THEY HAD NOT"),
+    @(58, "Zennit said he had", "ZENNIT HAD KNOWN"),
+    @(59, "wrote the finding himself", "POOGS WRITES THE FINDING"),
+    @(59, "out of affection", "OUT OF AFFECTION"),
+    @(59, "filed himself under it first", "FILED UNDER IT FIRST"),
+    @(59, "Request to Be Summoned", "FORM 27B/7"),
+    @(59, "slightly larger cake", "A SLIGHTLY LARGER CAKE")
 )
 $lead = 0.25   # show a cue a little before the words are spoken
 
-# The narration text lives in Intro.lua (one place); read it from there.
-$luaText = [IO.File]::ReadAllText((Join-Path $root "Intro.lua"))
-$texts = [regex]::Matches($luaText, 'text = \[=\[(.*?)\]=\]', "Singleline") | ForEach-Object { $_.Groups[1].Value.Trim() }
-if ($texts.Count -ne $sceneCount) { throw "expected $sceneCount scene texts in Intro.lua, found $($texts.Count)" }
+# The narration text lives in Intro.lua (season one) and Season2.lua (season two): one place each; read it from there.
+$introTexts = @([regex]::Matches([IO.File]::ReadAllText((Join-Path $root "Intro.lua")), 'text = \[=\[(.*?)\]=\]', "Singleline") | ForEach-Object { $_.Groups[1].Value.Trim() })
+$seasonTexts = @([regex]::Matches([IO.File]::ReadAllText((Join-Path $root "Season2.lua")), 'text = \[=\[(.*?)\]=\]', "Singleline") | ForEach-Object { $_.Groups[1].Value.Trim() })
+$texts = @{}
+for ($k = 0; $k -lt $introTexts.Count; $k++) { $texts[$k + 1] = $introTexts[$k] }
+for ($k = 0; $k -lt $seasonTexts.Count; $k++) { $texts[$introTexts.Count + 2 + $k] = $seasonTexts[$k] }   # the Ledger scene is the one after season one's
+foreach ($n in $sceneNums) { if (-not $texts.ContainsKey($n)) { throw "no narration text for scene $n (Intro.lua, Season2.lua)" } }
 
 function SpeechSegments([string]$file, [double]$length) {
     $prev = $ErrorActionPreference
@@ -562,29 +705,146 @@ $highlightSpec = @(
     @(32, "small click", 100, 120, 170, 240),
     @(32, "free", 320, 80, 280, 400),
     @(32, "for cake", 580, 360, 320, 100),
-    @(32, "They accepted", 620, 230, 300, 110)
+    @(32, "They accepted", 620, 230, 300, 110),
+    # season two (scenes 34 to 59)
+    @(34, "added an entire party", 90, 56, 340, 358),
+    @(34, "notes of thanks", 336, 126, 78, 258),
+    @(34, "any map", 730, 376, 190, 124),
+    @(34, "a bell rang", 770, 56, 104, 170),
+    @(34, "bell for audits", 716, 30, 204, 318),
+    @(35, "on a Monday", 40, 22, 190, 60),
+    @(35, "hat slightly too large", 104, 112, 176, 84),
+    @(35, "chair in order", 310, 52, 264, 40),
+    @(35, "pen in order", 310, 92, 264, 40),
+    @(35, "clerk not in order", 310, 130, 264, 42),
+    @(35, "to pending review", 404, 314, 176, 48),
+    @(35, "He accepted", 660, 30, 250, 48),
+    @(36, "receipt issued by a spell is", 370, 40, 240, 380),
+    @(36, "irregular", 385, 368, 230, 56),
+    @(36, "to itself", 386, 128, 230, 170),
+    @(36, "bell for audits", 736, 150, 128, 130),
+    @(36, "nine thousand years", 690, 404, 240, 84),
+    @(36, "Nobody saw", 792, 0, 16, 160),
+    @(37, "suspended the receipt", 290, 186, 130, 186),
+    @(37, "free for almost a week", 716, 16, 214, 52),
+    @(37, "small click", 686, 356, 52, 76),
+    @(37, "The Ritual apologised", 500, 300, 190, 200),
+    @(37, "noted the apology", 500, 70, 170, 64),
+    @(38, "gardening leave pending audit", 552, 36, 376, 108),
+    @(38, "did not have a garden", 484, 318, 470, 174),
+    @(38, "a borrowed deckchair", 78, 164, 330, 366),
+    @(38, "wondering what, exactly", 296, 40, 160, 84),
+    @(38, "asked to see his file", 358, 144, 202, 86),
+    @(39, "did not open the file", 338, 358, 184, 64),
+    @(39, "with the date, the place, and what he had said", 586, 22, 370, 290),
+    @(39, "without once looking down", 362, 106, 164, 146),
+    @(39, "a dog knowing your birthday", 36, 32, 328, 150),
+    @(39, "made a note", 36, 370, 76, 82),
+    @(40, "was very thin", 18, 72, 468, 416),
+    @(40, "the sneeze", 276, 192, 174, 80),
+    @(40, "that said see also", 140, 306, 260, 48),
+    @(40, "studied the syllabus", 466, 26, 250, 128),
+    @(40, "under A", 722, 78, 232, 436),
+    @(41, "no Auditor under A", 52, 240, 248, 68),
+    @(41, "no Auditor under Z", 322, 62, 258, 134),
+    @(41, "a bell for audits", 326, 244, 224, 112),
+    @(41, "appointed to answer it", 384, 328, 190, 80),
+    @(41, "Who rang the bell", 626, 20, 316, 204),
+    @(42, "The bell for audits hung", 430, 134, 100, 206),
+    @(42, "Its rope was new", 454, 136, 52, 114),
+    @(42, "frayed, recently", 700, 42, 216, 216),
+    @(42, "ordinary boots", 296, 332, 440, 176),
+    @(43, "a soul shard", 540, 286, 84, 118),
+    @(43, "turned it over", 508, 276, 150, 156),
+    @(43, "where the boots had stood", 584, 404, 284, 116),
+    @(43, "He knew several warlocks", 538, 32, 408, 160),
+    @(43, "went to see the Auditor", 824, 388, 134, 136),
+    @(44, "hesitated", 286, 120, 190, 396),
+    @(44, "gathered two helpers", 588, 238, 194, 238),
+    @(44, "No book was opened", 796, 300, 148, 224),
+    @(44, "in under a minute", 776, 36, 148, 190),
+    @(45, "where he always arrived", 124, 122, 352, 352),
+    @(45, "He knew that ritual", 240, 96, 150, 176),
+    @(45, "the same pace", 592, 96, 252, 414),
+    @(45, "He thanked the Auditor", 30, 18, 232, 122),
+    @(46, "entered in the Index", 284, 348, 334, 100),
+    @(46, "uncapped the pen", 240, 312, 180, 92),
+    @(46, "took off the hat", 684, 46, 190, 112),
+    @(46, "It was Poogs", 628, 50, 300, 440),
+    @(47, "rung the bell himself", 806, 120, 148, 108),
+    @(47, "borrowed a stamp", 548, 328, 62, 106),
+    @(47, "bought a hat", 370, 320, 110, 72),
+    @(47, "Pending review meant summonable", 24, 28, 312, 142),
+    @(48, "under P", 50, 134, 344, 168),
+    @(48, "stamped it Correct", 150, 296, 242, 80),
+    @(48, "his hat, and his soul shard", 656, 306, 94, 108),
+    @(48, "same time next week", 496, 10, 318, 66),
+    @(49, "a ritual nobody in the room had cast", 228, 24, 504, 80),
+    @(49, "a small sign that said Witnesses", 10, 266, 200, 98),
+    @(49, "still holding a fork", 616, 84, 54, 160),
+    @(49, "who sent apologies", 344, 128, 152, 242),
+    @(50, "the apologies", 352, 276, 156, 94),
+    @(50, "without looking up", 770, 150, 170, 200),
+    @(50, "summoned, not invited", 166, 22, 628, 80),
+    @(50, "Zennit, at the far end of the table", 14, 150, 160, 308),
+    @(51, "a notebook", 326, 160, 308, 222),
+    @(51, "Nobody at the table remembered keeping it", 46, 130, 252, 218),
+    @(51, "The handwriting", 338, 210, 284, 140),
+    @(51, "had sent apologies", 776, 130, 140, 240),
+    @(52, "stamped the notebook Received", 590, 226, 226, 236),
+    @(52, "as a compliment", 200, 96, 370, 250),
+    @(52, "after the audit", 586, 20, 326, 66),
+    @(52, "a feeling about that", 158, 4, 194, 90),
+    @(53, "asked to give evidence", 372, 236, 196, 196),
+    @(53, "not built for a spell", 386, 410, 168, 112),
+    @(53, "a statement about Zennit", 532, 362, 380, 170),
+    @(53, "he complained very well", 334, 14, 330, 116),
+    @(54, "We work together most Tuesdays", 290, 12, 392, 92),
+    @(54, "The Auditor coughed", 678, 186, 156, 88),
+    @(54, "glowed in the wrong places", 320, 230, 284, 226),
+    @(54, "The party noted the glow", 136, 100, 262, 248),
+    @(55, "closed the notebook", 368, 410, 136, 54),
+    @(55, "set down the stamp", 606, 420, 76, 44),
+    @(55, "Why do you keep summoning him?", 296, 14, 448, 148),
+    @(55, "less like a question than a confession", 420, 190, 196, 176),
+    @(56, "none of which were filed", 4, 40, 376, 146),
+    @(56, "due at the close of the audit", 444, 14, 152, 142),
+    @(56, "in triplicate", 400, 404, 374, 64),
+    @(56, "did the Auditor", 680, 10, 266, 200),
+    @(57, "crossed out a great deal", 0, 448, 308, 92),
+    @(57, "Because he comes.", 432, 248, 176, 160),
+    @(57, "once per copy", 432, 206, 176, 60),
+    @(57, "took off the hat", 410, 66, 216, 150),
+    @(58, "It was Poogs.", 262, 188, 194, 226),
+    @(58, "at every session as the Auditor", 402, 156, 236, 246),
+    @(58, "suspected since the notebook", 54, 412, 130, 50),
+    @(58, "Zennit said he had", 648, 108, 272, 292),
+    @(59, "wrote the finding himself", 258, 50, 368, 138),
+    @(59, "filed himself under it first", 192, 384, 160, 78),
+    @(59, "Request to Be Summoned", 648, 62, 300, 142),
+    @(59, "slightly larger cake", 512, 302, 204, 166)
 )
 
 $cues = @{}
 $sentenceTimes = @{}
 $highlights = @{}
-for ($s = 1; $s -le $sceneCount; $s++) {
-    $sentences = [regex]::Split($texts[$s - 1], '(?<=[.!?])\s+')
-    $segs = SpeechSegments $voices[$s - 1] $lengths[$s - 1]
+foreach ($s in $sceneNums) {
+    $sentences = [regex]::Split($texts[$s], '(?<=[.!?])\s+')
+    $segs = SpeechSegments $voiceOf[$s] $lengthOf[$s]
     $byCount = $segs.Count -ne $sentences.Count
     if ($byCount) {
         Write-Warning ("scene {0}: {1} sentences but {2} speech segments; spreading cues across the whole take" -f $s, $sentences.Count, $segs.Count)
     }
     $cues[$s] = @()
     foreach ($c in $cueSpec | Where-Object { $_[0] -eq $s }) {
-        $t = PhraseTime $texts[$s - 1] $sentences $segs $byCount $c[1] $s
+        $t = PhraseTime $texts[$s] $sentences $segs $byCount $c[1] $s
         $cues[$s] += , @([math]::Max(0.1, [double]$t - $lead), $c[2])
     }
     $cues[$s] = @($cues[$s] | Sort-Object { $_[0] })
 
     $highlights[$s] = @()
     foreach ($h in $highlightSpec | Where-Object { $_[0] -eq $s }) {
-        $t = PhraseTime $texts[$s - 1] $sentences $segs $byCount $h[1] $s
+        $t = PhraseTime $texts[$s] $sentences $segs $byCount $h[1] $s
         # keep the box inside the 960x540 picture (the self-test checks it)
         $bw = [math]::Min($h[4], 960 - $h[2]); $bh = [math]::Min($h[5], 540 - $h[3])
         $highlights[$s] += , @([math]::Max(0.1, [double]$t - 0.15), $h[2], $h[3], $bw, $bh)
@@ -597,7 +857,7 @@ for ($s = 1; $s -le $sceneCount; $s++) {
     for ($k = 0; $k -lt $sentences.Count; $k++) {
         if ($byCount) {
             $first = $segs[0][0]; $last = $segs[$segs.Count - 1][1]
-            $t = $first + ($running / [double]$texts[$s - 1].Length) * ($last - $first)
+            $t = $first + ($running / [double]$texts[$s].Length) * ($last - $first)
         } else {
             $t = $segs[$k][0]
         }
@@ -612,9 +872,15 @@ $lines.Add("-- Generated by tools/intro/build_audio.ps1. Do not edit by hand.")
 $lines.Add("-- introLength: narration length of each scene in seconds; introCues: when each key phrase appears.")
 $lines.Add("local ADDON, ST = ...")
 $lines.Add("ST.introEnding = " + $ending.ToString("0.00", $inv))
-$lines.Add("ST.introLength = { " + (($lengths | ForEach-Object { $_.ToString("0.00", $inv) }) -join ", ") + " }")
+# season one's lengths are a plain list (scene 1, 2, ...); a scene after the gap at 33 is keyed by its number
+$lengthItems = @()
+for ($k = 0; $k -lt $sceneNums.Count; $k++) {
+    $v = $lengths[$k].ToString("0.00", $inv)
+    if ($sceneNums[$k] -eq $k + 1) { $lengthItems += $v } else { $lengthItems += ("[{0}] = {1}" -f $sceneNums[$k], $v) }
+}
+$lines.Add("ST.introLength = { " + ($lengthItems -join ", ") + " }")
 $lines.Add("ST.introCues = {")
-for ($s = 1; $s -le $sceneCount; $s++) {
+foreach ($s in $sceneNums) {
     $lines.Add("    [$s] = {")
     foreach ($c in $cues[$s]) { $lines.Add(("        {{ t = {0}, text = `"{1}`" }}," -f $c[0].ToString("0.00", $inv), $c[1].Replace('"', '\"'))) }
     $lines.Add("    },")
@@ -622,7 +888,7 @@ for ($s = 1; $s -le $sceneCount; $s++) {
 $lines.Add("}")
 $lines.Add("-- introSentences: when each sentence of the narration starts, for the subtitles.")
 $lines.Add("ST.introSentences = {")
-for ($s = 1; $s -le $sceneCount; $s++) {
+foreach ($s in $sceneNums) {
     $lines.Add("    [$s] = {")
     foreach ($c in $sentenceTimes[$s]) { $lines.Add(("        {{ t = {0}, text = [=[{1}]=] }}," -f $c[0].ToString("0.00", $inv), $c[1])) }
     $lines.Add("    },")
@@ -630,7 +896,7 @@ for ($s = 1; $s -le $sceneCount; $s++) {
 $lines.Add("}")
 $lines.Add("-- introHighlights: while something is mentioned, a box is drawn round it (x, y, w, h in the 960x540 picture).")
 $lines.Add("ST.introHighlights = {")
-for ($s = 1; $s -le $sceneCount; $s++) {
+foreach ($s in $sceneNums) {
     if ($highlights[$s].Count -eq 0) { continue }
     $lines.Add("    [$s] = {")
     foreach ($h in $highlights[$s]) { $lines.Add(("        {{ t = {0}, x = {1}, y = {2}, w = {3}, h = {4} }}," -f $h[0].ToString("0.00", $inv), $h[1], $h[2], $h[3], $h[4])) }

@@ -822,7 +822,7 @@ add("season two: a finale opens the next season with its own chapters, and a res
     local good = s.number == 2 and #s.openings == 1 and s.openings[1].key == "2a" and s.chapters[6].season == 2
         and out.soFar == "2a,2g1,2z1,2g2,2g3" and out.reached and out.title == "season 2, chapter 3: Witnesses" and out.art == "2g3"
         and out.today:find("Last season ended with Zennit in the clerk's chair", 1, true)
-        and out.today:find(ST.seasonLines[2].recap_g3, 1, true) and not out.today:find("Ritual has handed up", 1, true)
+        and out.today:find(L.LINES.recap_g3_2, 1, true) and not out.today:find("Ritual has handed up", 1, true)
         and out.later and out.later:find("season 3 of the story is not in this version", 1, true)
         and r.number == 2 and r.zennit == 0 and r.group == 0
     return good, string.format("season %d, so far %s, art %s, after a restart season %d", s.number, out.soFar, tostring(out.art),

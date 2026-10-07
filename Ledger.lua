@@ -44,15 +44,32 @@ local LINES = {
     whim_attentive = "This week's whim: The Index is attentive. Zennit's edge on the dice is 5 higher this week.",
     whim_feast = "This week's whim: A helpers' feast. Each helper adds +8 to the summoner's roll this week.",
     whim_tired = "This week's whim: The helpers are tired. Each helper adds only +2 to the summoner's roll this week.",
+    -- Season two's story (Season2.lua): the same ids with _2 after them, which storyLine looks for first.
+    recap_z1_2 = "Zennit is on gardening leave pending audit. He has no garden, and has asked for his file.",
+    recap_z2_2 = "Zennit has looked the Auditor up in the Index, and found no such entry.",
+    recap_z3_2 = "Zennit has found the bell for audits, a new rope, and a soul shard in the dust.",
+    recap_z4_2 = "The Auditor has summoned Zennit from memory, and he recognised the ritual.",
+    recap_g1_2 = "The party has been called to give evidence. Poogs sent apologies.",
+    recap_g2_2 = "A notebook of summons, in familiar handwriting, has been entered as Exhibit A.",
+    recap_g3_2 = "The Ritual has given Zennit a character reference, and greeted the Auditor like an old friend.",
+    recap_g4_2 = "The Auditor has asked the party why they keep summoning him. The answer is due.",
+    last_zennit_2 = "Last season ended with the Auditor unmasked as Poogs, and entered in the Index under P, in ink.",
+    last_group_2 = "Last season ended with Poogs unmasked, a finding of affection, and Zennit holding Form 27B slash 7.",
+    end_zennit_2 = "Zennit is one win from closing the audit, and would like the Auditor to spell their name.",
+    end_group_2 = "The party is one win from answering the question, and has started rehearsing.",
+    empty_fresh_2 = "The audit is open, and its file is empty. Nobody has won a week.",
 }
 Ledger.LINES = LINES
 
 -- The scene's lines that belong to a season's story (where its trunks stand, how it ended, the pressure near its finale):
--- season one's are in LINES, a later season's in ST.seasonLines (Season2.lua) and not recorded, so they are typed and silent.
--- A season with no lines of its own says none of these, rather than season one's. Returns the text and its recording's id.
+-- season one's are in LINES, and so are season two's, with _2 after the id (recap_z1_2). A later season whose lines are not
+-- recorded yet has them in ST.seasonLines (Season2.lua), typed and silent. A season with no lines of its own says none of
+-- these, rather than season one's. Returns the text and its recording's id.
 local STORY = { recap_ = true, last_ = true, end_zennit = true, end_group = true }
 local function storyLine(number, id)
     if number <= 1 then return LINES[id], LINES[id] and id or nil end
+    local recorded = id .. "_" .. number
+    if LINES[recorded] then return LINES[recorded], recorded end
     local own = ST.seasonLines and ST.seasonLines[number]
     if own and own[id] then return own[id], nil end
     if STORY[id] or STORY[id:match("^%a+_")] then return nil end

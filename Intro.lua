@@ -99,8 +99,9 @@ scenes[EPI] = { chapter = "now", label = "The Index today", dur = 30, text = "",
 firstOf.now, lastOf.now = EPI, EPI
 
 -- Later seasons' scenes (Season2.lua) follow "The Index today", so season one's scene numbers, pictures and recordings do not
--- move. Their chapters are named by key (2a, 2z1, ...). Until a scene is recorded it is typed and silent: its sentences are
--- timed to be read, as the Ledger scene's are, and it borrows a season-one scene's picture (`art`).
+-- move. Their chapters are named by key (2a, 2z1, ...). A scene that is recorded has its length, sentences and key phrases in
+-- IntroCues.lua, like season one's. Until then it is typed and silent: its sentences are timed to be read, as the Ledger
+-- scene's are, and it may borrow another scene's picture (`art`).
 local READ_LEAD, READ_PER_CHAR = 1.2, 1 / 16 -- reading speed of a typed sentence (Ledger.Timed uses the same)
 function Intro.TypedTimings(text)
     local sentences, t = {}, 0
@@ -113,9 +114,12 @@ end
 local seasonOf = {} -- a later season's chapter (its key) -> the season's number
 for number = 2, 9 do
     for _, def in ipairs(ST.seasonScenes and ST.seasonScenes[number] or {}) do
-        local scene = { chapter = def.chapter, label = def.label, art = def.art, text = def.text, silent = true }
-        scene.sentences, scene.length = Intro.TypedTimings(def.text)
-        scene.dur = scene.length + PAUSE
+        local scene = { chapter = def.chapter, label = def.label, art = def.art, text = def.text }
+        if not (ST.introLength and ST.introLength[#scenes + 1]) then
+            scene.silent = true
+            scene.sentences, scene.length = Intro.TypedTimings(def.text)
+            scene.dur = scene.length + PAUSE
+        end
         scenes[#scenes + 1] = scene
         firstOf[def.chapter] = firstOf[def.chapter] or #scenes
         lastOf[def.chapter] = #scenes
@@ -722,9 +726,11 @@ function Intro.Check()
             ST.print("cannot play: " .. name:match("[^\\]+$"))
         end
     end
-    for i = 1, RECORDED do
-        try(MEDIA .. "intro_" .. i .. ".ogg")
-        try(MEDIA .. "intro_" .. i .. "_voice.ogg")
+    for i = 1, #scenes do
+        if not scenes[i].silent then -- season one's, and the scenes of a later season that have been recorded
+            try(MEDIA .. "intro_" .. i .. ".ogg")
+            try(MEDIA .. "intro_" .. i .. "_voice.ogg")
+        end
     end
     for _, name in ipairs({ "sfx_chirp_1", "sfx_chirp_2", "sfx_chirp_3", "sfx_keys_long", "sfx_pop" }) do
         try(SFX .. name .. ".ogg")

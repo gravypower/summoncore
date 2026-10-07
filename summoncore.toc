@@ -3,7 +3,7 @@
 ## Notes: Ritual of Summoning logger, shared tally and scoring (v1 in progress)
 ## Author: Aaron
 ## X-Curse-Project-ID: 1731543
-## Version: 0.26.0
+## Version: 0.27.0
 ## IconTexture: Interface\AddOns\summoncore\Media\icon
 ## SavedVariables: SummonTrackerDB
 

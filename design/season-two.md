@@ -1,8 +1,8 @@
 # Season two: "Zennit and the Audit" (outline, draft)
 
 Status: **premise and twist agreed; narration drafted** ([below](#narration-draft)); **the code is built** (v0.26.0, see
-[The code](#the-code)), with every season-two scene typed and silent on a borrowed picture. Still to do: the art in
-`tools/intro/source.html` and the voice (`zenit-narrator-audio`).
+[The code](#the-code)); **the art and the voice are rendered** (v0.27.0): 26 scenes drawn in `tools/intro/source.html` and narrated,
+and the 13 "Index today" lines recorded. Nothing has been seen or heard in the game yet.
 
 Decided so far (2026-10-06):
 - **One arc, two openings.** Season one ends in one of two ways (Zennit in the clerk's chair, or Zennit freed). Season two has one
@@ -154,9 +154,13 @@ Built in v0.26.0 (README, [Season two](../README.md#season-two)):
 - **"The Index today"** takes its story lines by season (`ST.seasonLines`). Season two's are typed and silent until recorded.
 - **Self-test**: "season two: a finale opens the next season..." in `/sc synctest`.
 
-To finish season two: draw its scenes in `source.html` and render them as `Media/intro_<n>.blp` for scenes 34 to 59; record the
-narration and the Ledger lines; then remove `silent` from the recorded scenes (and give them their cues in `IntroCues.lua`), and
-move the Ledger lines into `Ledger.LINES`.
+Finished in v0.27.0: the scenes are drawn in `source.html` (the Auditor, Poogs, and the props: a hat, a stamp, the audit bell, a
+soul shard) and rendered as `Media/intro_<n>.blp` and `intro_l<n>.blp` for scenes 34 to 59; the narration is rendered as
+`tools/intro/narration/voice_<n>.ogg` and mixed into `Media/intro_<n>.ogg`; the cues, sentences and highlights are in
+`IntroCues.lua`; the Ledger lines are in `Ledger.LINES` as `recap_z1_2` and so on, with their recordings in `Media/ledger`. A scene
+is "recorded" when `IntroCues.lua` has a length for it, so a scene without a clip falls back to being typed and silent.
+Poogs is the "horns" hero of the party (rust robe, grey horned cap); the Auditor's over-large hat covers that cap, and two white
+horn tips show under its brim.
 
 ## Hooks for mechanics (not decided)
 
