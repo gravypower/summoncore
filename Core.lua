@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.25.3"
+ST.version = "0.26.0"
 
 local DB_VERSION = 1
 
@@ -468,7 +468,7 @@ end
 -- The weekly contest: how this week is going and how the last one ended.
 function commands.week(rest)
     local W = ST.Week
-    if rest == "victory" or rest == "group" or rest:match("^[zg]%d$") then return ST.Intro.Toggle(rest) end
+    if rest == "victory" or rest == "group" or ST.Intro.ParseKey(rest) then return ST.Intro.Toggle(rest) end
     if rest == "login" then return W.Replay() end
     if rest == "say" then
         local ok, text = W.SayWeek({
@@ -497,7 +497,7 @@ function commands.week(rest)
     end
     local season = W.Season()
     if season.running then
-        print_(string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit, W.WINS,
+        print_(string.format("Season %d: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.number, season.zennit, W.WINS,
             season.group, W.WINS, #season.finales))
     else
         print_(string.format("Season: none is running; the admin stopped the last one. Finales so far: %d.", #season.finales))
@@ -708,7 +708,7 @@ local HELP = {
     "/sc season - whether a season is running",
     { "admin", "/sc season start|stop - begin a new season (0 to 0, from this week) or end this one now, for everyone" },
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",
-    "/sc week [say|copy|login|z1..z5|g1..g5] - the weekly contest and the season (first to 5 wins); say tells the group, copy opens the same line in a window you can copy from, login says this week's login lines again, a key plays that chapter of the story",
+    "/sc week [say|copy|login|z1..z5|g1..g5|2z1..] - the weekly contest and the season (first to 5 wins); say tells the group, copy opens the same line in a window you can copy from, login says this week's login lines again, a key plays that chapter of the story (2z1, 2g1... in season two)",
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",

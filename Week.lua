@@ -494,14 +494,27 @@ end
 -- The season is a race: the first side to WINS weekly wins takes the finale, then the count starts again.
 -- Worked out from the log, one completed week at a time, so every client reaches the same story.
 -- Returns { zennit, group (wins so far this season), since (the season's first week), running (false once the admin has
--- stopped it), finales = { { start, side, from } }, ended = { { from, to, zennit, group } } (seasons the admin stopped
--- before a finale), chapters = { { start, side, n, key } } } where key is the story chapter that win plays: z<n> or g<n>
--- (n = 5 is the finale).
+-- stopped it), number (the season's number in the story), finales = { { start, side, from, season } }, ended = { { from,
+-- to, zennit, group } } (seasons the admin stopped before a finale), chapters = { { start, side, n, key, season } },
+-- openings = { { start, season, key } } } where key is the story chapter that win plays (Week.ChapterKey; n = 5 is the
+-- finale), and each season after the first opens with a chapter of its own, chosen by how the season before it ended.
+-- Only a finale moves the story on to its next season: a season the admin stops and starts again is the same season,
+-- told again from its start, so a restart (a test season before the beta, say) never skips a season of the story.
 Week.WINS = 5
+
+-- The story chapter of a side's nth win in a season: z3 and g3 in season one, 2z3 and 2g3 in season two.
+function Week.ChapterKey(number, side, n)
+    return (number > 1 and number or "") .. (side == "zennit" and "z" or "g") .. n
+end
+
+-- The opening chapter of a season after the first: 2a after Zennit took the season before's finale, 2b after the group did.
+function Week.OpeningKey(number, side)
+    return number .. (side == "zennit" and "a" or "b")
+end
 
 function Week.Season(now)
     now = now or time()
-    local s = { zennit = 0, group = 0, finales = {}, chapters = {}, ended = {}, running = true }
+    local s = { zennit = 0, group = 0, finales = {}, chapters = {}, ended = {}, openings = {}, running = true, number = 1 }
     local first
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and (not first or ev.time < first) then first = ev.time end
@@ -529,11 +542,14 @@ function Week.Season(now)
         local side = r and r.winner
         if side then
             s[side] = s[side] + 1
-            s.chapters[#s.chapters + 1] = { start = start, side = side, n = s[side], key = (side == "zennit" and "z" or "g") .. s[side] }
+            s.chapters[#s.chapters + 1] = { start = start, side = side, n = s[side], season = s.number,
+                key = Week.ChapterKey(s.number, side, s[side]) }
             if s[side] >= Week.WINS then
-                s.finales[#s.finales + 1] = { start = start, side = side, from = s.since }
+                s.finales[#s.finales + 1] = { start = start, side = side, from = s.since, season = s.number }
                 s.zennit, s.group = 0, 0
                 s.since = start + LENGTH
+                s.number = s.number + 1
+                s.openings[#s.openings + 1] = { start = s.since, season = s.number, key = Week.OpeningKey(s.number, side) }
             end
         end
         start = start + LENGTH
@@ -605,7 +621,15 @@ local function checkLastWeek()
         story = ST.Intro.HasChapter(key) and (" The story: |cffffd100/sc intro " .. key .. " group|r shows it to the group, at the raid perhaps.")
             or " (That chapter of the story is not written yet.)"
         if chapter.n >= Week.WINS then
-            story = story .. " That was the finale. The season starts again. |cffffd100/sc seasons|r keeps the Index's record of it."
+            -- the next season has begun with this week: its opening plays now, if this version of the addon has it
+            local open = season.openings[#season.openings]
+            if open and ST.Intro.HasChapter(open.key) then
+                story = story .. string.format(" That was the finale, and season %d has begun: |cffffd100/sc intro %s|r is how it " ..
+                    "opens. |cffffd100/sc seasons|r keeps the Index's record of the last one.", season.number, open.key)
+            else
+                story = story .. string.format(" That was the finale, and season %d has begun. Its story is not in this version of " ..
+                    "Summon Core: an update will have it. |cffffd100/sc seasons|r keeps the Index's record of the last one.", season.number)
+            end
         end
     end
     if last.winner == "zennit" then
@@ -619,7 +643,8 @@ local function checkLastWeek()
             "The group took the week (%s). Zennit is back on the list, and has been told.%s",
             "The week went to the group (%s). Zennit is back on the list.%s" }, lines(last), story))
     end
-    ST.print(string.format("Season: Zennit %d of %d, the group %d of %d.", season.zennit, Week.WINS, season.group, Week.WINS))
+    ST.print(string.format("Season %d: Zennit %d of %d, the group %d of %d.", season.number, season.zennit, Week.WINS, season.group,
+        Week.WINS))
     if provisional then
         ST.print(string.format("|cffffd100Provisional:|r %d summons of him %s still waiting for his answer, and the week closes on %s. " ..
             "The Index will say again if it changes.", waiting, waiting == 1 and "is" or "are",

@@ -492,27 +492,65 @@ local function buildStory(f)
         sides[side] = col
     end
     local root = treeNode(f, MID_X, ROOT_TOP, ROOT_W)
-    root.key, root.playable = "1", true
-    root.tag:SetText("THE INTRO")
-    root.tip = { "The intro: Zennit and the Index", "Click to play. It ends with the Index today: where the season stands, and how far down each trunk the race has got." }
+    -- once there is more than one season, a button picks which season's tree is shown (the season in progress by default)
+    local viewing
+    local pick = button(f, "", 596, -26, 170, function()
+        local current = ST.Week.Season().number or 1
+        viewing = (viewing or current) % current + 1
+        Hub.Refresh()
+    end)
 
     return function()
         local season = ST.Week.Season()
-        local reached = {}
-        for _, c in ipairs(season.chapters) do reached[c.key] = true end
+        local current = season.number or 1
+        local number = math.min(viewing or current, current)
+        local thisSeason = number == current
+        pick:SetShown(current > 1)
+        pick:SetText(string.format("SEASON %d OF %d", number, current))
+        local reached, count = {}, { zennit = 0, group = 0 }
+        for _, c in ipairs(season.chapters) do
+            if (c.season or 1) == number then
+                reached[c.key] = true
+                count[c.side] = count[c.side] + 1
+            end
+        end
         local admin = ST.IsAdmin()
-        local silver = ST.Ledger.SilverLine(ST.Ledger.Facts(season))
+        local silver = thisSeason and number == 1 and ST.Ledger.SilverLine(ST.Ledger.Facts(season)) -- the Ritual's price (g4, g5)
+        local titles = number > 1 and ST.seasonTrees and ST.seasonTrees[number]
+        -- a trunk's chapter: its key and its short title
+        local function chapter(side, tier)
+            if number == 1 then return TREE[side][tier][1], TREE[side][tier][2] end
+            return ST.Week.ChapterKey(number, side, tier), titles and titles[side][tier] or "not written yet"
+        end
 
-        setNode(root, { border = "green", tag = "THE INTRO", state = "", stateColor = "dim", title = "Zennit and the Index",
-            titleColor = "green" })
+        if number == 1 then
+            root.key, root.playable = "1", true
+            root.tip = { "The intro: Zennit and the Index", "Click to play. It ends with the Index today: where the season stands, and how far down each trunk the race has got." }
+            setNode(root, { border = "green", tag = "THE INTRO", state = "", stateColor = "dim", title = "Zennit and the Index",
+                titleColor = "green" })
+        else
+            -- a later season starts with its opening, chosen by how the season before it ended
+            local open
+            for _, o in ipairs(season.openings or {}) do
+                if o.season == number then open = o end
+            end
+            local title = open and ST.Intro.ChapterTitle(open.key)
+            root.key, root.playable = open and open.key, title ~= nil
+            root.tip = title and { "Season " .. number .. " opens", "Click to play." }
+                or { "Season " .. number .. " opens", "This season's story is not in this version of Summon Core. An update will have it." }
+            setNode(root, { border = title and "green" or "line", tag = "THE OPENING", state = title and "" or "NOT WRITTEN",
+                stateColor = title and "dim" or "line", title = title and title:match(": (.+)$") or "Season " .. number,
+                titleColor = title and "green" or "line" })
+        end
         paintTexture(rootStem, "dim")
 
         for _, side in ipairs(SIDES) do
             local col, color = sides[side], SIDE_COLOR[side]
-            local done = season[side]
+            local done = thisSeason and season[side] or count[side]
             col.head:SetText(string.format("%s  %d/%d", SIDE_HEAD[side], done, ST.Week.WINS))
             for tier, node in ipairs(col.nodes) do
-                local key, short = TREE[side][tier][1], TREE[side][tier][2]
+                local key, short = chapter(side, tier)
+                node.key = key
                 local finale = tier == ST.Week.WINS
                 local written = ST.Intro.HasChapter(key)
                 local isReached = reached[key] == true
@@ -522,20 +560,23 @@ local function buildStory(f)
                 local look = { tag = finale and "FINALE" or (ORDINAL[tier]:upper() .. " WIN"), title = show and short or "???" }
                 if isReached then
                     look.border, look.titleColor, look.glow = color, color, finale
-                    look.state, look.stateColor = tier <= done and "THIS SEASON" or "REACHED", "green"
+                    look.state, look.stateColor = not thisSeason and ("SEASON " .. number)
+                        or tier <= done and "THIS SEASON" or "REACHED", "green"
                     node.tip = { full, "Click to play." }
                 elseif not written then
                     look.border, look.titleColor, look.state, look.stateColor = "line", "line", "NOT WRITTEN", "line"
                     node.tip = { show and full or "???", "This chapter is not written yet." }
-                elseif tier == done + 1 then
+                elseif thisSeason and tier == done + 1 then
                     look.border, look.pulse, look.state, look.stateColor = "amber", true, "NEXT WIN", "amber"
                     look.titleColor = admin and "dim" or "line"
                     node.tip = { show and full or "???", "Unlocks when " .. (side == "zennit" and "Zennit" or "the group") ..
                         " wins the week." .. (admin and " (Admin: click to play.)" or "") }
                 else
-                    look.border, look.state, look.stateColor = "line", admin and "ADMIN" or "LOCKED", admin and "amber" or "line"
+                    look.border, look.state, look.stateColor = "line", admin and "ADMIN" or (thisSeason and "LOCKED" or "NOT REACHED"),
+                        admin and "amber" or "line"
                     look.titleColor = admin and "dim" or "line"
-                    node.tip = { show and full or "???", "Not reached yet." .. (admin and " (Admin: click to play.)" or "") }
+                    node.tip = { show and full or "???", (thisSeason and "Not reached yet." or "Not reached that season.") ..
+                        (admin and " (Admin: click to play.)" or "") }
                 end
                 if silver and side == "group" and tier >= ST.Week.WINS - 1 and node.tip then
                     node.tip[#node.tip + 1] = silver -- the Ritual's price, as the season stands
@@ -648,7 +689,7 @@ local function buildTools(f)
         show(table.concat({
             "This week: " .. W.Describe(W.Score(W.Start())),
             "Last week: " .. W.Describe(W.Score(W.Start() - 7 * 86400)),
-            season.running and string.format("Season: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.zennit,
+            season.running and string.format("Season %d: Zennit %d of %d wins, the group %d of %d. Finales so far: %d.", season.number, season.zennit,
                 W.WINS, season.group, W.WINS, #season.finales)
                 or string.format("Season: none is running; the admin stopped the last one. Finales so far: %d.", #season.finales),
             immune and ("Zennit is on his week off until " .. date("%a %d %b", untilT) .. ".") or "Zennit is on the list.",

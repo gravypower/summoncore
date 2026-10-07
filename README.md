@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.25.3, work in progress**. See [Status](#status) for what has and has
+Status: **v0.26.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -66,7 +66,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc debug` | Toggle detector messages |
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/sc intro [scene\|z1..z5\|g1..g5\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter, `now` plays only "The Index today", `check` tests the sound files |
+| `/sc intro [scene\|z1..z5\|g1..g5\|2a\|2z1..\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter (`2a`, `2b`, `2z1`, `2g1`... are season two's: see [Season two](#season-two)), `now` plays only "The Index today", `check` tests the sound files |
 | `/sc titles` | Who leads each of the season's titles so far, with who is close behind: the heaviest hand, the best supporting role (assists), the lucky pair (whose bonus tipped most rolls), the prompt payer, the process server (whose writs cost him the most points), and Zennit's kind ones (the dice goblin, the hard bargain, the quick reply, and the good sport: ten summons or more that he went on in the season). The Index names them for good in the finale's keepsake. Praise in words, no points. Also the Tools tab's **The titles** |
 | `/sc tab` | The silver tab as a statement: on Zennit's client, who owes him what across every week and what has been paid; on anyone else's, what you owe him and your card's punches. Also the Tools tab's **The tab** |
 | `/sc cards` | Who holds a summon card and how many punches are left. `/sc card` explains cards; Zennit's own: `/sc card sell <name> [punches [silver]]` and `/sc card offer <punches> <silver>`. Also the Tools tab's **Summon cards** |
@@ -79,7 +79,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc intro previously` | **Previously on**: every chapter this season has reached, back to back, in the order the race reached them; closing the window stops it. For anyone catching up (the welcome mentions it). Nobody has to have watched anything to play any reached chapter |
 | `/sc intro <key> group` | **Show the group a chapter** (design/lenses.md, Pleasure): it plays here, and everyone else in the party or raid who runs the addon is asked "Watch now?" (a newcomer whose log is still syncing too: the sender's client checked the season has reached it). Chapters unlock by the season's race, not by what you have watched, so nobody has to watch the earlier ones first. When a raid gathers (once a week), its leader is offered last week's chapter, and everyone else is told the command |
 | `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
-| `/sc week [z1..z5\|g1..g5]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
+| `/sc week [z1..z5\|g1..g5\|2z1..]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
 | `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
 | `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting. The list is **set for the week**: a place he adds counts from the next Monday (marked "from Monday"), and removing one takes effect at once, so it cannot be changed with a summons on screen |
 | `/sc zennit postcard [<place>: <line>\|clear]` | Zennit writes his own postcard from a far-flung place (80 letters at most), used on every client instead of the Index's default; `clear` puts the default back. Anyone can read them with `/sc zennit postcard [<place>]`; only his characters can write them |
@@ -343,6 +343,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
+| Season two (`Season2.lua`) | Built (v0.26.0): seasons counted by finales, its own chapter keys, openings and "Index today" lines, the Story tab's season picker; checked outside the game with the self-test and stubbed WoW calls, never run in the client. Typed and silent: no art or voice yet |
 | The tour (`/sc tour`) | Written; never run in the client (check `s-tour`). Nobody has listened to the recordings yet |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
 | Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (never run live yet). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |
@@ -485,6 +486,19 @@ count starts again. It is worked out from the log, so every client agrees. Each 
 All ten chapters are written (scenes 11 to 32). Zennit's track ends with him becoming the clerk of the Index,
 the group's with Form 27B/6 turning out to be the receipt for the fifty silver, the Ritual getting its closure and Zennit
 being freed. `/sc week` shows the standing.
+
+#### Season two
+
+A finale moves the story on to its next season (`Week.Season().number`), with chapters of its own: the keys carry the season
+(`2z1` to `2z5`, `2g1` to `2g5`), and the season opens with a chapter chosen by how the one before ended (`2a` after Zennit's
+finale, `2b` after the group's), which plays first in "Previously on". Season two is "Zennit and the Audit"
+(`Season2.lua`, the outline in `design/season-two.md`). Its scenes come after "The Index today" (scene 33), so season one's
+scene numbers, art and recordings do not move. **None is drawn or recorded yet**: each is typed and silent, timed to be
+read, on a borrowed season-one picture, and "The Index today" says season two's lines (`ST.seasonLines`) typed and silent too.
+Only a finale changes the season: a season the admin stops and starts again is the same season, told from its start, so a
+test season before the beta cannot skip one. A season this version has no story for (season three) shows its chapters as
+not written and says an update will have them, and a client shown a chapter it does not have says so. The Story tab shows
+the season in progress, with a button to look back at earlier seasons and replay their chapters.
 
 The admin can also stop and start seasons (`/sc season stop|start`, or Tools > General > The season). A **stop** ends the
 season in progress at once, with no finale (`Week.Season` lists it under `ended`), and no week counts while none is running:

@@ -768,7 +768,7 @@ function Sync.OnMessage(text, channel, sender)
     elseif typ == "V" then
         -- a chapter shown to the group: only from the party or raid, and never our own echo
         if channel ~= "PARTY" and channel ~= "RAID" then return "rejected:channel" end
-        if not body:match("^[zg]%d$") then return "bad" end
+        if not (body:match("^%d*[zg]%d$") or body:match("^%d+[ab]$")) then return "bad" end -- z1, or 2z1 and 2a in a later season
         if sender == Sync.myName() then return "self" end
         if Sync.onWatch then Sync.onWatch(sender, body) end
         return "asked"
