@@ -1,0 +1,11 @@
+package-as: summoncore
+
+# Only the addon itself goes to CurseForge: the build tools, design notes and CI config stay in the repo.
+ignore:
+  - tools
+  - design
+  - .claude
+  - .github
+  - .luacheckrc
+  - .gitignore
+  - Media/.gitkeep

@@ -2,6 +2,8 @@ name: Release
 
 # Push a tag like v0.7.0 (it must match "## Version" in summoncore.toc) to build and publish a zip.
 # Or run this workflow by hand (Actions > Release > Run workflow) on master: it tags the commit with the TOC version itself.
+# Once the GitHub release exists, a second job uploads the same tag to CurseForge (project id in the TOC, key in the
+# CF_API_KEY secret). It is a separate job so a failed upload can be retried with "Re-run failed jobs".
 on:
   push:
     tags: ["v*"]
@@ -13,9 +15,12 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - name: Work out the tag
+        id: tag
         run: |
           toc=$(grep -m1 '^## Version:' summoncore.toc | sed 's/^## Version: *//' | tr -d '\r')
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then
@@ -31,6 +36,7 @@ jobs:
             exit 1
           fi
           echo "TAG=v$toc" >> "$GITHUB_ENV"
+          echo "tag=v$toc" >> "$GITHUB_OUTPUT"
       - name: Package
         run: |
           mkdir -p dist/summoncore
@@ -56,3 +62,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # --target creates the tag on this commit when it does not exist yet (a hand-run release)
         run: gh release create "$TAG" "dist/summoncore-${TAG}.zip" dist/release.json --title "$TAG" --target "$GITHUB_SHA" --generate-notes
+
+  curseforge:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 0
+      # The packager builds its own zip from .pkgmeta and sends it to CurseForge. GITHUB_OAUTH is left unset on purpose:
+      # with it the packager would make a second GitHub release, and the one above already carries release.json.
+      - uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
