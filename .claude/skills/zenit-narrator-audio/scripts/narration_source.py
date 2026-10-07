@@ -60,11 +60,25 @@ def _read(name):
         return f.read()
 
 
-def scene_captions():
-    """{n: caption} for the intro's scenes, in order (Intro.lua's `scenes` table; the Ledger scene is added later)."""
+def season_one_captions():
+    """[caption] for the intro's own scenes, in order (Intro.lua's `scenes` table; the Ledger scene is added later)."""
     block = re.search(r"^local scenes = \{\n(.*?)^\}", _read("Intro.lua"), re.S | re.M).group(1)
-    caps = re.findall(r"^\s+\{[^\n]*?text = \[=\[(.*?)\]=\]", block, re.S | re.M)
-    return {n: c for n, c in enumerate(caps, 1)}
+    return re.findall(r"^\s+\{[^\n]*?text = \[=\[(.*?)\]=\]", block, re.S | re.M)
+
+
+def season_two_captions():
+    """[caption] for season two's scenes, in order (the `seasonScenes[2]` table of Season2.lua)."""
+    block = re.search(r"^ST\.seasonScenes\[2\] = \{\n(.*?)^\}", _read("Season2.lua"), re.S | re.M).group(1)
+    return re.findall(r"^\s+\{[^\n]*?text = \[=\[(.*?)\]=\]", block, re.S | re.M)
+
+
+def scene_captions():
+    """{n: caption} for every narrated scene. Season one's are 1 to 32, "The Index today" is 33 (it has no narration clip: its
+    lines are the Ledger's), and season two's follow from 34, the way Intro.lua numbers them."""
+    first = season_one_captions()
+    out = {n: c for n, c in enumerate(first, 1)}
+    out.update({n: c for n, c in enumerate(season_two_captions(), len(first) + 2)})
+    return out
 
 
 def ledger_lines():

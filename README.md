@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.26.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.27.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -66,7 +66,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc debug` | Toggle detector messages |
 | `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
 | `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
-| `/sc intro [scene\|z1..z5\|g1..g5\|2a\|2z1..\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season); a scene number starts there, a chapter key plays that chapter (`2a`, `2b`, `2z1`, `2g1`... are season two's: see [Season two](#season-two)), `now` plays only "The Index today", `check` tests the sound files |
+| `/sc intro [scene\|z1..z5\|g1..g5\|2a\|2z1..\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season; season two's 26 scenes come after it); a scene number starts there, a chapter key plays that chapter (`2a`, `2b`, `2z1`, `2g1`... are season two's: see [Season two](#season-two)), `now` plays only "The Index today", `check` tests the sound files |
 | `/sc titles` | Who leads each of the season's titles so far, with who is close behind: the heaviest hand, the best supporting role (assists), the lucky pair (whose bonus tipped most rolls), the prompt payer, the process server (whose writs cost him the most points), and Zennit's kind ones (the dice goblin, the hard bargain, the quick reply, and the good sport: ten summons or more that he went on in the season). The Index names them for good in the finale's keepsake. Praise in words, no points. Also the Tools tab's **The titles** |
 | `/sc tab` | The silver tab as a statement: on Zennit's client, who owes him what across every week and what has been paid; on anyone else's, what you owe him and your card's punches. Also the Tools tab's **The tab** |
 | `/sc cards` | Who holds a summon card and how many punches are left. `/sc card` explains cards; Zennit's own: `/sc card sell <name> [punches [silver]]` and `/sc card offer <punches> <silver>`. Also the Tools tab's **Summon cards** |
@@ -230,7 +230,7 @@ twice, and it now tells the season's named moments (the roll a helper pair tippe
 
 Scenes 9 and 10 explain the weekly challenge: only summons of Zennit count (summons between friends count for nothing), the group earns points by place, ten summons a week count, Zennit holds a secret list of five places that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), close the Index once five are filed, go on leave when he wins a week (summons of him are then filler), and the Index leans toward the side that is behind, with a whim some weeks. The first to five weeks takes the season. **The wording was brought up to date, but the takes have not been re-rendered yet**: `Intro.lua` and `render_takes.py` have the new text, while `Media/intro_9.ogg` and `intro_10.ogg` (and their `_voice` twins) and `IntroCues.lua` are still the old recording until `.claude/skills/zenit-narrator-audio` has been run for scenes 9 and 10 (`render_takes.py --only 9,10`, copy to `tools/intro/narration/voice_09.ogg` and `voice_10.ogg`, then `tools/intro/build_audio.ps1`), after which WoW needs a full restart.
 
-The narration is `Media/intro_1.ogg` to `intro_32.ogg` (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
+The narration is `Media/intro_1.ogg` to `intro_32.ogg`, and `intro_34.ogg` to `intro_59.ogg` for season two (scene 33 is "The Index today", which has no clip of its own) (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
 start. Each clip is the length of its scene. The viewer plays them on the Dialog sound channel; the Sound button
 mutes the narration.
@@ -343,7 +343,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
-| Season two (`Season2.lua`) | Built (v0.26.0): seasons counted by finales, its own chapter keys, openings and "Index today" lines, the Story tab's season picker; checked outside the game with the self-test and stubbed WoW calls, never run in the client. Typed and silent: no art or voice yet |
+| Season two (`Season2.lua`) | Built (v0.26.0): seasons counted by finales, its own chapter keys, openings and "Index today" lines, the Story tab's season picker; checked outside the game with the self-test and stubbed WoW calls, never run in the client. Drawn and voiced (v0.27.0): 26 scenes of art, narration and key phrases, and its 13 "Index today" lines, rendered but not yet seen or heard in the client |
 | The tour (`/sc tour`) | Written; never run in the client (check `s-tour`). Nobody has listened to the recordings yet |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
 | Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (never run live yet). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |
@@ -493,8 +493,10 @@ A finale moves the story on to its next season (`Week.Season().number`), with ch
 (`2z1` to `2z5`, `2g1` to `2g5`), and the season opens with a chapter chosen by how the one before ended (`2a` after Zennit's
 finale, `2b` after the group's), which plays first in "Previously on". Season two is "Zennit and the Audit"
 (`Season2.lua`, the outline in `design/season-two.md`). Its scenes come after "The Index today" (scene 33), so season one's
-scene numbers, art and recordings do not move. **None is drawn or recorded yet**: each is typed and silent, timed to be
-read, on a borrowed season-one picture, and "The Index today" says season two's lines (`ST.seasonLines`) typed and silent too.
+scene numbers, art and recordings do not move. Season two's 26 scenes are 34 to 59: each has its own art (`Media/intro_<n>`
+and `intro_l<n>`, drawn in `tools/intro/source.html`, which has the Auditor and Poogs), its own narration (`Media/intro_<n>.ogg`, the same
+voice as season one) and its key phrases and highlights in `IntroCues.lua`, and "The Index today" says season two's lines from
+recordings of its own (`Ledger.LINES`, with `_2` after each id). A scene with no recording is typed and silent, timed to be read.
 Only a finale changes the season: a season the admin stops and starts again is the same season, told from its start, so a
 test season before the beta cannot skip one. A season this version has no story for (season three) shows its chapters as
 not written and says an update will have them, and a client shown a chapter it does not have says so. The Story tab shows

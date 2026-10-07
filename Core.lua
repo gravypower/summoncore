@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.26.0"
+ST.version = "0.27.0"
 
 local DB_VERSION = 1
 
