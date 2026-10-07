@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.27.1, work in progress**. See [Status](#status) for what has and has
+Status: **v0.27.2, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -71,6 +71,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc tab` | The silver tab as a statement: on Zennit's client, who owes him what across every week and what has been paid; on anyone else's, what you owe him and your card's punches. Also the Tools tab's **The tab** |
 | `/sc cards` | Who holds a summon card and how many punches are left. `/sc card` explains cards; Zennit's own: `/sc card sell <name> [punches [silver]]` and `/sc card offer <punches> <silver>`. Also the Tools tab's **Summon cards** |
 | `/sc probe` | Listens to trade and mail events and prints what the client lets an addon see (who, how much, or a secret value), to learn how the fifty silver could be detected. Run it again to stop |
+| `/sc probe chat` | The same kind of probe for chat (`Probe.lua`): listens to say, yell, party and raid chat and to the events around a summons arriving, and prints whether the text and the sender are readable or secret values, how long the text is, and how long after the summons prompt each event came. Your own words are printed, other players' never (only whether they could be read). It stores and sends nothing; it is there to learn whether logging what Zennit says after he arrives is possible. Run it again to stop; `/sc probe chat copy` opens what it printed in a window to copy |
 | `/sc report` | What the log says about how the race is being played, for a playtest: summons a week, wins by how many summons counted, his answers and how fast, how he spends his dice, the list's hit rate, the helpers, whether he closes. The chat window cannot be selected, so `/sc report copy` opens the same text in a window to copy from (Ctrl+A, Ctrl+C), then paste it into the group chat. Also the Tools tab's **Playtest report**, which prints it and hands it to its COPY button; the script is `design/playtest.md` |
 | `/sc rules` | The rules of the race on one card, with this week's live numbers (the cap and the close, his dice and edge with the catch-up and the whim, what a helper adds, his list, the points by place). `/sc rules copy` opens it in the copy window. Also the Tools tab's **The rules**, which prints it and hands it to COPY |
 | `/sc seasons` | The Index's keepsake of each finished season, newest first: how it ended and how long it took, who was in the room (everyone who summoned him or helped), the silver paid, and a moment or two by name. Also the Tools tab's **Past seasons**, and printed in chat when a finale lands |
@@ -110,6 +111,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `Voice.lua` | Voice | Pools of lines: the Index says a fact that repeats a few different ways, never the same one twice running |
 | `Cards.lua` | Cards | Summon cards: prepaid silver Zennit sells, with punches counted from the log |
 | `Silver.lua` | Silver | The money side: on Zennit's client, sees silver arrive by trade or mail and asks him what it pays; `/sc probe` |
+| `Probe.lua` | Probe | What the client lets an addon read of chat and of a summons arriving: `/sc probe chat` |
 | `Report.lua` | Report | `/sc report`: the playtest numbers, worked out from the log |
 | `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays; and the log's memory of a season (named moments, the silver, the keepsake) |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |

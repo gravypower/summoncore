@@ -3,7 +3,7 @@
 ## Notes: Ritual of Summoning logger, shared tally and scoring (v1 in progress)
 ## Author: Aaron
 ## X-Curse-Project-ID: 1731543
-## Version: 0.27.1
+## Version: 0.27.2
 ## IconTexture: Interface\AddOns\summoncore\Media\icon
 ## SavedVariables: SummonTrackerDB
 
@@ -28,6 +28,7 @@ LedgerClips.lua
 Report.lua
 Cards.lua
 Silver.lua
+Probe.lua
 Reset.lua
 Hub.lua
 TourClips.lua

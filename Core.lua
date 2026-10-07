@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.27.1"
+ST.version = "0.27.2"
 
 local DB_VERSION = 1
 
@@ -541,7 +541,11 @@ function commands.card(rest)
 end
 
 -- Listens to trade and mail events and prints what the client lets an addon see, to learn how silver could be detected.
-function commands.probe()
+-- "/sc probe chat" does the same for the lines said in chat and a summons arriving (Probe.lua), to learn whether what Zennit says
+-- can be read.
+function commands.probe(rest)
+    local chat = (rest or ""):match("^chat%s*(.-)%s*$")
+    if chat then return ST.Probe.Chat(chat) end
     ST.Silver.Probe()
 end
 
@@ -724,7 +728,7 @@ local HELP = {
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",
-    "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)",
+    "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)    /sc probe chat - the same for say, yell, party and raid chat and a summons arriving (can what Zennit says be read?); /sc probe chat copy opens what it printed",
     "/sc report [copy] - what the log says about how the race is being played (for a playtest); copy opens it in a window you can copy from",
     "/sc rules [copy] - the rules of the race, with this week's live numbers; copy opens them in a window you can copy from",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
