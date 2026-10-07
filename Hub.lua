@@ -494,19 +494,25 @@ local function buildStory(f)
     local root = treeNode(f, MID_X, ROOT_TOP, ROOT_W)
     -- once there is more than one season, a button picks which season's tree is shown (the season in progress by default)
     local viewing
+    -- the seasons the tab can show: those that have begun, and for the admin's preview (Tools > Testing, /sc preview) the next
+    local function lastShown(began)
+        return (ST.IsAdmin() and ST.db.settings.previewSeason) and began + 1 or began
+    end
     local pick = button(f, "", 596, -26, 170, function()
-        local current = ST.Week.Season().number or 1
+        local current = lastShown(ST.Week.Season().number or 1)
         viewing = (viewing or current) % current + 1
         Hub.Refresh()
     end)
 
     return function()
         local season = ST.Week.Season()
-        local current = season.number or 1
+        local began = season.number or 1
+        local current = lastShown(began)
         local number = math.min(viewing or current, current)
         local thisSeason = number == current
+        local previewing = number > began -- a season that has not begun: the admin's preview, nothing in the log changes
         pick:SetShown(current > 1)
-        pick:SetText(string.format("SEASON %d OF %d", number, current))
+        pick:SetText(previewing and string.format("PREVIEW SEASON %d", number) or string.format("SEASON %d OF %d", number, current))
         local reached, count = {}, { zennit = 0, group = 0 }
         for _, c in ipairs(season.chapters) do
             if (c.season or 1) == number then
@@ -534,9 +540,12 @@ local function buildStory(f)
             for _, o in ipairs(season.openings or {}) do
                 if o.season == number then open = o end
             end
+            if not open and previewing then open = { key = ST.Week.OpeningKey(number, "zennit") } end -- the other opening: /sc intro <n>b
             local title = open and ST.Intro.ChapterTitle(open.key)
             root.key, root.playable = open and open.key, title ~= nil
-            root.tip = title and { "Season " .. number .. " opens", "Click to play." }
+            root.tip = title and { "Season " .. number .. " opens" .. (previewing and " (preview)" or ""),
+                previewing and ("Click to play the opening after Zennit's finale. /sc intro " .. number .. "b plays the one after the group's.")
+                    or "Click to play." }
                 or { "Season " .. number .. " opens", "This season's story is not in this version of Summon Core. An update will have it." }
             setNode(root, { border = title and "green" or "line", tag = "THE OPENING", state = title and "" or "NOT WRITTEN",
                 stateColor = title and "dim" or "line", title = title and title:match(": (.+)$") or "Season " .. number,
@@ -546,7 +555,7 @@ local function buildStory(f)
 
         for _, side in ipairs(SIDES) do
             local col, color = sides[side], SIDE_COLOR[side]
-            local done = thisSeason and season[side] or count[side]
+            local done = previewing and 0 or thisSeason and season[side] or count[side]
             col.head:SetText(string.format("%s  %d/%d", SIDE_HEAD[side], done, ST.Week.WINS))
             for tier, node in ipairs(col.nodes) do
                 local key, short = chapter(side, tier)
@@ -823,6 +832,12 @@ local function buildTools(f)
         end, true)
     switch(modes, "DETECTOR", function() return ST.db.settings.debug == true end,
         function(v) ST.db.settings.debug = v end, true)
+    -- the Story tab also shows the season after this one, as if it had begun (admin only; nothing in the log changes)
+    switch(modes, "PREVIEW NEXT SEASON", function() return ST.db.settings.previewSeason == true end,
+        function(v)
+            ST.db.settings.previewSeason = v or nil
+            Hub.Refresh()
+        end, true)
 
     local selfTests = group(testing, "TEST DATA AND SELF-TESTS", true)
     tool(selfTests, "ADD TEST SUMMON", function()
@@ -1182,5 +1197,11 @@ function Hub.SelfCheck()
     end
     local ok, err = pcall(refreshChrome)
     if not ok then return false, "season band: " .. tostring(err) end
+    -- the admin's season preview draws a season that has not begun (it only shows on the admin's account)
+    local preview = ST.db.settings.previewSeason
+    ST.db.settings.previewSeason = true
+    local shown, why = pcall(tabs.story.refresh)
+    ST.db.settings.previewSeason = preview
+    if not shown then return false, "story preview: " .. tostring(why) end
     return true
 end

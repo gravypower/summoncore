@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.27.0"
+ST.version = "0.27.1"
 
 local DB_VERSION = 1
 
@@ -639,6 +639,17 @@ function commands.season(rest)
     if ST.IsAdmin() then print_("/sc season start begins a new season; /sc season stop ends this one now (both ask first)") end
 end
 
+-- Test switch: the Story tab also shows the season after this one, as if it had begun, so the admin can look at a season
+-- that no finale has reached yet. Nothing in the log changes. (Tools > Testing > PREVIEW NEXT SEASON is the same switch.)
+function commands.preview()
+    if not ST.IsAdmin() then return print_("that is an admin tool") end
+    ST.db.settings.previewSeason = not ST.db.settings.previewSeason or nil
+    print_(ST.db.settings.previewSeason and
+        "previewing the next season: the Story tab shows it as if it had begun. /sc preview again to switch off." or
+        "the Story tab shows the seasons that have begun.")
+    if ST.Hub then ST.Hub.Refresh() end
+end
+
 -- The admin's account sees the addon as a player does, and back (the switch is the account's, so it works while on).
 function commands.asplayer()
     if not ST.IsAdminAccount() then return print_("that is an admin tool") end
@@ -705,6 +716,7 @@ local HELP = {
     { "zennit", "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office" },
     { "admin", "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's" },
     { "admin", "/sc asplayer - see the addon as a player does (admin tools, help lines and spoilers hidden); again to switch back" },
+    { "admin", "/sc preview - the Story tab also shows the season after this one, as if it had begun (nothing in the log changes); again to switch off" },
     "/sc season - whether a season is running",
     { "admin", "/sc season start|stop - begin a new season (0 to 0, from this week) or end this one now, for everyone" },
     "/sc reset [all] - wipe summons, badges and the story (all: the admin asks everyone to do the same)",

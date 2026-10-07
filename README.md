@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.27.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.27.1, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -88,6 +88,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
 | `/sc party` | Toggle party test mode (admin only): this character acts as an ordinary party member, even on the admin's or Zennit's own account, so Zennit's tab gives the party's gag. It turns Zennit test mode off, and the other way round. Both are also switches on the Tools tab |
+| `/sc preview` | Toggle the season preview (admin only; Tools > Testing > PREVIEW NEXT SEASON is the same switch): the Story tab also shows the season after this one, as if it had begun, with its opening and chapters playable, so season two can be looked at before any finale has reached it. Nothing in the log changes |
 
 ## How it works
 
@@ -500,7 +501,7 @@ recordings of its own (`Ledger.LINES`, with `_2` after each id). A scene with no
 Only a finale changes the season: a season the admin stops and starts again is the same season, told from its start, so a
 test season before the beta cannot skip one. A season this version has no story for (season three) shows its chapters as
 not written and says an update will have them, and a client shown a chapter it does not have says so. The Story tab shows
-the season in progress, with a button to look back at earlier seasons and replay their chapters.
+the season in progress, with a button to look back at earlier seasons and replay their chapters. The admin can switch on a **preview** (`/sc preview`, or Tools > Testing) that adds the season after this one, as "PREVIEW SEASON 2", with every chapter playable.
 
 The admin can also stop and start seasons (`/sc season stop|start`, or Tools > General > The season). A **stop** ends the
 season in progress at once, with no finale (`Week.Season` lists it under `ended`), and no week counts while none is running:
