@@ -269,6 +269,11 @@ Check.LIST = {
     { id = "d-silver", kind = "duo", title = "Silver paid by trade or mail is noticed (existing /sc probe)",
       steps = { "Zennit runs /sc probe, the friend trades him some silver, then he checks the Index's popup.", "See README, 'Seeing it arrive'." },
       expect = "a confirmation popup", fails = "the client hides trade or mail money; payments are marked by hand" },
+    { id = "d-chatprobe", kind = "duo", title = "Can an addon read what Zennit says? (/sc probe chat)",
+      steps = { "Both run /sc probe chat. Zennit accepts a summons from the friend and, once he arrives, says a line in /s or party chat; the friend says one too.",
+          "Each client prints what it could read of each line: your own words in full, everyone else's as readable or secret, with how long it was. Try it in the open world, then in an instance.",
+          "Both run /sc probe chat copy and send the text back. (It stores and sends nothing.)" },
+      expect = "Zennit's own lines show as readable on his client; the friend's client says readable or secret for his", fails = "the lines are secret values: logging what he says is not possible, at least there" },
 }
 
 local byId = {}
