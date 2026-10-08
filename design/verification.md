@@ -32,15 +32,16 @@ one friend; and `/sc errors` empty after an evening. Then share it, and make no 
 
 ## Phase 1: by yourself, ten minutes, any character
 
-1. `/sc check auto`. Eight checks: the game's calls exist (a-api), the prompt hooks installed (a-hooks), every map ID is a real map
-   (a-places), the self-tests pass in the game (a-selftest), every tab builds (a-window), the key binding's names exist (a-binding),
+1. `/sc check auto`. Ten checks: the game's calls exist (a-api), an item can be counted and its cooldown read (a-ask), the prompt hooks installed (a-hooks), every map ID is a real map
+   (a-places), the zones list for his secret list box (a-zones), the self-tests pass in the game (a-selftest), every tab builds (a-window), the key binding's names exist (a-binding),
    the message prefix is registered (a-prefix) and nothing has thrown (a-errors).
 2. **Stop here if a-api, a-hooks or a-selftest fail.** Send the report: the rest depends on them.
 3. `/sc check s-popup` (a pretend summons: the form, one-click dice), `s-key` (bind the writ key and press it), `s-fit` (click through
    every tab), `s-lines` (read the chat lines on a test summons), `s-login` (`/sc week login`: the week's close in your time, a tip),
    `s-band` (the window's band against `/sc week`), and `s-sound` after a full restart. `s-lastcall` waits for a week's final
    day (Sunday UTC) and marks itself when the line is said; `s-decline` (the form's Decline and its cost against `/sc rules`); `s-list` (a new place on his list marked 'from Monday'); `s-previously` (`/sc intro previously` plays the season's chapters back to back); `s-welcome` marks itself on a character's first login (`/sc welcome` to read
-   it again); `s-tour` (`/sc tour` after a full restart: every line heard, every outline on what is being talked about).
+   it again); `s-tour` (`/sc tour` after a full restart: every line heard, every outline on what is being talked about); `s-ask`
+   (in Zennit test mode, `/sc ask hearth`, `carries` and `playing` answered by this client, and off when switched off).
 
 ## Phase 2: with one friend, an hour, both on the same version
 
@@ -63,7 +64,8 @@ Both run `/sc check auto` first. Decide who is the warlock and who is Zennit (hi
 12. `d-away`: Zennit AFK for five minutes; a ritual on him is warned about and filed as away (it marks this itself).
 13. `d-watch`: one shows a chapter to the group (`/sc intro g1 group`) and the other watches; at the raid, the leader's offer.
 14. `d-feelings`: the friend answers the weekly question; the admin's `/sc feelings` shows the count, the friend's does not.
-15. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
+15. `d-ask`: the friend asks `/sc ask hearth` and `playing`; the answer comes back and Zennit's client says who asked; then off.
+16. `d-say` (a group), and `d-silver` (trade or mail) if there is time.
 
 ## Phase 3: a week with the group
 

@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.27.2, work in progress**. See [Status](#status) for what has and has
+Status: **v0.28.0, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -85,6 +85,8 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting. The list is **set for the week**: a place he adds counts from the next Monday (marked "from Monday"), and removing one takes effect at once, so it cannot be changed with a summons on screen |
 | `/sc zennit postcard [<place>: <line>\|clear]` | Zennit writes his own postcard from a far-flung place (80 letters at most), used on every client instead of the Index's default; `clear` puts the default back. Anyone can read them with `/sc zennit postcard [<place>]`; only his characters can write them |
 | `/sc zennit away [<line>\|clear]` | His out-of-office: whoever summons him on his week off sees "His out-of-office says: '...'" in the briefing, instead of the Index's "not hopeful" |
+| `/sc ask [<question> [<arg>]]` | **Zennit's state, read by his own client** (`Ask.lua`); nothing is put to him and he presses nothing: `hearth` (is his hearthstone in his bags, and ready, or how many minutes are left on it), `carries <item name or ID>` (how many of an item he carries), `playing` (how long he has been logged in; a `/reload` does not reset it). The question goes to the party or raid and the guild; only his client answers, whispering back within a few seconds, and he is told who asked and what the Index said. With no answer in 8 seconds the asker is told so; one question every 5 seconds. On his own client (or in Zennit test mode) it answers without the network. No rule uses an answer yet: it is the mechanism a challenge or a card can call later (`ST.Ask.Ask(key, arg, callback)`). The item calls have never run in the client (checks `a-ask`, `s-ask`, `d-ask`) |
+| `/sc zennit ask [on\|off]` | Whether his client answers `/sc ask` (on until he switches it off); off, the asker is told questions are off |
 | `/sc respond [test]` | Zennit answers a summon of him (accept, decline, ask for silver or dice); `test` tries it on a pretend summon |
 | `/sc gag` | Preview the Zennit gag |
 | `/sc zenit` | Toggle Zennit test mode on this character |
@@ -112,6 +114,7 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `Cards.lua` | Cards | Summon cards: prepaid silver Zennit sells, with punches counted from the log |
 | `Silver.lua` | Silver | The money side: on Zennit's client, sees silver arrive by trade or mail and asks him what it pays; `/sc probe` |
 | `Probe.lua` | Probe | What the client lets an addon read of chat and of a summons arriving: `/sc probe chat` |
+| `Ask.lua` | Ask | Questions only Zennit's client can answer (`/sc ask`): the questions, asking with a timeout, and his client's answers |
 | `Report.lua` | Report | `/sc report`: the playtest numbers, worked out from the log |
 | `Ledger.lua` | Ledger | "The Index today": the intro's last scene, written from the season tree each time it plays; and the log's memory of a season (named moments, the silver, the keepsake) |
 | `Clips.lua`, `ClipList.lua` | Clips | Voice clips from `Media/clips` (`ClipList.lua` is generated) |
@@ -159,7 +162,7 @@ Sync shares events, not totals, so merging is a set union and nothing is double-
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
 `T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
-alts), `X` (a request to reset), `F` (how a player felt about a week, kept only by Zennit's and the admin's clients), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) `W` (what a group member saw of a ritual, kept only by Zennit's client: see below) and `C` (the admin started or stopped
+alts), `X` (a request to reset), `F` (how a player felt about a week, kept only by Zennit's and the admin's clients), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) `W` (what a group member saw of a ritual, kept only by Zennit's client: see below), `Q` and `Y` (a question for Zennit's client, sent to the group and the guild, and his answer whispered back to whoever asked: `/sc ask`) and `C` (the admin started or stopped
 a season: see [The season](#the-season)). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
 
@@ -347,6 +350,7 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
 | Season two (`Season2.lua`) | Built (v0.26.0): seasons counted by finales, its own chapter keys, openings and "Index today" lines, the Story tab's season picker; checked outside the game with the self-test and stubbed WoW calls, never run in the client. Drawn and voiced (v0.27.0): 26 scenes of art, narration and key phrases, and its 13 "Index today" lines, rendered but not yet seen or heard in the client |
+| Questions for Zennit's client (`/sc ask`) | Built (v0.28.0) and checked outside the game with the self-test and stubbed WoW calls; never run in the client. Whether the game lets an addon count an item and read its cooldown is check `a-ask` |
 | The tour (`/sc tour`) | Written; never run in the client (check `s-tour`). Nobody has listened to the recordings yet |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
 | Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (never run live yet). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |

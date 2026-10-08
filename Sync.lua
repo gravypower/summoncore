@@ -13,6 +13,8 @@
 --   W  WITNESS  body: caster|target|helpers|mapID|subzone|time|helping   (what a group member saw of a ritual, for Zennit's client)
 --   C  SEASON   body: kind|time|stamp       (the admin started or stopped a season; stamp: ST.TagHash of the sender's BattleTag,
 --                                           kept only when it is the admin's. Anyone may pass a mark on: the stamp travels with it)
+--   Q  QUESTION body: qid|key|arg           (a question only Zennit's client can answer, Ask.lua; qid starts with the asker's name)
+--   Y  REPLY    body: qid|key|status|value  (his client's answer, whispered back to whoever asked; only from his characters)
 -- record = id|caster|target|assist1,assist2|mapID|subzone|time|confirmed|wrote[|answer[|w[|by]]]
 -- A record filed by Zennit's client for a caster without the addon carries "by" (his name): its id starts with it, and only he
 -- can send or delete it (design/lenses.md, Accessibility, G).
@@ -593,6 +595,24 @@ function Sync.SendDiceReply(id, sroll, toName)
 end
 
 ----------------------------------------------------------------------
+-- Questions for Zennit's client (Ask.lua): something only his client can tell, such as whether his hearthstone is ready. The
+-- question goes to the group and the guild, since he may be in either; his client whispers the answer back to whoever asked.
+----------------------------------------------------------------------
+Sync.ASK_KEY = "^%l+$"   -- a question's key: lowercase letters
+local MAX_ASK_ARG = 40     -- an argument (an item's name) and an answer's value are short
+local ASK_STATUS = { ok = true, off = true, unknown = true, unasked = true }
+Sync.ASK_STATUS = ASK_STATUS
+
+function Sync.SendQuestion(qid, key, arg)
+    local body = string.format("%s|%s|%s", esc(qid), key, esc((arg or ""):sub(1, MAX_ASK_ARG)))
+    for _, ch in ipairs(Sync.channels()) do enqueue(ch, nil, "Q", body) end
+end
+
+function Sync.SendReply(target, qid, key, status, value)
+    enqueue("WHISPER", target, "Y", string.format("%s|%s|%s|%s", esc(qid), key, status, esc(tostring(value or ""):sub(1, MAX_ASK_ARG))))
+end
+
+----------------------------------------------------------------------
 -- Receiving
 ----------------------------------------------------------------------
 local function short(name)
@@ -798,6 +818,27 @@ function Sync.OnMessage(text, channel, sender)
         if not note then return "bad" end
         Sync.AddWitness(note)
         return "noted"
+
+    elseif typ == "Q" then
+        -- a question for Zennit's client: the asker names itself in the id, and only his client answers (Ask.Answer)
+        local qid, key, arg = body:match("^([^|]+)|([^|]+)|([^|]*)$")
+        if not qid or not key:match(Sync.ASK_KEY) or #key > 16 then return "bad" end
+        qid, arg = unesc(qid), unesc(arg)
+        if #qid > 48 or qid:sub(1, #sender + 1) ~= sender .. "-" or #arg > MAX_ASK_ARG then return "rejected:values" end
+        if not ST.Gag.IsZennit() then return "ignored" end
+        if not Sync.onQuestion then return "ignored" end
+        return Sync.onQuestion(sender, qid, key, arg)
+
+    elseif typ == "Y" then
+        -- his client's answer: only his characters may give one, and only to a question we asked (Ask.OnReply checks that)
+        if channel ~= "WHISPER" then return "rejected:channel" end
+        if not ST.Week.IsZennit(sender) then return "rejected:sender" end
+        local qid, key, status, value = body:match("^([^|]+)|([^|]+)|(%a+)|([^|]*)$")
+        if not qid or not ASK_STATUS[status] then return "bad" end
+        value = unesc(value)
+        if #value > MAX_ASK_ARG then return "rejected:values" end
+        if not Sync.onReply then return "ignored" end
+        return Sync.onReply(sender, unesc(qid), key, status, value)
 
     elseif typ == "T" then
         -- the caster deleted this summon: nobody else can, so the sender must be the one named in the id
