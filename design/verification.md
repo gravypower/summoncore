@@ -32,7 +32,7 @@ one friend; and `/sc errors` empty after an evening. Then share it, and make no 
 
 ## Phase 1: by yourself, ten minutes, any character
 
-1. `/sc check auto`. Ten checks: the game's calls exist (a-api), an item can be counted and its cooldown read (a-ask), the prompt hooks installed (a-hooks), every map ID is a real map
+1. `/sc check auto`. Ten checks: the game's calls exist (a-api), the hearthstone can be found and its cooldown read (a-ask), the prompt hooks installed (a-hooks), every map ID is a real map
    (a-places), the zones list for his secret list box (a-zones), the self-tests pass in the game (a-selftest), every tab builds (a-window), the key binding's names exist (a-binding),
    the message prefix is registered (a-prefix) and nothing has thrown (a-errors).
 2. **Stop here if a-api, a-hooks or a-selftest fail.** Send the report: the rest depends on them.
@@ -41,7 +41,7 @@ one friend; and `/sc errors` empty after an evening. Then share it, and make no 
    `s-band` (the window's band against `/sc week`), and `s-sound` after a full restart. `s-lastcall` waits for a week's final
    day (Sunday UTC) and marks itself when the line is said; `s-decline` (the form's Decline and its cost against `/sc rules`); `s-list` (a new place on his list marked 'from Monday'); `s-previously` (`/sc intro previously` plays the season's chapters back to back); `s-welcome` marks itself on a character's first login (`/sc welcome` to read
    it again); `s-tour` (`/sc tour` after a full restart: every line heard, every outline on what is being talked about); `s-ask`
-   (in Zennit test mode, `/sc ask hearth`, `carries` and `playing` answered by this client, and off when switched off).
+   (in Zennit test mode, `/sc ask hearth` and `playing` answered by this client, and off when switched off).
 
 ## Phase 2: with one friend, an hour, both on the same version
 

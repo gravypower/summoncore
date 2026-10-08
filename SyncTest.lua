@@ -2886,7 +2886,7 @@ add("a question reaches only Zennit's client, which answers it by whisper; off, 
     zennit.db.settings.zenitTest = true
     for _, c in ipairs({ alpha, zennit, beta }) do c.ask = A.newState() end
     local real = { state = A.state, later = A.later, count = A.itemCount, cd = A.cooldownLeft, now = A.now, clock = A.clock }
-    local bags, cooldown, timers, got, out = { [A.HEARTHSTONE] = 1, ["Linen Cloth"] = 3 }, 0, {}, {}, {}
+    local bags, cooldown, timers, got, out = { [A.HEARTHSTONE] = 1 }, 0, {}, {}, {}
     A.itemCount = function(item) return bags[item] or 0 end
     A.cooldownLeft = function() return cooldown end
     A.later = function(_, fn) timers[#timers + 1] = fn end
@@ -2909,8 +2909,6 @@ add("a question reaches only Zennit's client, which answers it by whisper; off, 
         ask("hearth");                     out.ready = got[#got]
         cooldown = 1500; ask("hearth");    out.cd = got[#got]
         bags[A.HEARTHSTONE] = nil; ask("hearth"); out.none = got[#got]
-        ask("carries", "Linen Cloth");     out.carries = got[#got]
-        bags[2589] = 7; ask("carries", "|cffffffff|Hitem:2589::::::::60:::::|h[Linen Cloth]|h|r"); out.link = got[#got]
         zennit.db.settings.loginAt = BASE + 7200 - 3900
         ask("playing");                    out.playing = got[#got]
         out.tooSoon = select(2, on(alpha, function()
@@ -2919,7 +2917,6 @@ add("a question reaches only Zennit's client, which answers it by whisper; off, 
         end))
         settle({ alpha, zennit, beta })
         clock = clock + A.COOLDOWN
-        out.needsArg = select(2, ask("carries", " "))
         out.unknownKey = select(2, ask("weather"))
         zennit.db.settings.askOff = true; ask("hearth"); out.off = got[#got]
         zennit.db.settings.askOff = nil
@@ -2930,7 +2927,7 @@ add("a question reaches only Zennit's client, which answers it by whisper; off, 
         out.repeated = on(zennit, function() return Sync.OnMessage(q, "GUILD", "Alpha") end)
         out.rate = on(zennit, function() return Sync.OnMessage("1~Q~Alpha-1-100|hearth|", "PARTY", "Alpha") end)
         clock = clock + A.COOLDOWN
-        out.unasked = on(zennit, function() return Sync.OnMessage("1~Q~Alpha-1-101|weather|", "PARTY", "Alpha") end)
+        out.unasked = on(zennit, function() return Sync.OnMessage("1~Q~Alpha-1-101|carries|Linen Cloth", "PARTY", "Alpha") end)
         -- a question in someone else's name, a client that is not his, a reply from a stranger or to nothing, or not whispered
         out.forged = on(zennit, function() return Sync.OnMessage("1~Q~Beta-1-1|hearth|", "PARTY", "Alpha") end)
         out.notHim = on(beta, function() return Sync.OnMessage("1~Q~Alpha-1-102|hearth|", "PARTY", "Alpha") end)
@@ -2955,20 +2952,19 @@ add("a question reaches only Zennit's client, which answers it by whisper; off, 
     local function is(r, status, value) return r and r.status == status and (value == nil or r.value == value) end
     local good = is(out.ready, "ok", "ready") and out.ready.from == "Zennit"
         and is(out.cd, "ok", "cd:1500") and out.cd.text:find("25 minutes more", 1, true)
-        and is(out.none, "ok", "none") and is(out.carries, "ok", "3") and out.carries.text:find("carries 3 of 'Linen Cloth'", 1, true)
+        and is(out.none, "ok", "none")
         and is(out.playing, "ok", "3900") and out.playing.text:find("1 hour 5 minutes", 1, true)
-        and out.needsArg == "that question needs <item name or ID>" and out.unknownKey == "no such question"
+        and out.unknownKey == "no such question"
         and out.tooSoon == "one question every 5 seconds: ask again in a moment"
-        and is(out.link, "ok", "7") and out.link.text:find("carries 7 of 'Linen Cloth'", 1, true)
-        and is(out.off, "off") and out.answers == 8
+        and is(out.off, "off") and out.answers == 6
         and out.first == "answered:ok" and out.repeated == "ignored:repeat" and out.rate == "ignored:ratelimit"
         and out.unasked == "answered:unasked" and out.forged == "rejected:values" and out.notHim == "ignored"
         and out.stranger == "rejected:sender" and out.nothing == "rejected:unasked" and out.open == "rejected:channel"
         and out.badStatus == "bad" and is(out.timeout, "timeout") and out.late == "rejected:unasked"
         and is(out.self, "ok", "none") and out.selfSent == 0
-    return good, string.format("ready %s, cd %s, none %s, carries %s, playing %s (%s), off %s, %d answers; %s %s %s %s; %s %s %s %s %s %s; %s %s; self %s",
+    return good, string.format("ready %s, cd %s, none %s, playing %s (%s), off %s, %d answers; %s %s %s %s; %s %s %s %s %s %s; %s %s; self %s",
         tostring(out.ready and out.ready.value), tostring(out.cd and out.cd.value), tostring(out.none and out.none.value),
-        tostring(out.carries and out.carries.value), tostring(out.playing and out.playing.value),
+        tostring(out.playing and out.playing.value),
         tostring(out.playing and out.playing.text), tostring(out.off and out.off.status), out.answers or -1,
         tostring(out.first), tostring(out.repeated), tostring(out.rate), tostring(out.unasked), tostring(out.forged),
         tostring(out.notHim), tostring(out.stranger), tostring(out.nothing), tostring(out.open), tostring(out.badStatus),

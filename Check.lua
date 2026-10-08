@@ -53,8 +53,8 @@ Check.LIST = {
           local soft = Check.Missing(Check.OPTIONAL, _G)
           return #missing == 0, "missing: " .. joined(missing) .. "; optional missing: " .. joined(soft)
       end },
-    { id = "a-ask", kind = "auto", title = "The game lets an addon count an item in the bags and read its cooldown (/sc ask)",
-      fails = "Zennit's client answers /sc ask hearth and carries with 'could not tell'",
+    { id = "a-ask", kind = "auto", title = "The game lets an addon find the hearthstone in the bags and read its cooldown (/sc ask)",
+      fails = "Zennit's client answers /sc ask hearth with 'could not tell'",
       run = function()
           local count = Check.Missing({ "C_Item.GetItemCount" }, _G)[1] and Check.Missing({ "GetItemCount" }, _G)[1]
           local cd = Check.Missing({ "C_Container.GetItemCooldown" }, _G)[1] and Check.Missing({ "C_Item.GetItemCooldown" }, _G)[1]
@@ -190,7 +190,7 @@ Check.LIST = {
     { id = "s-ask", kind = "solo", title = "Questions about Zennit, answered by his own client (/sc ask)",
       steps = { "Turn Zennit test mode on (/sc zenit): this client now answers as his.",
           "/sc ask hearth should say whether your hearthstone is in your bags and ready; use it, then ask again: it should give the minutes left.",
-          "/sc ask carries <an item in your bags> should give how many you carry; /sc ask playing how long you have been logged in (a /reload should not reset it).",
+          "/sc ask playing should say how long you have been logged in (a /reload should not reset it).",
           "/sc zennit ask off, then /sc ask hearth: it should say questions are off. /sc zennit ask on, and Zennit test mode off again." },
       expect = "the right answers, the cooldown in minutes, and 'off' when switched off", fails = "'could not tell': the item calls are hidden or named differently on this client" },
     -- ---------------------------------------------------------------- with a friend (both on the same version)

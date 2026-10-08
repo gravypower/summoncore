@@ -1,6 +1,6 @@
 -- Ask: the state of Zennit, read by his own client. Nothing is put to him and he presses nothing: his client looks and answers.
 -- Questions only Zennit's client can answer (design/lenses.md, Parked ideas: the stranded summons). Is his hearthstone ready?
--- Is he carrying something? How long has he been logged in? Anyone asks; the question goes to the group and the guild, and only his
+-- How long has he been logged in? Anyone asks; the question goes to the group and the guild, and only his
 -- client answers, whispering back to whoever asked. No rule uses an answer yet: this is the mechanism a challenge or a card
 -- could play later (Ask.Ask takes a callback for that). He is told each time he is asked, and /sc zennit ask off stops answers.
 --
@@ -34,7 +34,8 @@ local function plain(v)
     return v
 end
 
--- How many of an item (an ID or a name) are in his bags, or nil when the game will not say.
+-- How many of an item are in his bags, or nil when the game will not say. Only the hearthstone is asked about: what else he
+-- carries is his business, so no question looks in his bags for anything else.
 function Ask.itemCount(item)
     local get = (C_Item and C_Item.GetItemCount) or GetItemCount
     if not get then return nil end
@@ -87,23 +88,6 @@ Ask.QUESTIONS = {
             if v == "ready" then return "Zennit's hearthstone is in his bags and ready." end
             local left = tonumber((v or ""):match("^cd:(%d+)$"))
             if left then return "Zennit's hearthstone is in his bags, on cooldown for " .. minutes(left) .. " more." end
-        end,
-    },
-    carries = {
-        label = "Is he carrying an item? (its name or ID)",
-        arg = "<item name or ID>",
-        about = function(arg) return string.format("whether you carry '%s'", arg) end,
-        answer = function(arg)
-            if arg == "" then return "unknown" end
-            local n = Ask.itemCount(tonumber(arg) or arg)
-            if n == nil then return "unknown" end
-            return "ok", tostring(n)
-        end,
-        say = function(v, arg)
-            local n = tonumber(v)
-            if not n then return nil end
-            if n == 0 then return string.format("Zennit carries no '%s' that his client could find.", arg) end
-            return string.format("Zennit carries %d of '%s'.", n, arg)
         end,
     },
     playing = {
@@ -202,10 +186,6 @@ function Ask.Ask(key, arg, callback)
     if not q then return nil, "no such question" end
     arg = q.arg and (arg or ""):match("^%s*(.-)%s*$") or ""
     if q.arg and arg == "" then return nil, "that question needs " .. q.arg end
-    -- a shift-clicked item is a link too long to send: send its ID, and keep its name for the answer
-    local linkID, linkName = arg:match("|Hitem:(%d+)[^|]*|h%[(.-)%]|h")
-    local sendArg = linkID or arg
-    if linkName then arg = linkName end
     local count = 0
     for _ in pairs(Ask.state.pending) do count = count + 1 end
     if count >= Ask.MAX_PENDING then return nil, "three questions are already waiting for an answer" end
@@ -215,7 +195,7 @@ function Ask.Ask(key, arg, callback)
     Ask.state.pending[qid] = { key = key, arg = arg, callback = callback }
     if ST.Gag.IsZennit() then
         -- his own client knows: no need to ask anyone (and this is how he, or the admin in Zennit test mode, tries it alone)
-        local status, value = Ask.AnswerHere(key, sendArg)
+        local status, value = Ask.AnswerHere(key, arg)
         finish(qid, { status = status, value = value, from = me })
         return qid
     end
@@ -230,7 +210,7 @@ function Ask.Ask(key, arg, callback)
         return nil, string.format("one question every %d seconds: ask again in a moment", Ask.COOLDOWN)
     end
     Ask.state.lastAsked = now
-    ST.Sync.SendQuestion(qid, key, sendArg)
+    ST.Sync.SendQuestion(qid, key, arg)
     Ask.later(Ask.TIMEOUT, function() finish(qid, { status = "timeout", value = "" }) end)
     return qid
 end

@@ -561,7 +561,7 @@ function commands.probe(rest)
     ST.Silver.Probe()
 end
 
--- Questions only Zennit's client can answer (Ask.lua): /sc ask lists them, /sc ask <question> [<arg>] asks one.
+-- Questions only Zennit's client can answer (Ask.lua): /sc ask lists them, /sc ask <question> asks one.
 function commands.ask(rest)
     ST.Ask.Command(rest)
 end
@@ -735,7 +735,7 @@ local HELP = {
     { "admin", "/sc clip [category|file] - list or play voice clips from Media/clips" },
     { "zennit", "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)" },
     { "zennit", "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office" },
-    "/sc ask [<question> [<arg>]] - ask something only Zennit's client can answer (is his hearthstone ready, is he carrying an item, how long has he been logged in); he is told who asked",
+    "/sc ask [<question>] - ask something only Zennit's client can answer (is his hearthstone ready, how long has he been logged in); he is told who asked",
     { "zennit", "/sc zennit ask [on|off] - whether his client answers /sc ask (it is on until he switches it off)" },
     { "admin", "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's" },
     { "admin", "/sc asplayer - see the addon as a player does (admin tools, help lines and spoilers hidden); again to switch back" },
