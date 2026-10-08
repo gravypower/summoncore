@@ -148,8 +148,11 @@ local function parseResp(str)
     return resp
 end
 
--- The later of two answers (an answer can change: owes 50 silver, then paid).
-local function laterResponse(a, b)
+-- The later of two answers to the summons `ev` (an answer can change: owes 50 silver, then paid). An answer made after its week
+-- closed (Week.LateAnswer) does not count at all, so every client keeps the same answer for a closed week.
+local function laterResponse(ev, a, b)
+    if a and ST.Week.LateAnswer(ev, a) then a = nil end
+    if b and ST.Week.LateAnswer(ev, b) then b = nil end
     if not a then return b end
     if not b then return a end
     return b.time > a.time and b or a
@@ -233,14 +236,17 @@ function Sync.Merge(id, ev, sender, live, opts)
     if author == Sync.myName() then
         -- Nobody can write entries against the receiver. Our own copy is authoritative.
         if cur then
-            if not opts.dryRun then cur.response = laterResponse(cur.response, ev.response) end
+            if not opts.dryRun then cur.response = laterResponse(ev, cur.response, ev.response) end
             return "kept"
         end
         if not opts.allowSelf then return "rejected:self" end
     end
     ev.points, ev.kind = ST.Scoring.Score(ev.mapID, ev.subzone)
     if not cur then
-        if not opts.dryRun then store.Put(id, ev) end
+        if not opts.dryRun then
+            ev.response = laterResponse(ev, ev.response, nil)
+            store.Put(id, ev)
+        end
         return "added"
     end
     local replace
@@ -251,10 +257,10 @@ function Sync.Merge(id, ev, sender, live, opts)
     end
     if not opts.dryRun then
         if replace then
-            ev.response = laterResponse(ev.response, cur.response)
+            ev.response = laterResponse(ev, ev.response, cur.response)
             store.Put(id, ev)
         else
-            cur.response = laterResponse(cur.response, ev.response)
+            cur.response = laterResponse(ev, cur.response, ev.response)
         end
     end
     return replace and "replaced" or "kept"
@@ -317,9 +323,12 @@ local function lastMarkTime()
     return m and m.time or 0
 end
 
+-- The fifth field is the newest reset everyone was asked to make (db.resetAll, from the admin's /sc reset all), never a friend's
+-- own reset, and a seventh carries the admin's stamp with it, as season marks do. Clients before 0.28.1 read only the first six.
 local function helloBody()
-    return string.format("%d|%d|%s|%d|%d|%d", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse(),
-        ST.db.resetAt or 0, lastMarkTime())
+    local resetAll = ST.db.resetAll or 0
+    return string.format("%d|%d|%s|%d|%d|%d%s", ST.Store.Count(), ST.Store.Latest(), ST.version, ST.Store.LatestResponse(),
+        resetAll, lastMarkTime(), resetAll > 0 and ("|" .. ST.ADMIN_HASH) or "")
 end
 
 function Sync.Hello(channel, target)
@@ -619,18 +628,30 @@ local function short(name)
     return ST.baseName(name) or ""
 end
 
+-- Says how many summons arrived once they stop arriving. A newcomer's history comes in at about three a second (Pump), so a line
+-- every couple of seconds would fill their chat; a long stream still says how it is going once a minute.
+local ANNOUNCE_QUIET = 3
+local ANNOUNCE_EVERY = 60
 local function announceSoon()
     local st = Sync.state
-    if Sync.quiet or st.announcing then return end
+    if Sync.quiet then return end
+    local now = Sync.now()
+    st.lastAdded = now
+    st.firstAdded = st.firstAdded or now
+    if st.announcing then return end
     st.announcing = true
-    C_Timer.After(2, function()
-        st.announcing = false
+    local function check()
+        local t = Sync.now()
+        if t - st.lastAdded < ANNOUNCE_QUIET and t - st.firstAdded < ANNOUNCE_EVERY then return C_Timer.After(1, check) end
+        st.announcing, st.firstAdded = false, nil
         if st.added > 0 then
             ST.print(string.format("Sync: received %d new summon%s.", st.added, st.added == 1 and "" or "s"))
+            ST.Guard("the week check after sync", ST.Week.Recheck) -- a late summons can change a week already announced
             if ST.Hub then ST.Hub.Refresh() end
             st.added = 0
         end
-    end)
+    end
+    C_Timer.After(ANNOUNCE_QUIET, check)
 end
 
 -- Returns a short result string describing what happened (used by the self-test).
@@ -650,7 +671,7 @@ function Sync.OnMessage(text, channel, sender)
     local now = Sync.now()
 
     if typ == "H" then
-        local count, latest, respT, theirReset, theirMark = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)|?(%d*)|?(%d*)")
+        local count, latest, respT, theirReset, theirMark, resetStamp = body:match("^(%d+)|(%d+)|[^|]*|?(%d*)|?(%d*)|?(%d*)|?(%x*)")
         count, latest, respT, theirReset = tonumber(count), tonumber(latest), tonumber(respT) or 0, tonumber(theirReset) or 0
         theirMark = tonumber(theirMark) or 0
         if not count then return "bad" end
@@ -682,8 +703,9 @@ function Sync.OnMessage(text, channel, sender)
                 actions[#actions + 1] = "hello-back"
             end
         end
-        -- They reset after us (we were offline, or said no): ask our user again.
-        if theirReset > (ST.db.resetAt or 0) and theirReset <= time() + 86400 and Sync.onReset then
+        -- They took part in a reset everyone was asked to make, after our last one (we were offline, or said no): ask our user
+        -- again. Only one with the admin's stamp: clients before 0.28.1 sent a friend's own reset here, unstamped.
+        if theirReset > (ST.db.resetAt or 0) and resetStamp == ST.ADMIN_HASH and theirReset <= time() + 86400 and Sync.onReset then
             Sync.onReset(sender, theirReset)
             actions[#actions + 1] = "reset-asked"
         end
@@ -744,7 +766,8 @@ function Sync.OnMessage(text, channel, sender)
         local resp = applyFlags({ result = result, zroll = tonumber(z), sroll = tonumber(r), time = tonumber(rt) }, flags)
         resp.amount = amount
         if resp.zroll > 100 or resp.sroll > 100 or resp.time > time() + 86400 then return "rejected:values" end
-        if laterResponse(ev.response, resp) ~= resp then return "kept" end
+        if ST.Week.LateAnswer(ev, resp) then return "rejected:late" end -- made after the week closed
+        if laterResponse(ev, ev.response, resp) ~= resp then return "kept" end
         local before = ev.response
         ST.Store.SetResponse(rid, resp)
         if Sync.onResponse then Sync.onResponse(rid, ev, resp, before) end

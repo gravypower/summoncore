@@ -36,7 +36,7 @@ Limits worth knowing:
 
 - An export string costs 50 to 110 characters a summons: 25 summons fit a 2,000-character Discord message, and about 100 fit a slash
   command's text box. A real log needs a file.
-- The export carries summons and answers only. It has no alts (`settings.zenitAlts`), frozen weeks (`settings.weekFrozen`), cards,
+- The export carries summons and answers only. It has no alts (`settings.zenitAlts`), cards,
   Zennit's lines, deletions or reset time. Without his alts a week's winner can come out differently (it did, in a test). The saved
   variables have all of them.
 - The subzone is cut at 40 bytes (`Sync.Encode`), which can split a letter in two; anything reading it must work on bytes.

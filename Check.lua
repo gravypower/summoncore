@@ -322,12 +322,13 @@ function Check.Status(id)
     return r and r.status or "todo", r
 end
 
--- The addon watched this happen: marks it pass unless it already passed (and keeps the first note).
+-- The addon watched this happen: marks it pass unless it already passed (and keeps the first note). Only the admin is told:
+-- the checklist is an admin tool, so on a friend's client it is only recorded.
 function Check.Seen(id, note)
     if not byId[id] or not ST.db then return end
     if Check.Status(id) == "pass" then return end
     Check.Record(id, "pass", "seen live: " .. tostring(note))
-    ST.print(string.format("|cff33ff66Check passed by itself:|r %s (%s)", id, byId[id].title))
+    if ST.IsAdmin() then ST.print(string.format("|cff33ff66Check passed by itself:|r %s (%s)", id, byId[id].title)) end
 end
 
 function Check.Counts()

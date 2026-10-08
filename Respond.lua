@@ -472,10 +472,15 @@ function Respond.Decide(id, result, zroll, sroll, amount)
     if result == "owed" then amount = math.max(1, math.min(Respond.MAX_SILVER, math.floor(amount or SILVER)))
     elseif result == "paid" then amount = amount or (ev.response and ev.response.amount) or nil
     else amount = nil end
+    -- paying the silver he asked for settles that same answer: the list bonus stays as it was then, even if he has changed his
+    -- list since (a payment after the week closed must not move its points: Week.LateAnswer lets it through)
+    local listed
+    if result == "paid" and ev.response and ev.response.result == "owed" then listed = ev.response.listed
+    else listed = Respond.OnList(ev) or nil end
     -- a new answer is always later than the one it replaces, or other clients keep the old one (sync takes the later)
     local resp = { result = result, zroll = zroll or 0, sroll = sroll or 0,
         time = math.max(time(), ev.response and ev.response.time + 1 or 0),
-        listed = Respond.OnList(ev) or nil, closes = ev.response and ev.response.closes or nil,
+        listed = listed, closes = ev.response and ev.response.closes or nil,
         card = card or (ev.response and ev.response.card) or nil, amount = amount }
     local before = ev.response
     ST.Store.SetResponse(id, resp)
@@ -505,9 +510,10 @@ end
 function Respond.CloseIndex(start)
     local id, ev = ST.Week.CloseTarget(start or ST.Week.Start())
     if not id or ST.Week.EventClosed(ev) then return false end
-    local old = ev.response
-    local resp = { result = old.result, zroll = old.zroll, sroll = old.sroll, time = math.max(time(), old.time + 1),
-        listed = old.listed, closes = true }
+    -- the same answer (a card's punch and a named price included), now closing the Index
+    local resp = {}
+    for k, v in pairs(ev.response) do resp[k] = v end
+    resp.time, resp.closes = math.max(time(), ev.response.time + 1), true
     ST.Store.SetResponse(id, resp)
     ST.Sync.SendResponse(id, resp)
     ST.print(closedLine(ev))
@@ -1035,6 +1041,8 @@ function Respond.Adopt(id, ev)
                 local resp = {}
                 for key, v in pairs(f.response) do resp[key] = v end
                 resp.time = math.max(time(), f.response.time + 1)
+                -- moved after the summons' week closed: an answer he made in time stays in time, or every client would refuse it
+                if ST.Week.LateAnswer(ev, resp) then resp.time = f.response.time + 1 end
                 ST.Store.SetResponse(id, resp)
                 ST.Sync.SendResponse(id, resp)
             end

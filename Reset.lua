@@ -1,7 +1,9 @@
 -- Reset: wipes the summons, the badges and, with them, the story (the season is worked out from the log).
 -- It asks first. The admin can also ask everyone else to reset (/sc reset all): each user is shown a prompt and
 -- nothing is changed on their client until they agree. A reset leaves a mark (db.resetAt); anything older than it
--- is refused by sync, so another client still holding the old log cannot put it back.
+-- is refused by sync, so another client still holding the old log cannot put it back. A reset everyone was asked to make
+-- is also kept as db.resetAll, which every hello passes on (Sync), so a client that missed the request is asked later;
+-- a friend's own reset stays on their client.
 local ADDON, ST = ...
 local Reset = {}
 ST.Reset = Reset
@@ -31,7 +33,7 @@ function Reset.Apply(stamp)
     ST.db.badges = {}
     ST.db.deleted = nil -- tombstones older than the reset are redundant
     ST.db.cards = nil   -- a card's punches are counted from the summons, so with them gone every card would be full again
-    if ST.db.settings then ST.db.settings.weekSeen, ST.db.settings.weekFrozen = nil, nil; ST.db.settings.weekAnnounced = nil end
+    if ST.db.settings then ST.db.settings.weekSeen, ST.db.settings.weekAnnounced = nil, nil end
     if ST.Hub then ST.Hub.Refresh() end
     return removed
 end
@@ -47,21 +49,42 @@ function Reset.Ask(everyone)
         local removed = Reset.Apply(stamp)
         ST.print(string.format("reset: %d summon%s removed, badges and story cleared.", removed, removed == 1 and "" or "s"))
         if everyone then
+            ST.db.resetAll = stamp
             ST.Sync.SendReset(stamp)
             ST.print("asked everyone else to reset too.")
         end
     end)
 end
 
--- Another user (the admin) asks us to reset; they were not verified, so we ask before doing anything.
+-- Does this client hold anything a reset as of `stamp` would remove?
+function Reset.Holds(stamp)
+    for _, ev in pairs(ST.db.events) do
+        if ev.time <= stamp then return true end
+    end
+    return false
+end
+
+-- Makes the reset `sender` asked for. Its mark is kept as one everyone was asked to make, so this client passes it on.
+function Reset.Accept(sender, stamp)
+    local removed = Reset.Apply(stamp)
+    ST.db.resetAll = math.max(ST.db.resetAll or 0, stamp)
+    ST.print(string.format("reset by request of %s: %d summon%s removed.", sender, removed, removed == 1 and "" or "s"))
+end
+
+-- Another user (the admin) asks us to reset; they were not verified, so we ask before doing anything. A client holding
+-- nothing from before the reset (a newcomer, say) has nothing to lose: it takes the mark without asking.
 local asked = {}
 ST.Sync.onReset = function(sender, stamp)
+    if not Reset.Holds(stamp) then
+        ST.db.resetAt = math.max(ST.db.resetAt or 0, stamp)
+        ST.db.resetAll = math.max(ST.db.resetAll or 0, stamp)
+        return
+    end
     if asked[stamp] then return end
     asked[stamp] = true
     StaticPopup_Show("SUMMONCORE_RESET",
         sender .. " asks everyone to reset all summons, badges and the story. Do it on this client?", nil, function()
-            local removed = Reset.Apply(stamp)
-            ST.print(string.format("reset by request of %s: %d summon%s removed.", sender, removed, removed == 1 and "" or "s"))
+            Reset.Accept(sender, stamp)
         end)
 end
 
