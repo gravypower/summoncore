@@ -2324,6 +2324,32 @@ praise the two things the judgment now misses: him being a good sport, and the g
 - Does Zennit care about his titles? Does the group compete for the Process Server?
 - How does the report's "time to answer" land with him?
 
+## Parked ideas
+
+Not built: the Playtesting entry holds new rules until the first week's report. Each waits for a lens (or the report) to pick it up.
+
+- **Stranded: summon him to the middle of nowhere when he has no hearthstone** (2026-10-06, from the group). A challenge
+  summons: the group drags him somewhere remote while his hearthstone is on cooldown (or not in his bags), so the trip back is
+  his problem. Today the place is always the caster's choice and the only randomness is the dice and the whim; "the middle of
+  nowhere" just scores as a zone (3). Open questions:
+  - *Can the addon tell?* Only his client can see his hearthstone (item 6948: its cooldown and whether he carries it), at the
+    moment the game's prompt appears; never tried in this client. A mage's portal or a friend's summons home would undo it.
+  - *What is "nowhere"?* The game gives a map and a subzone name, not a distance to the nearest flight path. An empty subzone,
+    or a short list of truly empty spots, is the likeliest test; the far-flung list (10) is the nearest thing we have.
+  - *What does it pay?* Points on top of the place, a badge or title ("Left in the Wilds"), or a postcard only, to keep it a joke.
+  - *Is it fair on him?* A walk back costs him real time (Griefing / Friendship, Freedom): his free decline already covers a
+    summons he cannot afford, and it should stay rare, like a writ (say once a week, or once a season).
+- **Built since (v0.28.0): the mechanism, not the rule.** Questions only Zennit's client can answer (`/sc ask`, `Ask.lua`): is his
+  hearthstone in his bags and ready (or how long until it is), and how long has he been logged in. The question
+  goes to the group and the guild, his client whispers the answer back, and he is told who asked; `/sc zennit ask off` stops it.
+  Nothing scores an answer yet. A challenge (the stranded summons) or a card the group plays to learn something about him calls
+  `ST.Ask.Ask(key, arg, callback)`; a new question is one entry in `Ask.QUESTIONS`. Still open for that rule: should a card spend
+  a question (today anyone may ask, one every five seconds), and should he be told before the answer goes out, or only after.
+  **Not asked (2026-10-08):** what else is in his bags. A question about any item could be misused to go through his inventory;
+  only the hearthstone is looked at.
+- **A place the Index draws each week**, picked from the week number like the whim (so nothing is synced), worth extra; or a
+  spot Zennit names himself as the week's dare. Both answer "who chooses where", which today is always the caster.
+
 ## Decisions
 
 | Date | Decision | Lens | Why |
@@ -2369,3 +2395,4 @@ praise the two things the judgment now misses: him being a good sport, and the g
 | 2026-10-05 | Share it with the group once the five-step gate passes (one release for everyone, the automatic checks, the solo checks, an hour with one friend, a quiet evening); then no new rules until the first week's report | Playtesting | The lenses that fit are largely done and each finds less; everything since 0.20 has only run in stubs, and the next answers are in the group's play |
 | 2026-10-05 | A one-click weekly question on how the week felt (Zennit asked his own); answers only reach Zennit's and the admin's clients, shown as counts, never names | Playtesting | The Monday questions are asked out loud, which misses Zennit and the quiet ones; a "Too much" or a run of "Not for me" is the cue to change something |
 | 2026-10-05 | Two titles: the Good Sport (Zennit, ten summons he went on in a season) and the Process Server (the caster whose writs cost him the most) | Judgment | The game praised the group for effort and luck and him for luck, mischief and speed; never him for being a good sport, or the group for being clever |
+| 2026-10-08 | Build the way to ask Zennit's client what only it knows (`/sc ask`: his hearthstone and time logged in; nothing else in his bags), with no rule on it; he is told who asked and can switch it off | Parked ideas (the stranded summons) | A challenge or a card needs facts only his client has; the mechanism can be built and checked before anyone decides what an answer is worth |

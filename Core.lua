@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.27.2"
+ST.version = "0.28.0"
 
 local DB_VERSION = 1
 
@@ -361,10 +361,22 @@ local function zennitLine(sub, arg)
     if not id and mine then print_("/sc zennit postcard <place>: <your line> writes one (80 letters); 'clear' puts the Index's back.") end
 end
 
+-- Questions about him (Ask.lua): his client answers them unless he switches them off.
+local function zennitAsk(arg)
+    local s = ST.db.settings
+    if arg == "off" or arg == "on" then
+        if not ST.Gag.IsZennit() then return print_("only Zennit switches questions about him on or off") end
+        s.askOff = arg == "off" or nil
+    end
+    print_(ST.Ask.IsOff() and "Questions about Zennit are off: his client answers none of them. /sc zennit ask on answers them again."
+        or "Questions about Zennit are on: his client answers /sc ask, and tells him who asked. /sc zennit ask off stops it.")
+end
+
 -- Test switch: makes this character behave as Zennit's so the gag can be tried solo.
 function commands.zenit(rest)
     local sub, arg = (rest or ""):match("^(%S*)%s*(.-)$")
     if sub == "postcard" or sub == "away" then return zennitLine(sub, arg) end
+    if sub == "ask" then return zennitAsk(arg) end
     if sub ~= "list" and not ST.IsAdmin() then return print_("that is an admin tool") end
     if sub == "list" then
         -- his secret list: /sc zennit list [add <place> | remove <n> | clear]
@@ -549,6 +561,11 @@ function commands.probe(rest)
     ST.Silver.Probe()
 end
 
+-- Questions only Zennit's client can answer (Ask.lua): /sc ask lists them, /sc ask <question> asks one.
+function commands.ask(rest)
+    ST.Ask.Command(rest)
+end
+
 -- The problems this session has caught (see ST.Guard): the last ten, newest last; "clear" forgets them.
 function commands.errors(rest)
     if rest == "clear" then
@@ -718,6 +735,8 @@ local HELP = {
     { "admin", "/sc clip [category|file] - list or play voice clips from Media/clips" },
     { "zennit", "/sc zennit list [add <place>|remove <n>|clear] - his secret list: declining a summon there is free (unless a writ is on it)" },
     { "zennit", "/sc zennit postcard [<place>: <line>|clear] - his own postcard from a far-flung place    /sc zennit away [<line>|clear] - his out-of-office" },
+    "/sc ask [<question>] - ask something only Zennit's client can answer (is his hearthstone ready, how long has he been logged in); he is told who asked",
+    { "zennit", "/sc zennit ask [on|off] - whether his client answers /sc ask (it is on until he switches it off)" },
     { "admin", "/sc admin - what the game reports as this account's BattleTag, and whether it is the admin or Zennit's" },
     { "admin", "/sc asplayer - see the addon as a player does (admin tools, help lines and spoilers hidden); again to switch back" },
     { "admin", "/sc preview - the Story tab also shows the season after this one, as if it had begun (nothing in the log changes); again to switch off" },

@@ -53,6 +53,15 @@ Check.LIST = {
           local soft = Check.Missing(Check.OPTIONAL, _G)
           return #missing == 0, "missing: " .. joined(missing) .. "; optional missing: " .. joined(soft)
       end },
+    { id = "a-ask", kind = "auto", title = "The game lets an addon find the hearthstone in the bags and read its cooldown (/sc ask)",
+      fails = "Zennit's client answers /sc ask hearth with 'could not tell'",
+      run = function()
+          local count = Check.Missing({ "C_Item.GetItemCount" }, _G)[1] and Check.Missing({ "GetItemCount" }, _G)[1]
+          local cd = Check.Missing({ "C_Container.GetItemCooldown" }, _G)[1] and Check.Missing({ "C_Item.GetItemCooldown" }, _G)[1]
+              and Check.Missing({ "GetItemCooldown" }, _G)[1]
+          return not count and not cd, string.format("item count: %s; item cooldown: %s", count and "missing" or "found",
+              cd and "missing" or "found")
+      end },
     { id = "a-hooks", kind = "auto", title = "The summon prompt's Accept and Decline calls are hooked",
       fails = "what he presses in the game is not seen; the Index's form answers as before",
       run = function()
@@ -178,6 +187,12 @@ Check.LIST = {
       steps = { "Log in during the last 24 hours of a week (from Sunday 00:00 UTC), or run /sc week login then.",
           "Expect 'Last call: the Index closes the week in ...' with the standing. A ritual briefing on Zennit then carries it too." },
       expect = "the last call, with the right hours left", fails = "the week's deadline is not felt (design/lenses.md, Time)" },
+    { id = "s-ask", kind = "solo", title = "Questions about Zennit, answered by his own client (/sc ask)",
+      steps = { "Turn Zennit test mode on (/sc zenit): this client now answers as his.",
+          "/sc ask hearth should say whether your hearthstone is in your bags and ready; use it, then ask again: it should give the minutes left.",
+          "/sc ask playing should say how long you have been logged in (a /reload should not reset it).",
+          "/sc zennit ask off, then /sc ask hearth: it should say questions are off. /sc zennit ask on, and Zennit test mode off again." },
+      expect = "the right answers, the cooldown in minutes, and 'off' when switched off", fails = "'could not tell': the item calls are hidden or named differently on this client" },
     -- ---------------------------------------------------------------- with a friend (both on the same version)
     { id = "d-sync", kind = "duo", title = "Two clients hear each other and are on the same version",
       steps = { "Both run /sc sync, then /sc.", "Each should see the other's summons arrive, and no 'is on another version' notice." },
@@ -266,6 +281,11 @@ Check.LIST = {
     { id = "d-say", kind = "duo", title = "/sc week say sends one line to the group", 
       steps = { "In a party or raid, either person runs /sc week say.", "The other sees 'Summon Core: Week: ...' in party chat." },
       expect = "the line arrives", fails = "C_ChatInfo.SendChatMessage is blocked; the addon says so" },
+    { id = "d-ask", kind = "duo", title = "A question reaches Zennit's client and his answer comes back (/sc ask)",
+      steps = { "In a party (or the same guild), the friend runs /sc ask hearth, then /sc ask playing.",
+          "Within a few seconds the friend sees 'Asked: ...' with the answer; Zennit's client says who asked and what the Index told them.",
+          "Zennit runs /sc zennit ask off; the friend asks again and is told questions are off. Then /sc zennit ask on. Try it once from the guild alone, out of the party." },
+      expect = "the answer on the friend's client within a few seconds, and the notice on Zennit's", fails = "'No answer': the question or the whisper back did not arrive (check both are on 0.28 or later)" },
     { id = "d-silver", kind = "duo", title = "Silver paid by trade or mail is noticed (existing /sc probe)",
       steps = { "Zennit runs /sc probe, the friend trades him some silver, then he checks the Index's popup.", "See README, 'Seeing it arrive'." },
       expect = "a confirmation popup", fails = "the client hides trade or mail money; payments are marked by hand" },
