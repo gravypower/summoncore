@@ -6,6 +6,26 @@ summon by destination, then turns the scores into a weekly contest, a season and
 Status: **v0.28.1, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
+## For friends
+
+**Install.** With WowUp: Get Addons > Install from URL, paste `https://github.com/summoncore/summoncore`, and install; WowUp
+then offers each new version as an update. It is also on CurseForge (project 1731543). By hand: download the newest zip from
+the GitHub Releases page and unzip it into `World of Warcraft\_classic_beta_\Interface\AddOns\`, so that the folder is
+`AddOns\summoncore`. If it does not show in the game's AddOns list, tick "Load out of date AddOns".
+
+**What changes for you.** Nothing you have to do: cast and click portals as usual. Whoever casts the ritual should have the addon,
+so the summons is logged with its place and its helpers, and summons of Zennit count for the group in the weekly race. At your
+first login the Index says three lines of welcome (`/sc welcome` says them again).
+
+- `/sc` opens the window. `/sc intro` is the story (about four minutes), `/sc tour` shows you round the window (about six),
+  `/sc rules` is the race in a minute, and `/sc week` is how this week stands. `/sc help` lists the rest.
+- Once a week the Index asks how the last week was: three buttons, or close it to skip.
+
+**Keep it updated.** Everyone should be on the same version. An older one still syncs, but it can count or say things
+differently; the addon says so when a friend's version differs from yours.
+
+**Something wrong?** `/sc errors` lists any problem the addon caught in itself. Send Aaron what it says.
+
 ## Install
 
 Copy this folder to `World of Warcraft\_classic_beta_\Interface\AddOns\summoncore\` (the folder name must
@@ -50,22 +70,22 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc writ` | Arm a writ for your next ritual on Zennit (two a week): if he declines that summons in the game, it costs him its points. Again to withdraw it. It is also a **key binding** (Esc > Options > Key Bindings > AddOns > Summon Core: "Play a writ on your next summons of Zennit"), so it is one key in the middle of play; the binding (`Bindings.xml`) has never been tried in the client |
 | `/sc week copy` | Opens the same "Week:" line `/sc week say` would send, in the copy window, to paste where you choose (nothing is sent). It says why not under the old rules |
 | `/sc week say` | Tell the group (party or raid chat) where the week stands, in one line: the lead, his dice left, the last call. It uses `C_ChatInfo.SendChatMessage` (the global `SendChatMessage` is only a deprecation fallback on this client, kept as a last resort), which has never been tried under the 12.0 chat rules |
-| `/sc check` | The live-client checklist (`design/verification.md`), also the Tools tab's Checks section (RUN AUTO, NEXT, PASS, FAIL, SKIP, TRACE, REPORT, COPY: the output box cannot be selected, so COPY opens its text in a window that can): `/sc check auto` runs the automatic checks, `/sc check <id>` gives the steps for the rest, `pass`/`fail`/`skip <id> [note]` records a result, `trace` shows what the summon prompt did, `report` opens a copyable report to send back. Some checks turn green on their own when they happen for real |
+| `/sc check` | Admin only. The live-client checklist (`design/verification.md`), also the Tools tab's Checks section (RUN AUTO, NEXT, PASS, FAIL, SKIP, TRACE, REPORT, COPY: the output box cannot be selected, so COPY opens its text in a window that can): `/sc check auto` runs the automatic checks, `/sc check <id>` gives the steps for the rest, `pass`/`fail`/`skip <id> [note]` records a result, `trace` shows what the summon prompt did, `report` opens a copyable report to send back. Some checks turn green on their own when they happen for real |
 | `/sc where` | Current map ID, subzone and how it scores |
 | `/sc places` | What a place is worth (a city 1, a zone 3, a dungeon entrance 5, a far-flung place 10) and every map ID in the table, checked against the game's own name for it; a wrong or missing one is flagged. The ritual briefing on Zennit also says what the place you stand in is worth |
 | `/sc undo` | Remove the newest summon you cast (earned badges are kept). Nobody can undo someone else's, and the deletion is shared so sync does not bring it back |
-| `/sc admin` | What the game reports as this account's BattleTag, and whether it is the admin's or Zennit's |
+| `/sc admin` | Admin only. What the game reports as this account's BattleTag, and whether it is the admin's or Zennit's |
 | `/sc reset [all]` | Wipe this client's summons, badges and story (it asks first). `all` is admin only: it asks everyone else to do the same |
 | `/sc season [start\|stop]` | Whether a season is running. `start` and `stop` are admin only (each asks first): `stop` ends the season in progress now, with no finale; `start` begins a new one, 0 to 0, from this week. Everyone's client hears of it, now or at its next hello. Also Tools > General > **The season** |
 | `/sc asplayer` | Admin's account only: see the addon as a player does (admin tools, help lines and spoilers hidden), and back. Also Tools > General > **View as player** |
 | `/sc export`, `/sc import` | Import / Export window (copy-paste strings of the summon log) |
 | `/sc sync` | Send a HELLO to party and guild, show sync status |
-| `/sc synctest` | Run the sync self-test with simulated clients (scratch data only) |
-| `/sc comic [size]` | Large-image test viewer (generate the textures first, see below) |
-| `/sc test` | Diagnostics panel; `/sc test ping <name>` adds a whisper ping |
-| `/sc debug` | Toggle detector messages |
-| `/sc fake <target> [h1 h2]` | Add a test summon (never broadcast) |
-| `/sc fakeprompt <target> <members...>` | Open the assistants prompt without a party |
+| `/sc synctest` | Admin only. Run the sync self-test with simulated clients (scratch data only) |
+| `/sc comic [size]` | Admin only. Large-image test viewer (generate the textures first, see below) |
+| `/sc test` | Admin only. Diagnostics panel; `/sc test ping <name>` adds a whisper ping |
+| `/sc debug` | Admin only. Toggle detector messages |
+| `/sc fake <target> [h1 h2]` | Admin only. Add a test summon (never broadcast) |
+| `/sc fakeprompt <target> <members...>` | Admin only. Open the assistants prompt without a party |
 | `/sc intro [scene\|z1..z5\|g1..g5\|2a\|2z1..\|now\|check]` | Play the illustrated story, "Zennit and the Index" (32 scenes, then "The Index today", which follows the season; season two's 26 scenes come after it); a scene number starts there, a chapter key plays that chapter (`2a`, `2b`, `2z1`, `2g1`... are season two's: see [Season two](#season-two)), `now` plays only "The Index today", `check` tests the sound files |
 | `/sc titles` | Who leads each of the season's titles so far, with who is close behind: the heaviest hand, the best supporting role (assists), the lucky pair (whose bonus tipped most rolls), the prompt payer, the process server (whose writs cost him the most points), and Zennit's kind ones (the dice goblin, the hard bargain, the quick reply, and the good sport: ten summons or more that he went on in the season). The Index names them for good in the finale's keepsake. Praise in words, no points. Also the Tools tab's **The titles** |
 | `/sc tab` | The silver tab as a statement: on Zennit's client, who owes him what across every week and what has been paid; on anyone else's, what you owe him and your card's punches. Also the Tools tab's **The tab** |
@@ -81,15 +101,15 @@ three-line welcome to this effect (`/sc welcome` says it again).
 | `/sc intro <key> group` | **Show the group a chapter** (design/lenses.md, Pleasure): it plays here, and everyone else in the party or raid who runs the addon is asked "Watch now?" (a newcomer whose log is still syncing too: the sender's client checked the season has reached it). Chapters unlock by the season's race, not by what you have watched, so nobody has to watch the earlier ones first. When a raid gathers (once a week), its leader is offered last week's chapter, and everyone else is told the command |
 | `/sc week login` | Says this week's login lines again: the whim, when the Index closes the week (in your own time), a last call in the week's final day, a tip, and what is waiting for Zennit or what you owe. Last week's result is not repeated |
 | `/sc week [z1..z5\|g1..g5\|2z1..]` | The weekly contest and the season: this week and last, whether Zennit is on his week off, and the season standing; a key replays that chapter |
-| `/sc clip [category|file]` | List or play voice clips from `Media/clips` |
-| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (this client only, never synced). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting. The list is **set for the week**: a place he adds counts from the next Monday (marked "from Monday"), and removing one takes effect at once, so it cannot be changed with a summons on screen |
+| `/sc clip [category|file]` | Admin only. List or play voice clips from `Media/clips` |
+| `/sc zennit list [add <place>\|remove <n>\|clear]` | Zennit's secret list (his client only, never synced; nobody else can edit one). Toward his week off (draft rules): winning the dice earns him the summon's points, a decline that costs takes them off, and a summon that lands at a place on his list earns them again; declining a listed place is free (unless the group played a writ on it). Also editable in the hub's Zennit tab. The list is bounded: at most **5** places of **4 letters or more** (an entry matches any part of a place's name, so a single letter would match most places and decide every week); older entries that are shorter, or past the fifth, stop counting. The list is **set for the week**: a place he adds counts from the next Monday (marked "from Monday"), and removing one takes effect at once, so it cannot be changed with a summons on screen |
 | `/sc zennit postcard [<place>: <line>\|clear]` | Zennit writes his own postcard from a far-flung place (80 letters at most), used on every client instead of the Index's default; `clear` puts the default back. Anyone can read them with `/sc zennit postcard [<place>]`; only his characters can write them |
 | `/sc zennit away [<line>\|clear]` | His out-of-office: whoever summons him on his week off sees "His out-of-office says: '...'" in the briefing, instead of the Index's "not hopeful" |
 | `/sc ask [<question>]` | **Zennit's state, read by his own client** (`Ask.lua`); nothing is put to him and he presses nothing: `hearth` (is his hearthstone in his bags, and ready, or how many minutes are left on it), `playing` (how long he has been logged in; a `/reload` does not reset it). The question goes to the party or raid and the guild; only his client answers, whispering back within a few seconds, and he is told who asked and what the Index said. With no answer in 8 seconds the asker is told so; one question every 5 seconds. On his own client (or in Zennit test mode) it answers without the network. No rule uses an answer yet: it is the mechanism a challenge or a card can call later (`ST.Ask.Ask(key, arg, callback)`). Nothing else in his bags is looked at: what he carries is his business. The item calls have never run in the client (checks `a-ask`, `s-ask`, `d-ask`) |
 | `/sc zennit ask [on\|off]` | Whether his client answers `/sc ask` (on until he switches it off); off, the asker is told questions are off |
-| `/sc respond [test]` | Zennit answers a summon of him (accept, decline, ask for silver or dice); `test` tries it on a pretend summon |
-| `/sc gag` | Preview the Zennit gag |
-| `/sc zenit` | Toggle Zennit test mode on this character |
+| `/sc respond [test]` | Zennit answers a summon of him (accept, decline, ask for silver or dice); `test` (admin only) tries it on a pretend summon |
+| `/sc gag` | Admin only. Preview the Zennit gag |
+| `/sc zenit` | Admin only. Toggle Zennit test mode on this character |
 | `/sc party` | Toggle party test mode (admin only): this character acts as an ordinary party member, even on the admin's or Zennit's own account, so Zennit's tab gives the party's gag. It turns Zennit test mode off, and the other way round. Both are also switches on the Tools tab |
 | `/sc preview` | Toggle the season preview (admin only; Tools > Testing > PREVIEW NEXT SEASON is the same switch): the Story tab also shows the season after this one, as if it had begun, with its opening and chapters playable, so season two can be looked at before any finale has reached it. Nothing in the log changes |
 
@@ -161,7 +181,7 @@ Badges, named as the Index would (the Badges tab says what each takes): Entered 
 Sync shares events, not totals, so merging is a set union and nothing is double-counted. Messages use the
 `SUMMONSYNC` prefix: `H` (hello), `E` (new event, broadcast), `R` (request, whispered), `B` (batch,
 whispered, one record each, about 3 per second). Others: `Z` (Zennit's answer), `D` and `S` (the dice),
-`T` (a summon its caster deleted), `A` (Zennit's client names the character he is playing, so others learn his
+`T` (a summon its caster deleted), `K` (a summon card Zennit sold), `A` (Zennit's client names the character he is playing, so others learn his
 alts), `X` (a request to reset), `F` (how a player felt about a week, kept only by Zennit's and the admin's clients), `V` (a chapter shown to the group, party or raid only), `L` (a line Zennit wrote for himself: a postcard or his out-of-office, only from his characters, the newest kept) `W` (what a group member saw of a ritual, kept only by Zennit's client: see below), `Q` and `Y` (a question for Zennit's client, sent to the group and the guild, and his answer whispered back to whoever asked: `/sc ask`) and `C` (the admin started or stopped
 a season: see [The season](#the-season)). AceComm, LibSerialize and LibDeflate are not used; the addon has its own
 small encoder and send queue.
@@ -235,7 +255,7 @@ this week stands (his week off, the Index closed, or the lead and the summons fi
 reached, or "The week" before any. It is typed out under the key clicks, and the sentences that never change (the recaps, how last season ended, the empty file, the one-win warnings, the quiet weeks) are voiced from clips in `Media/ledger` (made by `tools/intro/build_ledger_audio.py` from the `LINES` table in `Ledger.lua`); the lines that carry a name or a number are never the same
 twice, and it now tells the season's named moments (the roll a helper pair tipped, who has summoned him most, a run of dice he won) and the silver he has been paid, all worked out from the log; `/sc intro now` plays it alone. Tune the wording in `Ledger.lua` (`LINES` and `Ledger.Build`), then rerun the script for the voiced lines.
 
-Scenes 9 and 10 explain the weekly challenge: only summons of Zennit count (summons between friends count for nothing), the group earns points by place, ten summons a week count, Zennit holds a secret list of five places that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), close the Index once five are filed, go on leave when he wins a week (summons of him are then filler), and the Index leans toward the side that is behind, with a whim some weeks. The first to five weeks takes the season. **The wording was brought up to date, but the takes have not been re-rendered yet**: `Intro.lua` and `render_takes.py` have the new text, while `Media/intro_9.ogg` and `intro_10.ogg` (and their `_voice` twins) and `IntroCues.lua` are still the old recording until `.claude/skills/zenit-narrator-audio` has been run for scenes 9 and 10 (`render_takes.py --only 9,10`, copy to `tools/intro/narration/voice_09.ogg` and `voice_10.ogg`, then `tools/intro/build_audio.ps1`), after which WoW needs a full restart.
+Scenes 9 and 10 explain the weekly challenge: only summons of Zennit count (summons between friends count for nothing), the group earns points by place, ten summons a week count, Zennit holds a secret list of five places that pays him too, and he may refuse, ask for fifty silver, suggest dice (three a week, which helpers can lean on), close the Index once five are filed, go on leave when he wins a week (summons of him are then filler), and the Index leans toward the side that is behind, with a whim some weeks. The first to five weeks takes the season. Both takes were re-voiced for this wording; when the words of any scene change, `python tools/intro/check_audio.py` lists the takes that no longer match, and `.claude/skills/zenit-narrator-audio` re-renders them (WoW then needs a full restart).
 
 The narration is `Media/intro_1.ogg` to `intro_32.ogg`, and `intro_34.ogg` to `intro_59.ogg` for season two (scene 33 is "The Index today", which has no clip of its own) (the "rp" voice takes mixed with the music bed; `intro_<n>_voice.ogg` is voice only), one clip per scene, because
 `PlaySoundFile` cannot start partway into a file, so pausing and resuming replays the current scene from its
@@ -253,7 +273,7 @@ addon picks a random clip per category and avoids repeating the last one. Plays 
 - `wag`: used for the Zennit gag instead of the built-in sound.
 - `zenit_land`: played on Zennit's client when a friend's live summon of him arrives.
 - `zenit_refuse`: when Zennit refuses a summon (his client and the summoner's). `zenit_win`: when he wins the dice. `ritual`: as a ritual begins on your client. `narrator_weekopen`: when a finished week is announced.
-  Clips are silent until recorded; none are so far.
+  Clips are silent until recorded. The only take so far, `zenit_unsorted_01_aaron`, is in no category yet, so all of them are silent.
 
 The house style for every line the addon says (the deadpan Index, the words to use, what stays plain) is `design/voice.md`; add to it when a new line breaks it.
 
@@ -314,7 +334,7 @@ are missing it does nothing.
 His answer is saved on the event, shown in the Log tab ("Zennit's answer"), and sent to everyone (message `Z`). Only his
 own client can answer for him, a newer answer replaces an older one (owes, then paid), and the dice use two more
 messages (`D`: his roll to the summoner, `S`: the roll back). Points, tallies and badges only count summons that
-land. The same choices are in the hub window's **Answer** tab (`/sc`, then Answer): the summons waiting for his answer with Previous/Next, the four choices drawn in the window, and a list of the ones he has already answered. `/sc respond` reopens the dialog for the latest summon that is still waiting; `/sc respond test` (or the
+land. The same choices are in the hub window's **Zennit** tab (`/sc`, then ANSWER A SUMMON): the summons waiting for his answer with Previous/Next, the four choices drawn in the window, and a list of the ones he has already answered. `/sc respond` reopens the dialog for the latest summon that is still waiting; `/sc respond test` (or the
 Tools tab's "Test a summoning") tries it on a pretend summon from "Tester", with a pretend summoner rolling back.
 
 Test summons (`/sc fake`, the buttons that add them, and `respond test`) are marked and stay on that client: they
@@ -344,9 +364,9 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Area | State |
 |---|---|
 | Skeleton, diagnostics panel, store, tallies, scoring, badges, panel, Zennit gag | Verified in the live client (solo, with `/sc fake`) |
-| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients (`/sc synctest`, 23/23 in the live client on 2026-10-04). Tests added since, for answer resync, deletions, resets, closed weeks, Zennit's alts, test summons and raid candidates, have not been run in the live client yet |
-| The live-client checklist (`/sc check`, `design/verification.md`) | Written; not yet run in the game. It is how the rest of this table gets confirmed |
-| Real Ritual of Summoning detection | Verified in the live client (with Poogs). Summons by a warlock without the addon are not handled; what a target presses on the game's own summon prompt is read by hooking `C_SummonInfo` (written, never run live); raid helpers in other subgroups are checked now but not yet tried in a raid |
+| Sync merge rules and HELLO/REQUEST/BATCH exchange | Verified with simulated clients: `/sc synctest` passed 103/103 in the live client on 2026-10-06. It has 116 tests now; the ones added since (0.27 and 0.28) have only run outside the game, in a headless Lua 5.1 run with stubbed WoW calls |
+| The live-client checklist (`/sc check`, `design/verification.md`) | The automatic checks passed in the live client on 2026-10-06. The checks done with a friend are still to do: they are how the rest of this table gets confirmed |
+| Real Ritual of Summoning detection | Verified in the live client (with Poogs): the detector fired and the summons synced. Not yet confirmed: when the game reports the ritual done, which decides whether helpers are seen without the prompt (run one with `/sc debug` on the caster's client). Summons by a caster without the addon are filed by Zennit's client (never run live); what a target presses on the game's own summon prompt is read by hooking `C_SummonInfo` (written, never run live); raid helpers in other subgroups are checked now but not yet tried in a raid |
 | Addon messages between two real clients | Verified: party, guild and whisper pings and replies arrive. Names show as `Name Surname` here (not `Name-Realm`), so the addon compares plain first-word names |
 | Zennit's answer and the dice between two real clients | Not tested: the `/roll` text parsing, and whether `RandomRoll` is allowed in this client |
 | Intro art and sound loading | Not tested after a full restart (`/sc intro check`) |
@@ -354,9 +374,10 @@ textures must be `.tga` or `.blp` with power-of-two sides.
 | Questions for Zennit's client (`/sc ask`) | Built (v0.28.0) and checked outside the game with the self-test and stubbed WoW calls; never run in the client. Whether the game lets an addon find the hearthstone and read its cooldown is check `a-ask` |
 | The tour (`/sc tour`) | Written; never run in the client (check `s-tour`). Nobody has listened to the recordings yet |
 | A real Monday rollover of the week and season, and `/sc reset all` reaching friends | Not tested |
-| Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (never run live yet). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |
-| Gag and voice clips | Not recorded yet; the gag is still the placeholder sheet |
-| Release | None published yet (no git tags); a release zip carries whatever clips are committed |
+| Scoring tables | Ten far-flung places and six cities are matched by map ID from memory; `/sc places` asks the game and flags any ID it does not know or names differently (its automatic check, `a-places`, passed in the live client on 2026-10-06). The dungeon entrance subzone strings are guesses the game cannot look up; confirm each with `/sc where` |
+| Gag and voice clips | The gag is an original drawing (`Media/gag_wag_sheet.tga`) with Zennit's recorded line and 13 recorded party lines. The voice clip categories are silent: the one take so far is in no category |
+| Release | Published on GitHub (v0.22.0, v0.25.3, v0.26.0) and, from v0.26.0, on CurseForge. Actions > Release publishes the TOC's version; a release zip carries whatever clips are committed |
+| 0.28.1: resets, closed weeks, the silver watcher, BattleTag hashes | Checked outside the game only (the self-test and a headless run) |
 
 Known limits of the 12.0 API: no combat log, party data may be secret, no web requests. Secret values on
 other units (`UnitInRange`, `UnitHealth`) were confirmed, so the addon does not rely on them.
