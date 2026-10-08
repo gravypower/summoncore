@@ -1,6 +1,6 @@
 # Playtest script: the first season
 
-The first week on the new rules starts **Monday 5 October 2026 (UTC)**. This is the script for it, built from the "to watch
+The first week on the new rules started **Monday 5 October 2026 (UTC)**. This is the script for it, built from the "to watch
 in playtests" lists in `lenses.md`. The principle: **the log answers the questions that are numbers, so the group is only
 asked the ones that are feelings, and nobody keeps notes** (they dislike bookkeeping).
 
@@ -13,7 +13,7 @@ Several things have only been run in a stub, never in the game. Fix these before
 
 1. `/sc synctest`: every test should pass. Paste any failure.
 2. After a full WoW restart: `/sc intro check` (every sound file plays), then `/sc intro`: scene 10 should run on into **The
-   Index today**, typed out under the key clicks, with no voice. `/sc intro now` plays it alone.
+   Index today**, typed out under the key clicks: its fixed lines are voiced, the ones with names and numbers are typed only. `/sc intro now` plays it alone.
 3. `/sc places`: every city and far-flung map should read as found; any line saying "the client has no such map" or "calls it" is a
    wrong ID in `Scoring.lua` (fix it and say which). Then stand at a dungeon entrance you pass and run `/sc where`: it should say `dungeon`.
 4. `/sc rules` (the whole race on one card), `/sc report` and `/sc seasons` (empty until a finale) print to chat; the same three

@@ -381,6 +381,7 @@ function commands.zenit(rest)
     if sub == "postcard" or sub == "away" then return zennitLine(sub, arg) end
     if sub == "ask" then return zennitAsk(arg) end
     if sub ~= "list" and not ST.IsAdmin() then return print_("that is an admin tool") end
+    if sub == "list" and not (ST.Gag.IsZennit() or ST.IsAdmin()) then return print_("only Zennit keeps his secret list") end
     if sub == "list" then
         -- his secret list: /sc zennit list [add <place> | remove <n> | clear]
         local R = ST.Respond
@@ -750,11 +751,12 @@ local HELP = {
     "/sc titles - who leads each of the season's titles so far (heaviest hand, best supporting role, ...)",
     "/sc tab - who owes Zennit what (on his client), or what you owe him (on everyone else's)",
     "/sc cards - who holds a summon card and how many punches are left; /sc card - how cards work (Zennit sells them)",
-    "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)    /sc probe chat - the same for say, yell, party and raid chat and a summons arriving (can what Zennit says be read?); /sc probe chat copy opens what it printed",
+    { "zennit", "/sc probe - listen to trade and mail events and print what the client shows (how silver could be detected)    /sc probe chat - the same for say, yell, party and raid chat and a summons arriving (can what Zennit says be read?); /sc probe chat copy opens what it printed" },
     "/sc report [copy] - what the log says about how the race is being played (for a playtest); copy opens it in a window you can copy from",
     "/sc rules [copy] - the rules of the race, with this week's live numbers; copy opens them in a window you can copy from",
     "/sc seasons - the Index's keepsake of each finished season (who was there, the silver, the moments)",
-    { "zennit", "/sc respond [test] - Zennit answers a summon of him (accept, decline, ask for silver, dice); test tries it" },
+    { "zennit", "/sc respond - Zennit answers a summon of him (accept, decline, ask for silver, dice)" },
+    { "admin", "/sc respond test - try the answer form on a test summons" },
     "/sc tips [on|off] - the one-line tip about a command, at the Monday login",
     "/sc feelings [on|off] - the weekly one-click question about how the week felt (Zennit and the admin see the counts)",
     "/sc errors [clear] - problems the addon caught in itself this session (tell Aaron what they say)",

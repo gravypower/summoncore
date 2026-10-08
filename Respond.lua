@@ -262,6 +262,9 @@ function Respond.ListAdd(text)
         return false, string.format("'%s' is too short: a place needs at least %d letters", text, Respond.LIST_MIN)
     end
     local list = Respond.List()
+    for _, word in ipairs(list) do
+        if word:lower() == text:lower() then return false, string.format("'%s' is already on the list", word) end
+    end
     if #Respond.ListActive() >= Respond.LIST_MAX then
         return false, string.format("the list holds %d places: remove one first", Respond.LIST_MAX)
     end
