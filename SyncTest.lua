@@ -7,7 +7,7 @@ ST.SyncTest = T
 
 local BASE = 1717000000
 local clock = 1000
-local realEventClosed -- set in T.Run (Week.lua loads after this file)
+local realEventClosed, realLateAnswer -- set in T.Run (Week.lua loads after this file)
 
 local function newClient(name)
     return {
@@ -862,12 +862,13 @@ end)
 
 add("season marks travel: the admin's stamp is kept, another is refused, and a client that missed one catches up", function()
     local a, b, c = newClient("Alpha"), newClient("Beta"), newClient("Cara")
-    local saved = ST.bnGetInfo
+    local saved, savedAdmin = ST.bnGetInfo, ST.ADMIN_HASH
     local out = {}
     local ok, err = pcall(function()
+        ST.ADMIN_HASH = ST.TagHash("Admin#1") -- a sample account stands in for the admin's (its tag is not in the addon)
         ST.bnGetInfo = function() return 1, "Someone#1" end
         out.refused = with(a, function() return (Sync.MarkSeason("stop")) end)
-        ST.bnGetInfo = function() return 1, ST.ADMIN_TAG end
+        ST.bnGetInfo = function() return 1, "Admin#1" end
         out.made = with(a, function() return (Sync.MarkSeason("stop")) end)
         settle({ a, b }) -- Cara is offline
         out.forged = with(b, function() return Sync.OnMessage("1~C~start|" .. (BASE + 9) .. "|deadbeef", "PARTY", "Mallory") end)
@@ -876,7 +877,7 @@ add("season marks travel: the admin's stamp is kept, another is refused, and a c
         a.out = {}
         settle({ b, c })
     end)
-    ST.bnGetInfo = saved
+    ST.bnGetInfo, ST.ADMIN_HASH = saved, savedAdmin
     if not ok then return false, "ERROR " .. tostring(err) end
     local function has(cl) return with(cl, function() local m = ST.Week.LastMark() return m and m.kind == "stop" end) end
     local good = out.refused == nil and out.made and has(b) and has(c) and out.forged == "rejected:stamp" and out.badKind == "bad"
@@ -976,27 +977,98 @@ add("a friend who missed Zennit's answer gets it from the next HELLO", function(
     return got ~= nil and got.result == "owed", got and got.result or "still missing"
 end)
 
-add("a closed week is frozen: Zennit can no longer answer into it and a late summon cannot flip it", function()
-    local a = newClient("Alpha")
+add("a closed week comes from the log alone: no answer is made or synced into it late, and clients that synced at different times agree", function()
+    local a, b = newClient("Alpha"), newClient("Beta")
     local W = ST.Week
-    local fake = W.EventClosed
-    W.EventClosed = realEventClosed -- the other tests use old summons, so Run turns closing off
-    local ok, res = pcall(with, a, function()
-        local id = Store.Add({ caster = "Alpha", target = "Zennit", assistants = {}, mapID = 1436, subzone = "Sentinel Hill",
-            time = BASE + 3600, confirmed = true }, true)
-        a.db.events[id].points, a.db.events[id].kind = 3, "zone"
+    local fakeClosed, fakeLate = W.EventClosed, W.LateAnswer
+    W.EventClosed, W.LateAnswer = realEventClosed, realLateAnswer -- the other tests use old summons, so Run turns closing off
+    local ok, res = pcall(function()
+        local out = {}
+        -- two summons of Zennit in a week that closed long ago; only Alpha holds them so far
+        local id = cast(a, 3600, true, { target = "Zennit" })
+        local id2 = cast(a, 3700, true, { target = "Zennit" })
         local week = W.Start(BASE + 3600)
-        local answered = ST.Respond.Decide(id, "refused")
-        W.Freeze()
-        a.db.events["late-1"] = { caster = "Alpha", target = "Other", assistants = {}, points = 50, kind = "zone",
-            time = BASE + 7200 }
-        return { answered = answered, winner = W.Score(week).winner, closed = W.Closed(week),
-            frozen = a.db.settings.weekFrozen[week], pending = #ST.Respond.Pending() }
+        out.closed = W.Closed(week)
+        with(a, function()
+            out.made = ST.Respond.Decide(id, "refused")                                                    -- too late to answer
+            out.late = Sync.OnMessage("1~Z~" .. id .. "|accepted|0|0|" .. time(), "PARTY", "Zennit")       -- made late: refused
+            out.inTime = Sync.OnMessage("1~Z~" .. id .. "|refused|0|0|" .. (BASE + 3650), "PARTY", "Zennit") -- made in time, came late
+            out.owed = Sync.OnMessage("1~Z~" .. id2 .. "|owed|0|0|" .. (BASE + 3750), "PARTY", "Zennit")
+            out.paid = Sync.OnMessage("1~Z~" .. id2 .. "|paid|0|0|" .. time(), "PARTY", "Zennit")         -- paying is never late
+        end)
+        -- Beta first hears of the refused summons from a client that kept a late answer: the late answer is dropped, and Alpha's
+        -- in-time one wins when it comes
+        local _, stale = Sync.Decode(Sync.Encode(id, a.db.events[id]))
+        stale.response = { result = "accepted", zroll = 0, sroll = 0, time = time() }
+        out.staleAdd = with(b, function() return Sync.Merge(id, stale, "Alpha", false) end)
+        out.staleKept = b.db.events[id] and b.db.events[id].response
+        for _, key in ipairs({ id, id2 }) do
+            local _, rec = Sync.Decode(Sync.Encode(key, a.db.events[key]))
+            with(b, function() Sync.Merge(key, rec, "Alpha", false) end)
+        end
+        out.bAnswer = b.db.events[id].response and b.db.events[id].response.result
+        out.a1 = with(a, function() return W.Score(week).winner end)
+        out.b1 = with(b, function() return W.Score(week).winner end)
+        -- three summons made in that week reach both clients only now: they count, the same way on both
+        for n = 1, 3 do
+            local ev = { caster = "Gamma", target = "Other", assistants = {}, mapID = 1436, subzone = "Sentinel Hill",
+                time = BASE + 7200 + n, confirmed = true }
+            local _, rec = Sync.Decode(Sync.Encode("Gamma-" .. n, ev))
+            local _, rec2 = Sync.Decode(Sync.Encode("Gamma-" .. n, ev))
+            with(a, function() Sync.Merge("Gamma-" .. n, rec, "Gamma", false) end)
+            with(b, function() Sync.Merge("Gamma-" .. n, rec2, "Gamma", false) end)
+        end
+        out.a2 = with(a, function() return W.Score(week).winner end)
+        out.b2 = with(b, function() return W.Score(week).winner end)
+        out.aAnswer = a.db.events[id].response and a.db.events[id].response.result
+        out.aPaid = a.db.events[id2].response and a.db.events[id2].response.result
+        return out
     end)
-    W.EventClosed = fake
+    W.EventClosed, W.LateAnswer = fakeClosed, fakeLate
     if not ok then return false, tostring(res) end
-    return res.answered == nil and res.closed and res.frozen == "zennit" and res.winner == "zennit" and res.pending == 0,
-        string.format("answered=%s winner=%s frozen=%s pending=%d", tostring(res.answered), tostring(res.winner), tostring(res.frozen), res.pending)
+    local r = res
+    return r.closed and r.made == nil and r.late == "rejected:late" and r.inTime == "applied" and r.owed == "applied"
+        and r.paid == "applied" and r.aAnswer == "refused" and r.aPaid == "paid" and r.staleAdd == "added" and r.staleKept == nil
+        and r.bAnswer == "refused" and r.a1 == "zennit" and r.b1 == "zennit" and r.a2 == "group" and r.b2 == "group",
+        string.format("made %s, late %s, in time %s, paid %s; stale %s (answer %s), Beta then %s; winners %s/%s, after the late summons %s/%s",
+            tostring(r.made), tostring(r.late), tostring(r.inTime), tostring(r.paid), tostring(r.staleAdd),
+            tostring(r.staleKept and r.staleKept.result), tostring(r.bAnswer), tostring(r.a1), tostring(r.b1), tostring(r.a2),
+            tostring(r.b2))
+end)
+
+add("paying the silver keeps the list bonus it was owed with, and a week already announced says so when late summons change it", function()
+    local z = newClient("Zennit")
+    local W = ST.Week
+    local out, printed = {}, {}
+    local realPrint = ST.print
+    ST.print = function(text) printed[#printed + 1] = text end
+    local ok, err = pcall(with, z, function()
+        -- owed at a place that was on his list then; the list has changed since (it is empty now)
+        z.db.events["Bo-1"] = { caster = "Bo", target = "Zennit", assistants = {}, time = BASE + 10, points = 3, kind = "zone",
+            response = { result = "owed", zroll = 0, sroll = 0, time = BASE + 20, listed = true, amount = 50 } }
+        local resp = ST.Respond.Decide("Bo-1", "paid")
+        out.listed = resp and resp.listed
+        -- the week was announced as his; three summons made in it reach this client late and give it to the group
+        local week = W.Start(BASE + 10)
+        out.before = W.Score(week).winner
+        z.db.settings.weekAnnounced = { start = week, winner = out.before }
+        for n = 1, 3 do
+            z.db.events["Gamma-" .. n] = { caster = "Gamma", target = "Other", assistants = {}, time = BASE + 100 + n, points = 10,
+                kind = "far" }
+        end
+        local mark = #printed
+        W.Recheck()
+        out.said, out.after = printed[mark + 1], z.db.settings.weekAnnounced.winner
+        mark = #printed
+        W.Recheck()
+        out.again = #printed - mark
+    end)
+    ST.print = realPrint
+    if not ok then return false, tostring(err) end
+    return out.listed == true and out.before == "zennit" and out.after == "group" and out.said ~= nil
+        and out.said:find("changed", 1, true) ~= nil and out.again == 0,
+        string.format("paid keeps listed %s; week %s then %s, said %s, again %d", tostring(out.listed), tostring(out.before),
+            tostring(out.after), tostring(out.said ~= nil), out.again or -1)
 end)
 
 add("undo only removes your own summon, and the deletion sticks across sync, even for a friend who was offline", function()
@@ -1023,26 +1095,65 @@ add("undo only removes your own summon, and the deletion sticks across sync, eve
         string.format("gone=%s back=%s forged=%s", tostring(gone), back, forged)
 end)
 
-add("a reset a client missed is asked again from the next HELLO", function()
-    local a, b = newClient("Alpha"), newClient("Beta")
+add("a reset everyone was asked to make is asked again from the next HELLO; a player's own reset is never passed on", function()
+    local a, b, c = newClient("Alpha"), newClient("Beta"), newClient("Gamma")
     cast(a, 930, false)
     settle({ a, b })
     local stamp = BASE + 5000
-    with(a, function() ST.Reset.Apply(stamp) end) -- Beta never hears the request
-    local asked
+    local asked = {}
     local realAsk = Sync.onReset
-    Sync.onReset = function(_, s) asked = s end
-    with(b, function() Sync.OnMessage("1~H~0|0|x|0|" .. stamp, "WHISPER", "Alpha") end)
+    Sync.onReset = function(sender, s) asked[#asked + 1] = sender .. ":" .. s end
+    local function hello(c)
+        with(c, function() Sync.Hello() Sync.Pump(100000) end)
+        local found
+        for _, m in ipairs(c.out) do
+            if m.payload:match("^%d+~H~") then found = m.payload end
+        end
+        c.out = {}
+        return found or ""
+    end
+    -- Alpha resets only its own client: its hello does not carry it
+    with(a, function() ST.Reset.Apply(stamp) end)
+    local own = hello(a)
+    with(b, function() Sync.OnMessage(own, "PARTY", "Alpha") end)
+    local afterOwn = #asked
+    -- a client before 0.28.1 sends its own reset in the same field, unstamped: ignored
+    with(b, function() Sync.OnMessage("1~H~0|0|0.28.0|0|" .. stamp .. "|0", "WHISPER", "Alpha") end)
+    local afterOld = #asked
+    -- the admin's reset-all (Beta never heard the request) travels with the admin's stamp, and is asked
+    a.db.resetAll = stamp
+    local all = hello(a)
+    with(b, function() Sync.OnMessage(all, "PARTY", "Alpha") end)
     Sync.onReset = realAsk
-    return asked == stamp, tostring(asked)
+    -- a newcomer holding nothing from before it takes the mark without being asked (a prompt would leave it unset)
+    with(c, function() Sync.OnMessage(all, "PARTY", "Alpha") end)
+    -- Beta, who holds a summons from before it, says yes: the reset is made, and Beta passes the request on in turn
+    local realPrint = ST.print
+    ST.print = function() end
+    local okAccept, errAccept = pcall(with, b, function() ST.Reset.Accept("Alpha", stamp) end)
+    ST.print = realPrint
+    if not okAccept then return false, tostring(errAccept) end
+    local passed = hello(b)
+    local left = 0
+    for _ in pairs(b.db.events) do left = left + 1 end
+    return afterOwn == 0 and afterOld == 0 and #asked == 1 and asked[1] == "Alpha:" .. stamp and own ~= ""
+        and not own:find(tostring(stamp), 1, true) and all:find(ST.ADMIN_HASH, 1, true) ~= nil
+        and c.db.resetAt == stamp and c.db.resetAll == stamp
+        and left == 0 and b.db.resetAt == stamp and b.db.resetAll == stamp and passed:find(stamp .. "|", 1, true) ~= nil
+        and passed:find(ST.ADMIN_HASH, 1, true) ~= nil,
+        string.format("own reset asked %d, old client's %d, reset-all asked %s; newcomer's mark %s/%s; Beta accepted: %d left, passes it on %s",
+            afterOwn, afterOld - afterOwn, tostring(asked[1]), tostring(c.db.resetAt), tostring(c.db.resetAll), left,
+            tostring(passed:find(ST.ADMIN_HASH, 1, true) ~= nil))
 end)
 
 add("Zennit's alts are learned from his own client, and only a few", function()
     local a, z = newClient("Alpha"), newClient("Zennit")
-    local savedGet = ST.bnGetInfo
-    ST.bnGetInfo = function() return 1, ST.ZENNIT_TAG end
-    with(z, function() Sync.Hello() Sync.Pump(100000) end) -- messages only reach c.out once pumped
-    ST.bnGetInfo = savedGet
+    local savedGet, savedZennit = ST.bnGetInfo, ST.ZENNIT_HASH
+    ST.ZENNIT_HASH = ST.TagHash("Zennit#1") -- a sample account stands in for his (its tag is not in the addon)
+    ST.bnGetInfo = function() return 1, "Zennit#1" end
+    local okHello, errHello = pcall(with, z, function() Sync.Hello() Sync.Pump(100000) end) -- messages only reach c.out once pumped
+    ST.bnGetInfo, ST.ZENNIT_HASH = savedGet, savedZennit
+    if not okHello then return false, tostring(errHello) end
     local sentA
     for _, m in ipairs(z.out) do if m.payload:match("^%d+~A~") then sentA = m.payload end end
     if not sentA then return false, "Zennit's client did not announce itself" end
@@ -1379,6 +1490,80 @@ add("closing the Index: allowed after five answered, it travels to everyone, and
             tostring(out.early), tostring(out.target == ids[5]), tostring(rz.closed), tostring(ra.closed), ra.counted,
             ra.extra, rz.group, ra.group, tostring(back and back.response and back.response.closes))
     end)
+end)
+
+add("closing the Index keeps the answer it closes on: a card's punch and a named price stay", function()
+    return newRules(function()
+        local W, z = ST.Week, newClient("Zennit")
+        local out = {}
+        with(z, function()
+            local start = W.Start(BASE + 980)
+            for n = 1, 5 do
+                z.db.events["Alpha-" .. n] = { caster = "Alpha", target = "Zennit", assistants = {}, time = start + n, points = 3,
+                    kind = "zone", response = { result = "accepted", zroll = 0, sroll = 0, time = start + 10 + n } }
+            end
+            z.db.events["Alpha-5"].response = { result = "paid", zroll = 0, sroll = 0, time = start + 20, card = true, amount = 75 }
+            out.closed = ST.Respond.CloseIndex(start)
+            out.resp = z.db.events["Alpha-5"].response
+        end)
+        local r = out.resp or {}
+        return out.closed and r.closes == true and r.card == true and r.amount == 75 and r.result == "paid",
+            string.format("closed %s on %s, card %s, amount %s", tostring(out.closed), tostring(r.result), tostring(r.card),
+                tostring(r.amount))
+    end)
+end)
+
+local silverRuns = 0
+add("the silver watcher leaves mail from no player alone (the Auction House), and a mail it cannot place to people it knows", function()
+    local z = newClient("Zennit")
+    local out, printed = {}, {}
+    local realPrint = ST.print
+    ST.print = function(text) printed[#printed + 1] = text end
+    -- 50 silver settles nothing and buys no card, so each payment the watcher takes up is one line in chat (a payment is said once a
+    -- minute, so each run of the tests pays a copper more)
+    silverRuns = silverRuns + 1
+    local copper = 5000 + silverRuns
+    local function lines(fn) local before = #printed fn() return #printed - before end
+    local ok, err = pcall(with, z, function()
+        z.db.events["Bo-1"] = { caster = "Bo", target = "Zennit", assistants = { "Cy" }, time = BASE + 1, points = 3, kind = "zone" }
+        z.db.cards = { k1 = { id = "k1", holder = "Di", punches = 2, silver = 100, time = BASE } }
+        out.ah = ST.Silver.Known("Alliance Auction House")
+        out.stranger = ST.Silver.Known("Mallory")
+        out.caster = ST.Silver.Known("Bo Bravo") -- this client shows names as "Name Surname"
+        out.helper = ST.Silver.Known("Cy-Realm")
+        out.holder = ST.Silver.Known("Di")
+        out.auction = lines(function() ST.Silver.Mail("Alliance Auction House", copper, false) end) -- the game: no player sent it
+        out.unsure = lines(function() ST.Silver.Mail("Mallory", copper, nil) end)                   -- the game does not say, a stranger
+        out.player = lines(function() ST.Silver.Mail("Mallory", copper, true) end)                  -- a player's mail (an alt, say)
+        out.friend = lines(function() ST.Silver.Mail("Bo Bravo", copper, nil) end)                  -- does not say, but someone it knows
+    end)
+    ST.print = realPrint
+    if not ok then return false, tostring(err) end
+    return out.ah == false and out.stranger == false and out.caster and out.helper and out.holder and out.auction == 0
+        and out.unsure == 0 and out.player == 1 and out.friend == 1,
+        string.format("known: auction house %s, stranger %s, caster %s, helper %s, card holder %s; lines: auction %d, unsure %d, player %d, friend %d",
+            tostring(out.ah), tostring(out.stranger), tostring(out.caster), tostring(out.helper), tostring(out.holder), out.auction or -1,
+            out.unsure or -1, out.player or -1, out.friend or -1)
+end)
+
+add("a check the addon sees for itself is recorded quietly on a friend's client, and said on the admin's", function()
+    local a = newClient("Alpha")
+    local out, printed = {}, {}
+    local realAdmin, realPrint = ST.IsAdmin, ST.print
+    ST.print = function(text) printed[#printed + 1] = text end
+    local ok, err = pcall(with, a, function()
+        ST.IsAdmin = function() return false end
+        ST.Check.Seen("s-welcome", "test")
+        out.friend, out.friendSaid = ST.Check.Status("s-welcome"), #printed
+        ST.IsAdmin = function() return true end
+        ST.Check.Seen("s-lastcall", "test")
+        out.admin, out.adminSaid = ST.Check.Status("s-lastcall"), #printed - out.friendSaid
+    end)
+    ST.IsAdmin, ST.print = realAdmin, realPrint
+    if not ok then return false, tostring(err) end
+    return out.friend == "pass" and out.friendSaid == 0 and out.admin == "pass" and out.adminSaid == 1,
+        string.format("friend %s (%d lines), admin %s (%d lines)", tostring(out.friend), out.friendSaid or -1, tostring(out.admin),
+            out.adminSaid or -1)
 end)
 
 add("his week off is real: summons of him are filler, nobody wins it, and the week after is a normal one", function()
@@ -1982,6 +2167,7 @@ add("the week's clock in the player's time, a last call in the final day, and /s
     end)
 end)
 
+local guardRuns = 0
 add("errors are caught and said once, kept for /sc errors, and a failing step does not stop the next", function()
     local printed, realPrint, realHandler = {}, ST.print, geterrorhandler
     local saved = ST.errors
@@ -1990,8 +2176,10 @@ add("errors are caught and said once, kept for /sc errors, and a failing step do
     geterrorhandler = function() return function() end end                     -- the deliberate "boom" must not reach the game's error window
     local ran = false
     local bad = function() error("boom") end
-    local ok1, msg1 = ST.Guard("the first step", bad)
-    local ok1b = ST.Guard("the first step", bad)                                -- the same again: kept, not said again
+    guardRuns = guardRuns + 1 -- a problem is said once a session, so each run of the tests needs a step of its own
+    local step = guardRuns == 1 and "the first step" or ("the first step (run " .. guardRuns .. ")")
+    local ok1, msg1 = ST.Guard(step, bad)
+    local ok1b = ST.Guard(step, bad)                                            -- the same again: kept, not said again
     local ok2, value = ST.Guard("the second step", function() ran = true return "fine" end)
     local safe = ST.Safe("an event", function(a, b) return a + b end)
     local sum = select(2, safe(2, 3))
@@ -2000,7 +2188,7 @@ add("errors are caught and said once, kept for /sc errors, and a failing step do
     local first = ST.errors[1]
     ST.errors = saved
     local good = ok1 == false and ok1b == false and msg1:find("boom", 1, true) and ok2 == true and value == "fine" and ran
-        and sum == 5 and kept == 2 and said == 1 and first and first.name == "the first step" and printed[1]:find("/sc errors", 1, true)
+        and sum == 5 and kept == 2 and said == 1 and first and first.name == step and printed[1]:find("/sc errors", 1, true)
     return good, string.format("kept %d, said %d, second step ran %s", kept, said, tostring(ran))
 end)
 
@@ -2972,8 +3160,9 @@ add("a question reaches only Zennit's client, which answers it by whisper; off, 
 end)
 
 function T.Run(quiet)
-    realEventClosed = ST.Week.EventClosed
+    realEventClosed, realLateAnswer = ST.Week.EventClosed, ST.Week.LateAnswer
     ST.Week.EventClosed = function() return false end -- the other tests use old summons
+    ST.Week.LateAnswer = function() return false end  -- answered now, so every answer to them would be late
     local rulesFrom = ST.Week.RULES.from
     ST.Week.RULES.from = math.huge -- and the old race rules (the new-rules tests switch them on themselves)
     local whims, fixed, overdue = ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue
@@ -2996,7 +3185,7 @@ function T.Run(quiet)
                 r.detail ~= "" and ("  (" .. r.detail .. ")") or ""))
         end
     end
-    ST.Week.EventClosed = realEventClosed
+    ST.Week.EventClosed, ST.Week.LateAnswer = realEventClosed, realLateAnswer
     ST.Week.RULES.from = rulesFrom
     ST.Week.RULES.whims, ST.Voice.fixed, ST.Week.RULES.overdue, ST.Week.RULES.lastCall = whims, fixed, overdue, lastCall
     ST.print(string.format("sync self-test: %d/%d passed", pass, #tests))

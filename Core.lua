@@ -2,7 +2,7 @@ local ADDON, ST = ...
 
 ST.name = ADDON
 ST.prefix = "SUMMONCORE"
-ST.version = "0.28.0"
+ST.version = "0.28.1"
 
 local DB_VERSION = 1
 
@@ -60,9 +60,10 @@ function ST.baseName(name)
     return name:match("^[^%s%-]+")
 end
 
--- The admin is whoever is logged in to this Battle.net account. The check runs on the player's own computer, so
--- it keeps the debug tools and unreached chapters out of the way; it is not security.
-ST.ADMIN_TAG = "Gravypower#1577"
+-- The admin is whoever is logged in to one Battle.net account, and Zennit's own account is Zennit whichever character he
+-- plays. The check runs on the player's own computer, so it keeps the debug tools and unreached chapters out of the way; it is
+-- not security. Both accounts are known by a hash of their BattleTag (ST.TagHash), so the tags themselves are not in the addon.
+-- That keeps them out of sight, not secret: a BattleTag's number is short, so anyone who guesses the name can find it.
 
 -- This account's BattleTag, or nil if the game does not give it (ST.bnGetInfo is a seam for the self-test).
 function ST.BattleTag()
@@ -72,27 +73,9 @@ function ST.BattleTag()
     if ok and type(tag) == "string" and not ST.isSecret(tag) then return tag end
 end
 
--- Do two BattleTags name the same account? Case and stray spaces do not matter; a missing tag matches nothing.
-function ST.TagMatches(tag, expected)
-    if type(tag) ~= "string" or type(expected) ~= "string" then return false end
-    tag, expected = tag:match("^%s*(.-)%s*$"), expected:match("^%s*(.-)%s*$")
-    return tag ~= "" and tag:lower() == expected:lower()
-end
-
--- The admin's own account, whatever it is set to show.
-function ST.IsAdminAccount()
-    return ST.TagMatches(ST.BattleTag(), ST.ADMIN_TAG)
-end
-
--- The admin acting as one: the admin's account, unless it has switched to seeing the addon as a player does (/sc asplayer),
--- which hides the admin's tools, help lines and spoilers until it is switched back.
-function ST.IsAdmin()
-    return ST.IsAdminAccount() and not (ST.db and ST.db.settings and ST.db.settings.viewAsPlayer)
-end
-
--- A short hash of a BattleTag (case and stray spaces do not matter), or nil. Season commands carry the admin's (ST.ADMIN_HASH)
--- so other clients know them for the admin's. The hash is worked out from a tag that is in this file, so anyone who reads it
--- can stamp a message the same way: it keeps out mistakes and mischief, not a determined friend.
+-- A short hash of a BattleTag (case and stray spaces do not matter), or nil. Season commands and the reset request carry the
+-- admin's (ST.ADMIN_HASH) so other clients know them for the admin's. Anyone who reads this file can stamp a message the same
+-- way: it keeps out mistakes and mischief, not a determined friend.
 function ST.TagHash(tag)
     if type(tag) ~= "string" then return nil end
     tag = tag:match("^%s*(.-)%s*$"):lower()
@@ -101,55 +84,75 @@ function ST.TagHash(tag)
     for i = 1, #tag do h = (h * 33 + tag:byte(i)) % 4294967296 end
     return string.format("%08x", h)
 end
-ST.ADMIN_HASH = ST.TagHash(ST.ADMIN_TAG)
 
--- Zennit's own Battle.net account: it is Zennit whichever character he is playing.
-ST.ZENNIT_TAG = "Zennit#11523"
+-- The two accounts, by ST.TagHash of their BattleTag. The admin's is also the stamp on season marks and reset requests (Sync),
+-- which clients before 0.28.1 work out from the tag itself, so it must stay what it is.
+ST.ADMIN_HASH = "dde6f852"
+ST.ZENNIT_HASH = "31ce8f1c"
 
-function ST.IsZennitAccount()
-    return ST.TagMatches(ST.BattleTag(), ST.ZENNIT_TAG)
+-- Is `tag` the account whose hash is `hash`? A missing tag is nobody's.
+function ST.TagIs(tag, hash)
+    local h = ST.TagHash(tag)
+    return h ~= nil and h == hash
 end
 
--- Checks the BattleTag matching with sample tags, then through the ST.bnGetInfo seam as the game would report them.
--- Returns true or false and a short description.
+-- The admin's own account, whatever it is set to show.
+function ST.IsAdminAccount()
+    return ST.TagIs(ST.BattleTag(), ST.ADMIN_HASH)
+end
+
+-- The admin acting as one: the admin's account, unless it has switched to seeing the addon as a player does (/sc asplayer),
+-- which hides the admin's tools, help lines and spoilers until it is switched back.
+function ST.IsAdmin()
+    return ST.IsAdminAccount() and not (ST.db and ST.db.settings and ST.db.settings.viewAsPlayer)
+end
+
+function ST.IsZennitAccount()
+    return ST.TagIs(ST.BattleTag(), ST.ZENNIT_HASH)
+end
+
+-- Checks the BattleTag hash with sample tags, then the account lookups through the ST.bnGetInfo seam as the game would report
+-- them, with sample accounts standing in for the admin's and Zennit's (their tags are not in the addon). Returns true or false
+-- and a short description.
 function ST.TagTest()
+    local sample = ST.TagHash("Sample#1234")
+    if not (sample and sample:match("^%x%x%x%x%x%x%x%x$")) then return false, "the BattleTag hash is malformed" end
     local cases = {
-        { "Gravypower#1577", ST.ADMIN_TAG, true }, { "  gravypower#1577 ", ST.ADMIN_TAG, true },
-        { "GRAVYPOWER#1577", ST.ADMIN_TAG, true }, { "Gravypower#1578", ST.ADMIN_TAG, false },
-        { "Gravypower", ST.ADMIN_TAG, false }, { "Zennit#11523", ST.ZENNIT_TAG, true },
-        { "zennit#11523", ST.ZENNIT_TAG, true }, { "Zennit#1152", ST.ZENNIT_TAG, false },
-        { "Zennit#11523", ST.ADMIN_TAG, false }, { "", ST.ADMIN_TAG, false }, { nil, ST.ADMIN_TAG, false },
-        { 5, ST.ADMIN_TAG, false },
+        { "Sample#1234", true }, { "  sample#1234 ", true }, { "SAMPLE#1234", true }, { "Sample#1235", false },
+        { "Sample", false }, { "Sample#12345", false }, { "", false }, { "   ", false }, { nil, false }, { 5, false },
     }
     for i, c in ipairs(cases) do
-        if ST.TagMatches(c[1], c[2]) ~= c[3] then return false, "sample " .. i .. " matched wrongly" end
+        if ST.TagIs(c[1], sample) ~= c[2] then return false, "sample " .. i .. " matched wrongly" end
     end
-    -- the season stamp: the same for any spelling of a tag, different for another tag, nothing for no tag
-    if ST.TagHash(" GRAVYPOWER#1577 ") ~= ST.ADMIN_HASH or ST.TagHash("Gravypower#1578") == ST.ADMIN_HASH
-        or ST.TagHash("Zennit#11523") == ST.ADMIN_HASH or ST.TagHash("") or ST.TagHash(nil) or not ST.ADMIN_HASH:match("^%x+$") then
-        return false, "the BattleTag hash for season commands is wrong"
+    if ST.ADMIN_HASH == ST.ZENNIT_HASH or not ST.ADMIN_HASH:match("^%x%x%x%x%x%x%x%x$") or not ST.ZENNIT_HASH:match("^%x%x%x%x%x%x%x%x$") then
+        return false, "the admin's or Zennit's hash is malformed"
     end
     -- as the game would report them: id, tag, ...
     local saved, savedView = ST.bnGetInfo, ST.db and ST.db.settings and ST.db.settings.viewAsPlayer
+    local savedAdmin, savedZennit = ST.ADMIN_HASH, ST.ZENNIT_HASH
     local function report(tag) return function() return 1, tag end end
     local function view(on) if ST.db and ST.db.settings then ST.db.settings.viewAsPlayer = on end end
-    local out
-    view(nil)
-    ST.bnGetInfo = report("Gravypower#1577")
-    if not (ST.IsAdmin() and not ST.IsZennitAccount()) then out = "the admin account is not recognised" end
-    view(true)
-    if not out and ST.db and ST.db.settings and (ST.IsAdmin() or not ST.IsAdminAccount()) then
-        out = "viewing as a player does not hide the admin, or loses the account"
-    end
-    view(nil)
-    ST.bnGetInfo = report("Zennit#11523")
-    if not out and not (ST.IsZennitAccount() and not ST.IsAdmin()) then out = "Zennit's account is not recognised" end
-    ST.bnGetInfo = report("Someone#1")
-    if not out and (ST.IsAdmin() or ST.IsZennitAccount()) then out = "a stranger is recognised" end
-    ST.bnGetInfo = function() error("no Battle.net") end
-    if not out and (ST.BattleTag() ~= nil or ST.IsAdmin()) then out = "a failing lookup is not handled" end
+    local ok, out = pcall(function()
+        ST.ADMIN_HASH, ST.ZENNIT_HASH = ST.TagHash("Admin#1"), ST.TagHash("Zennit#1")
+        view(nil)
+        ST.bnGetInfo = report(" ADMIN#1")
+        if not (ST.IsAdmin() and not ST.IsZennitAccount()) then return "the admin account is not recognised" end
+        view(true)
+        if ST.db and ST.db.settings and (ST.IsAdmin() or not ST.IsAdminAccount()) then
+            return "viewing as a player does not hide the admin, or loses the account"
+        end
+        view(nil)
+        ST.bnGetInfo = report("zennit#1")
+        if not (ST.IsZennitAccount() and not ST.IsAdmin()) then return "Zennit's account is not recognised" end
+        ST.bnGetInfo = report("Someone#1")
+        if ST.IsAdmin() or ST.IsZennitAccount() then return "a stranger is recognised" end
+        ST.bnGetInfo = function() error("no Battle.net") end
+        if ST.BattleTag() ~= nil or ST.IsAdmin() then return "a failing lookup is not handled" end
+    end)
+    ST.ADMIN_HASH, ST.ZENNIT_HASH = savedAdmin, savedZennit
     ST.bnGetInfo = saved
     view(savedView)
+    if not ok then return false, "error: " .. tostring(out) end
     if out then return false, out end
     return true, string.format("%d samples and 4 account lookups behave. Live: %s", #cases, ST.TagReport())
 end

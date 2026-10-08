@@ -209,6 +209,24 @@ StaticPopupDialogs["SUMMONCORE_SILVER"] = {
     preferredIndex = 3,
 }
 
+-- Is `payer` someone the Index deals with: named in the log (a caster, a helper or the one summoned), holding a card, or a
+-- client sync has heard from? Used for a mail when the client does not say whether a player sent it.
+function Silver.Known(payer)
+    local who = base(payer)
+    if who == "" then return false end
+    for _, ev in pairs(ST.db.events) do
+        if base(ev.caster) == who or base(ev.target) == who then return true end
+        for _, a in ipairs(ev.assistants or {}) do
+            if base(a) == who then return true end
+        end
+    end
+    for _, card in pairs(ST.db.cards or {}) do
+        if base(card.holder) == who then return true end
+    end
+    local address = ST.Sync.state and ST.Sync.state.address
+    return address ~= nil and address[who] ~= nil
+end
+
 -- Money has arrived from `payer` (by "trade" or "mail"): say what it would settle and ask Zennit.
 local seen = {}
 function Silver.Paid(payer, copper, via)
@@ -264,14 +282,24 @@ local function hidden(what)
     ST.print("The client hides " .. what .. " from addons, so the silver cannot be seen automatically. /sc probe shows what it lets through.")
 end
 
+-- Money taken from a mail. A mail the game says cannot be answered is not from a player (an auction sale, the Postmaster): none
+-- of the Index's business. When the client does not say, only someone the Index knows (Silver.Known) counts.
+function Silver.Mail(sender, copper, canReply)
+    if canReply == false then return end
+    if canReply ~= true and not Silver.Known(sender) then return end
+    Silver.Paid(sender, copper, "mail")
+end
+
 local function snapshotInbox()
     inbox = {}
     local count = call("GetInboxNumItems")
     if not known(count) then return hidden("the mailbox") end
     for i = 1, math.min(count, 50) do
-        local _, _, sender, _, money = call("GetInboxHeaderInfo", i)
+        local _, _, sender, _, money, _, _, _, _, _, _, canReply = call("GetInboxHeaderInfo", i)
         if type(sender) == "string" and not secret(sender) then
-            inbox[i] = { sender = sender, money = known(money) and money or 0 }
+            local reply
+            if type(canReply) == "boolean" and not secret(canReply) then reply = canReply end
+            inbox[i] = { sender = sender, money = known(money) and money or 0, canReply = reply }
         end
     end
 end
@@ -282,7 +310,7 @@ local function tookMail(index)
     if entry and entry.money > 0 then
         local copper = entry.money
         entry.money = 0
-        Silver.Paid(entry.sender, copper, "mail")
+        Silver.Mail(entry.sender, copper, entry.canReply)
     end
 end
 

@@ -788,7 +788,7 @@ The group here is a handful of friends with real lives: holidays, flu, a month o
 | A warlock | Casts when others want to be summoned | Nothing: the others carry on |
 | A helper | Turns up at the portal | Fewer helpers; the bonus is smaller |
 | A new friend | Joins the guild or party and runs the addon | Sync brings the log across (about three records a second); the story is derived from it, so they are caught up |
-| The admin | One account (`ST.ADMIN_TAG`) | Debug tools wait; nothing in play depends on it |
+| The admin | One account (`ST.ADMIN_HASH`) | Debug tools wait; nothing in play depends on it |
 | **Zennit** | **Answers every summon of him himself** | **Every unanswered summon counts as accepted, for good** |
 
 **The numbers.** The group's chance of winning a week and of taking the finale, as the share of summons he actually answers falls

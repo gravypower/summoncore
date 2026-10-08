@@ -3,7 +3,7 @@
 A Ritual of Summoning logger for WoW Forever (12.0 addon API). It records each summon you complete,
 credits the target and both assistants, shares the log with other users of the addon, and scores each
 summon by destination, then turns the scores into a weekly contest, a season and a story ("Zennit and the Index").
-Status: **v0.28.0, work in progress**. See [Status](#status) for what has and has
+Status: **v0.28.1, work in progress**. See [Status](#status) for what has and has
 not been tested in the live client.
 
 ## Install
@@ -167,8 +167,9 @@ a season: see [The season](#the-season)). AceComm, LibSerialize and LibDeflate a
 small encoder and send queue.
 
 A `H` carries the number of summons, the latest summon time, the version, the time of the newest answer from
-Zennit, the last reset time and the time of the newest season mark, so a peer notices a missing summon, a changed answer,
-a missed reset or a missed season start or stop (season marks are sent in reply to its `R`).
+Zennit, the newest reset everyone was asked to make (with the admin's stamp; a player's own reset is never sent) and the time of
+the newest season mark, so a peer notices a missing summon, a changed answer, a missed reset or a missed season start or stop
+(season marks are sent in reply to its `R`).
 
 Merge rules:
 - Same event ID: keep the confirmed copy; if both are (or neither is), keep the earlier write.
@@ -521,10 +522,10 @@ and mischief, not a friend who reads the code. With no marks at all the season r
 
 The debug tools (`/sc test`, `fake`, `fakeprompt`, `comic`, `synctest`, `debug`, `gag`, `zennit` test mode, `respond test`, and the
 matching buttons in the window) and every chapter of the story not yet reached by the season are for the admin's Battle.net
-account only (`ST.ADMIN_TAG` in `Core.lua`). `/sc admin` says whether this account is the admin. `/sc asplayer` (Tools >
+account only (`ST.ADMIN_HASH` in `Core.lua`: a hash of its BattleTag, so the tag itself is not in the addon). `/sc admin` says whether this account is the admin. `/sc asplayer` (Tools >
 General > View as player) makes the admin's account see the addon as a player does, to check what friends see; that one
 switch stays in reach while it is on, and data kept only for the admin (how the week felt) is still kept. Zennit's own account
-(`ST.ZENNIT_TAG`) is treated as Zennit whichever character he plays. The check runs on each player's own computer, so it keeps
+(`ST.ZENNIT_HASH`, likewise) is treated as Zennit whichever character he plays. The check runs on each player's own computer, so it keeps
 things out of the way but is not security.
 
 ### Tools tab, BattleTags and reset
@@ -541,11 +542,15 @@ admin's **Run tag tests** button, and the last two lines of `/sc synctest`, chec
 `/sc reset` (or **Reset my data...**) wipes this client's summons, badges and, because the season and story are worked out from
 the log, the story too. It asks first. The admin's `/sc reset all` also asks everyone else running Summon Core, in the party, raid
 and guild, to do the same: each of them gets a prompt and nothing changes on their client until they agree. A reset leaves a mark,
-and sync refuses anything older than it, so a client that said no cannot put the old log back.
+and sync refuses anything older than it, so a client that said no cannot put the old log back. Only the admin's request travels on:
+a client that missed it is asked when it next meets someone who took part, and a client holding nothing from before it (a newcomer)
+takes the mark without being asked. A player's own `/sc reset` stays on their client.
 
 ### Closed weeks and Zennit's alts
 
-A week closes two days after it ends. Its winner is then frozen on each client, so a late answer or a late-synced summon cannot
-flip a week that has been announced, and Zennit can no longer answer a summon from a closed week. Zennit's alts are learned over
+A week closes two days after it ends. Zennit can then no longer answer a summon from it, and sync refuses an answer made after
+the close (the silver of a summons he asked silver for can still be paid, which moves no points). The week's result is worked out
+from the log, never frozen on one client, so every client that holds the same log agrees on it; a summons made in the week that
+reaches a client late still counts, the same way everywhere. Zennit's alts are learned over
 sync: his own client announces the character he is playing, and everyone else scores a summon of any of them as a summon of
 Zennit (up to 10 alts are kept).

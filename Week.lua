@@ -3,7 +3,8 @@
 -- him. When he wins, the seven days that follow are his: no summons. From October 2026 the race follows
 -- Week.RULES: the group has to beat Zennit at his own answers, and he no longer wins most weeks by default.
 -- Everything is derived from the event log, so every client reaches the same result.
--- A week closes two days after it ends: its winner is then frozen and Zennit can no longer answer into it.
+-- A week closes two days after it ends: Zennit can no longer answer into it (Week.LateAnswer), so its result then only
+-- changes if a summons made in it reaches a client late, and then the same way on every client.
 local ADDON, ST = ...
 local Week = {}
 ST.Week = Week
@@ -33,8 +34,9 @@ local function isZennit(name)
 end
 Week.IsZennit = isZennit
 
--- A week closes GRACE after it ends, leaving time for late answers and late syncs. Once closed, its winner is
--- frozen on this client (Week.Check), so a stray old answer or late-synced summon cannot flip a decided week.
+-- A week closes GRACE after it ends, leaving time for late answers and late syncs. Once closed, no answer made later counts
+-- toward it. Its result is not frozen on each client (a client that synced late would keep a different one for good): it is
+-- worked out from the log, which every client ends up holding the same.
 Week.GRACE = 2 * DAY
 
 function Week.Closed(start, now)
@@ -45,8 +47,11 @@ function Week.EventClosed(ev)
     return Week.Closed(Week.Start(ev.time))
 end
 
-local function frozen()
-    return ST.db and ST.db.settings and ST.db.settings.weekFrozen
+-- Is this answer to the summons `ev` too late to count? One made after the summons' week closed is, unless it pays silver
+-- already owed (that moves no points). It goes by the answer's own time, not when it arrived, so every client agrees: Sync
+-- refuses such an answer, and Respond.Decide never makes one.
+function Week.LateAnswer(ev, resp)
+    return resp ~= nil and resp.result ~= "paid" and resp.time >= Week.Start(ev.time) + LENGTH + Week.GRACE
 end
 
 -- The race from the week of Monday 5 October 2026 (UTC) on: beating Zennit means beating his answers (see
@@ -176,21 +181,56 @@ function Week.MarkIn(start)
     return false
 end
 
+-- Whether a week was his week off depends on the week before, and that one on the week before it, back to the first summons.
+-- So the answers are kept until anything the race reads changes: the summons and their answers, Zennit's names, the season
+-- marks or the rules. The stamp sums those (exactly: well inside a double's 53 bits for any log this addon will see).
+local ANSWER_CODE = { accepted = 1, refused = 2, excused = 3, declined = 4, owed = 5, paid = 6, won = 7, lost = 8, away = 9 }
+local zennitKnown, zennitNames = {}, nil -- isZennit by target, while his names stay the same
+local function raceStamp()
+    local s = ST.db.settings
+    local names = table.concat(s and s.zenitNames or { "Zennit" }, ",") .. ";" .. table.concat(s and s.zenitAlts or {}, ",")
+    if names ~= zennitNames then zennitKnown, zennitNames = {}, names end
+    local n, times, answers, marked = 0, 0, 0, 0
+    for _, ev in pairs(ST.db.events) do
+        if not ev.fake then
+            n = n + 1
+            local target = ev.target or ""
+            local z = zennitKnown[target]
+            if z == nil then
+                z = isZennit(target)
+                zennitKnown[target] = z
+            end
+            times = times + ev.time + (z and ev.time or 0) + (ev.points or 0) * 7
+            local r = ev.response
+            if r then
+                answers = answers + (r.time or 0) * 64 + (ANSWER_CODE[r.result] or 15) * 4 + (r.closes and 2 or 0) + (r.listed and 1 or 0)
+            end
+        end
+    end
+    for _, m in pairs(ST.db.seasonMarks or {}) do marked = marked + m.time * 2 + (m.kind == "start" and 1 or 0) end
+    local R = Week.RULES
+    return string.format("%d:%.0f:%.0f:%.0f:%s:%s:%s:%s:%s", n, times, answers, marked, tostring(R.from), tostring(R.headstart),
+        tostring(R.minimum), tostring(R.cap), names)
+end
+local offKnown, offStamp = {}, nil
+
 -- Is the week starting at `start` Zennit's week off? From the new rules on, a week off is real: he won the week before,
 -- so summons of him are filler (logged, answered and gagged as usual, but the race ignores them) and nobody wins the
--- week: a win for Zennit is a pause, not a head start. The search back through the weeks ends at the first real summon
--- or at a week whose winner is frozen.
+-- week: a win for Zennit is a pause, not a head start. The search back through the weeks ends at the first real summon.
 function Week.IsOff(start)
     if not Week.NewRules(start) then return false end
     if not Week.Running(start) or Week.MarkIn(start) then return false end -- no race, or a season started this week
+    local stamp = raceStamp()
+    if stamp ~= offStamp then offKnown, offStamp = {}, stamp end
+    if offKnown[start] ~= nil then return offKnown[start] end
     local prev, first = start - LENGTH, nil
     for _, ev in pairs(ST.db.events) do
         if not ev.fake and (not first or ev.time < first) then first = ev.time end
     end
-    if not first or prev < Week.Start(first) then return false end
-    local f = frozen() and frozen()[prev]
-    if f then return f == "zennit" end
-    return Week.Score(prev).winner == "zennit"
+    local off = false
+    if first and prev >= Week.Start(first) then off = Week.Score(prev).winner == "zennit" end
+    offKnown[start] = off
+    return off
 end
 
 -- Why a summon of Zennit in the week starting at `start` does not count, and what the Index files it under. `you` words
@@ -428,31 +468,7 @@ function Week.Score(start)
         end
     end
     if r.summons > 0 and not r.off and not r.paused then r.winner = r.zennit >= r.group and "zennit" or "group" end
-    -- a frozen winner stands, unless the admin's marks (which can arrive late) say the week was not raced, or was after all
-    local f = frozen() and frozen()[start]
-    if f and f ~= "paused" and not r.paused then r.winner = f ~= "none" and f or nil end
-    if r.paused then r.winner = nil end
     return r
-end
-
--- Freezes the winner of every closed week not yet frozen, from the first summon on.
-function Week.Freeze()
-    local settings = ST.db and ST.db.settings
-    if not settings then return end
-    local first
-    for _, ev in pairs(ST.db.events) do
-        if not ev.fake and (not first or ev.time < first) then first = ev.time end
-    end
-    if not first then return end
-    settings.weekFrozen = settings.weekFrozen or {}
-    local start = Week.Start(first)
-    while Week.Closed(start) do
-        if not settings.weekFrozen[start] then
-            local r = Week.Score(start)
-            settings.weekFrozen[start] = r.winner or (r.paused and "paused") or "none"
-        end
-        start = start + LENGTH
-    end
 end
 
 -- Is Zennit on his week off right now? True when he won last week. Returns the end time as the second value.
@@ -588,7 +604,7 @@ local function settleLastWeek()
     if now == a.winner then
         ST.print(string.format("The week of %s is now final: it stays with %s.", date("%d %b", a.start), who[now] or "nobody"))
     else
-        ST.print(string.format("|cffffd100The week of %s changed|r after Zennit's late answers: it went to %s, not %s.",
+        ST.print(string.format("|cffffd100The week of %s changed|r after answers or summons that came in late: it went to %s, not %s.",
             date("%d %b", a.start), who[now] or "nobody", who[a.winner] or "nobody"))
     end
     local season = Week.Season()
@@ -596,9 +612,22 @@ local function settleLastWeek()
     if now == a.winner and f and f.start == a.start then printKeepsake() end
 end
 
+-- A week already announced as final can still change when summons made in it reach this client late (a friend who was away
+-- syncs at last): the result follows the log on every client, so say so, once. Sync calls this after summons arrive.
+function Week.Recheck()
+    local a = ST.db and ST.db.settings and ST.db.settings.weekAnnounced
+    if not a or a.provisional then return end -- a provisional result is settled at the next login (settleLastWeek)
+    local now = Week.Score(a.start).winner
+    if now == a.winner then return end
+    local who = { zennit = "Zennit", group = "the group" }
+    ST.print(string.format("|cffffd100The week of %s changed|r: summons made in it reached the Index late, and it went to %s, not %s.",
+        date("%d %b", a.start), who[now] or "nobody", who[a.winner] or "nobody"))
+    a.winner = now
+end
+
 local function checkLastWeek()
     if not ST.db or not ST.db.settings then return end
-    Week.Freeze()
+    ST.db.settings.weekFrozen = nil -- winners each client froze for itself, before 0.28.1: results come from the log alone now
     settleLastWeek() -- an earlier provisional result, now that its week has closed
     local last = Week.Score(Week.Start() - LENGTH)
     if last.off and ST.db.settings.weekSeen ~= last.start then
